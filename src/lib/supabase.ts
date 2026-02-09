@@ -454,7 +454,7 @@ export async function createQuote(
       p_user_id: userId,
       p_customer_id: data.customer_id,
       p_total_value: data.total_value,
-      p_items: JSON.stringify(data.items),
+      p_items: data.items as unknown as Record<string, unknown>[],
       p_status: data.status,
     };
 
