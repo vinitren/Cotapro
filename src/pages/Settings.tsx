@@ -177,10 +177,11 @@ export function Settings() {
           return;
         }
 
-        // construir nome: userId + extensão
+        // construir nome único: logo-{userId}-{timestamp}.{extensão}
         const extMatch = (file.name || '').match(/\.([a-zA-Z0-9]+)$/);
         const ext = extMatch ? extMatch[1] : 'png';
-        const filename = `${uid}.${ext}`;
+        const timestamp = Date.now();
+        const filename = `logo-${uid}-${timestamp}.${ext}`;
         const path = `logos/${filename}`;
 
         // upload para bucket 'Logos'
