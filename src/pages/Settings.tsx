@@ -109,12 +109,78 @@ export function Settings() {
   };
 
   const onSettingsSubmit = (data: SettingsFormData) => {
+    // atualiza estado local imediatamente
     setSettings(data);
-    toast({
-      title: 'Preferências salvas',
-      description: 'Suas preferências foram atualizadas.',
-      variant: 'success',
-    });
+
+    (async () => {
+      try {
+        // obtém usuário atual
+        const { data: { user } } = await supabase.auth.getUser();
+        const uid = user?.id;
+
+        if (!uid) {
+          toast({
+            title: 'Preferências salvas (local)',
+            description: 'Usuário não autenticado — preferências salvas localmente.',
+            variant: 'default',
+          });
+          return;
+        }
+
+        // persiste no profile (garante valores não-nulos)
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            default_notes: data.observacoes_padrao ?? '',
+            // envia string vazia quando não houver valor, conforme regras
+            default_validity_days: data.validade_padrao === undefined || data.validade_padrao === null
+              ? ''
+              : data.validade_padrao,
+          })
+          .eq('id', uid);
+
+        if (error) {
+          console.error('Erro ao salvar preferências no Supabase:', error);
+          toast({
+            title: 'Erro ao salvar',
+            description: 'Não foi possível persistir as preferências no servidor.',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        // recarrega preferências do profile e atualiza estado
+        const { data: prefs, error: prefsError } = await supabase
+          .from('profiles')
+          .select('default_notes, default_validity_days')
+          .eq('id', uid)
+          .single();
+
+        if (!prefsError && prefs) {
+          setSettings({
+            observacoes_padrao: prefs.default_notes ?? '',
+            validade_padrao:
+              prefs.default_validity_days !== null && prefs.default_validity_days !== undefined
+                ? Number(prefs.default_validity_days) || settings.validade_padrao
+                : settings.validade_padrao,
+            unidades_customizadas: settings.unidades_customizadas,
+          });
+        }
+
+        toast({
+          title: 'Preferências salvas',
+          description: 'Suas preferências foram atualizadas.',
+          variant: 'success',
+        });
+      } catch (err) {
+        console.error('Erro ao salvar preferências:', err);
+        toast({
+          title: 'Erro',
+          description: 'Ocorreu um erro ao salvar as preferências.',
+          variant: 'destructive',
+        });
+      }
+    })();
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {

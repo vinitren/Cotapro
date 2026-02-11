@@ -120,7 +120,7 @@ export async function getProfile(userId: string) {
 }
 
 export async function upsertProfile(data: {
-  id: string;
+  id?: string;
   email?: string | null;
   company_name?: string | null;
   cnpj?: string | null;
@@ -139,27 +139,22 @@ export async function upsertProfile(data: {
   company_address?: string | null;
   company_cnpj?: string | null;
 }) {
-  // Verifica se há uma sessão válida antes de tentar inserir
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-  
-  if (sessionError) {
-    console.error('Erro ao obter sessão:', sessionError);
+  // Obtém o usuário autenticado de forma segura
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+  if (userError) {
+    console.error('Erro ao obter usuário:', userError);
     throw new Error('Erro ao verificar autenticação.');
   }
-  
-  if (!session) {
+
+  if (!user) {
     throw new Error('Usuário não autenticado. Faça login primeiro.');
   }
 
-  // Verifica se o ID do perfil corresponde ao usuário autenticado
-  if (session.user.id !== data.id) {
-    throw new Error('Não autorizado a modificar este perfil.');
-  }
-
-  // Prepara os dados para inserção/atualização
+  // Prepara os dados para inserção/atualização (força o id a ser o do usuário autenticado)
   const profileData: Record<string, unknown> = {
-    id: data.id,
-    email: data.email ?? session.user.email ?? null,
+    id: user.id,
+    email: data.email ?? user.email ?? null,
     company_name: data.company_name ?? null,
     // campos adicionais possíveis
     cnpj: (data as any).cnpj ?? null,
@@ -199,30 +194,14 @@ export async function upsertProfile(data: {
     .from('profiles')
     .upsert(profileData, { onConflict: 'id' })
     .select()
-    .maybeSingle();
+    .single();
     
   if (error) {
-    console.error('Erro ao salvar perfil no Supabase:', {
-      error,
-      code: error.code,
-      message: error.message,
-      details: error.details,
-      hint: error.hint,
-      profileData,
-      userId: session.user.id,
-    });
-    
-    // Mensagens de erro mais específicas
-    if (error.code === '42501') {
-      throw new Error('Erro de permissão. Verifique as políticas RLS no Supabase.');
-    } else if (error.code === '23505') {
-      throw new Error('Perfil já existe.');
-    } else {
-      throw new Error(`Erro ao salvar perfil: ${error.message || 'Erro desconhecido'}`);
-    }
+    console.error('Erro ao salvar perfil no Supabase:', error);
+    throw error;
   }
-  
-  return profile as Profile;
+
+  return profile;
 }
 
 // ============================================

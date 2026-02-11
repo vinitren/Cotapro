@@ -229,6 +229,38 @@ export const useStore = create<AppState>()(
         }));
         // Carrega clientes e orçamentos do Supabase após login
         get().loadCustomers();
+
+        // Em background, carrega preferências armazenadas no profile (default_notes, default_validity_days)
+        (async () => {
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            const uid = user?.id ?? userId;
+            if (!uid) return;
+
+            const { data: prefs, error } = await supabase
+              .from('profiles')
+              .select('default_notes, default_validity_days')
+              .eq('id', uid)
+              .maybeSingle();
+
+            if (!error && prefs) {
+              const observacoes_padrao = prefs.default_notes ?? '';
+              const validade_padrao = prefs.default_validity_days !== null && prefs.default_validity_days !== undefined
+                ? Number(prefs.default_validity_days) || defaultSettings.validade_padrao
+                : defaultSettings.validade_padrao;
+
+              set((state) => ({
+                settings: {
+                  ...state.settings,
+                  observacoes_padrao: observacoes_padrao,
+                  validade_padrao: validade_padrao,
+                },
+              }));
+            }
+          } catch (err) {
+            console.error('Erro ao carregar preferências do profile:', err);
+          }
+        })();
       },
 
       clearSession: () => {
