@@ -154,18 +154,15 @@ export function Login() {
         {/* Lado Direito - Card de Login */}
         <div className="w-full">
           <Card className="w-full max-w-md mx-auto shadow-2xl border-0 rounded-3xl">
-            <CardHeader className="text-center space-y-3 pb-6">
+            <CardHeader className="text-center space-y-2 pb-6">
               {/* Logo e branding mobile */}
-              <div className="lg:hidden mb-4">
-                <div className="flex justify-center mb-3">
-                  <div className="h-14 w-14 bg-emerald-100 rounded-2xl flex items-center justify-center">
-                    <Receipt className="h-7 w-7 text-emerald-600" />
+              <div className="lg:hidden mb-2">
+                <div className="flex justify-center mb-2">
+                  <div className="h-12 w-12 bg-emerald-100 rounded-2xl flex items-center justify-center">
+                    <Receipt className="h-6 w-6 text-emerald-600" />
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-lg font-bold text-emerald-600">CotaPro</p>
-                  <p className="text-sm text-gray-500">Orçamentos automáticos.</p>
-                </div>
+                <p className="text-base font-bold text-emerald-600">CotaPro</p>
               </div>
               <CardTitle className="text-3xl font-bold text-gray-900">
                 Bem-vindo de volta
@@ -227,7 +224,7 @@ export function Login() {
 
                 <Button 
                   type="submit" 
-                  className="w-full h-12 rounded-xl text-base font-semibold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-lg hover:shadow-xl transition-all duration-200" 
+                  className="w-full h-14 rounded-xl text-base font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-lg hover:shadow-xl transition-all duration-200" 
                   disabled={loading || !isSupabaseConfigured}
                 >
                   {loading ? 'Entrando...' : 'Entrar'}
@@ -248,7 +245,7 @@ export function Login() {
                   to="/signup" 
                   className="text-emerald-600 hover:text-emerald-700 font-semibold hover:underline transition-colors"
                 >
-                  Criar uma conta gratuita
+                  Começar grátis
                 </Link>
               </p>
             </CardContent>
@@ -257,7 +254,7 @@ export function Login() {
           {/* Benefícios Mobile */}
           <div className="lg:hidden mt-8 space-y-3 text-white text-center px-4">
             <p className="text-sm text-emerald-50 font-medium">
-              Mais vendas • Rápido no seu dia a dia • Logo personalizada
+              Mais vendas • Orçamentos rápidos • Logo personalizada
             </p>
           </div>
         </div>
