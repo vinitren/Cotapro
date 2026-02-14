@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Search, User, Phone, Mail, Trash2, Edit, Users } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -14,16 +14,36 @@ import {
 } from '../components/ui/dialog';
 import { useStore } from '../store';
 import { formatDate, formatQuoteDisplay } from '../lib/utils';
+import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { CustomerForm } from '../components/customers/CustomerForm';
 import type { Customer } from '../types';
 import { toast } from '../hooks/useToast';
 
 export function Customers() {
-  const { customers, deleteCustomer, quotes } = useStore();
+  const { customers, deleteCustomer, quotes, loadCustomers } = useStore();
   const [search, setSearch] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<Customer | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        await loadCustomers();
+      } catch (error) {
+        toast({
+          title: 'Erro ao carregar clientes',
+          description: 'Não foi possível carregar a lista de clientes. Verifique sua conexão.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, [loadCustomers]);
 
   const searchLower = (search || '').toLowerCase().trim();
   const filteredCustomers = (customers ?? []).filter((customer) => {
@@ -77,6 +97,10 @@ export function Customers() {
     setIsFormOpen(false);
     setEditingCustomer(null);
   };
+
+  if (isLoading) {
+    return <LoadingSkeleton />;
+  }
 
   return (
     <div className="p-4 lg:p-6 space-y-6">

@@ -1,8 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/layout';
 import { Login, Signup, Dashboard, Customers, Quotes, QuoteCreate, QuoteDetail, Catalog, Settings } from './pages';
 import { Toaster } from './components/ui/toaster';
+import { LoadingScreen } from './components/LoadingScreen';
 import { useStore } from './store';
 import { supabase, getProfile, isSupabaseConfigured } from './lib/supabase';
 
@@ -14,6 +15,7 @@ function setViewportHeight() {
 
 function App() {
   const { setSessionFromUser, clearSession } = useStore();
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
     let mobileListenersActive = false;
@@ -46,8 +48,12 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!isSupabaseConfigured) return;
+    if (!isSupabaseConfigured) {
+      setIsInitializing(false);
+      return;
+    }
 
+    setIsInitializing(true);
     supabase.auth
       .getSession()
       .then(({ data: { session } }) => {
@@ -58,13 +64,18 @@ function App() {
             })
             .catch(() => {
               setSessionFromUser(session.user.id, session.user.email ?? '', null);
+            })
+            .finally(() => {
+              setIsInitializing(false);
             });
         } else {
           clearSession();
+          setIsInitializing(false);
         }
       })
       .catch(() => {
         clearSession();
+        setIsInitializing(false);
       });
 
     const {
@@ -87,6 +98,10 @@ function App() {
       subscription?.unsubscribe?.();
     };
   }, [setSessionFromUser, clearSession]);
+
+  if (isInitializing) {
+    return <LoadingScreen />;
+  }
 
   return (
     <BrowserRouter>

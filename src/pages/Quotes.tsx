@@ -22,20 +22,37 @@ import {
 } from '../components/ui/select';
 import { useStore } from '../store';
 import { formatCurrency, formatDate, formatQuoteDisplay, getStatusColor, getStatusLabel, isSupabaseQuoteId } from '../lib/utils';
+import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import type { Quote, QuoteStatus } from '../types';
 import { toast } from '../hooks/useToast';
 import { generateQuotePDF } from '../lib/pdf-generator';
 
 export function Quotes() {
-  const { quotes, deleteQuote, checkExpiredQuotes, userId } = useStore();
+  const { quotes, deleteQuote, checkExpiredQuotes, userId, loadQuotes } = useStore();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<QuoteStatus | 'all'>('all');
   const [deleteConfirm, setDeleteConfirm] = useState<Quote | null>(null);
   const [pdfDownloadingId, setPdfDownloadingId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    checkExpiredQuotes();
-  }, [checkExpiredQuotes]);
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        await loadQuotes();
+        checkExpiredQuotes();
+      } catch (error) {
+        toast({
+          title: 'Erro ao carregar orçamentos',
+          description: 'Não foi possível carregar a lista de orçamentos. Verifique sua conexão.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, [loadQuotes, checkExpiredQuotes]);
 
   const searchLower = (search ?? '').toLowerCase().trim();
   const quotesList = quotes ?? [];
@@ -99,6 +116,10 @@ export function Quotes() {
       setPdfDownloadingId(null);
     }
   };
+
+  if (isLoading) {
+    return <LoadingSkeleton />;
+  }
 
   return (
     <div className="p-4 lg:p-6 space-y-6">
