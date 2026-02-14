@@ -498,7 +498,7 @@ export function QuoteCreate() {
               <Separator />
               <div className="flex justify-between">
                 <span className="text-lg font-semibold">Total</span>
-                <span className="text-2xl font-bold text-emerald-600">
+                <span className="text-2xl font-bold text-primary">
                   {formatCurrency(total)}
                 </span>
               </div>
@@ -569,7 +569,7 @@ export function QuoteCreate() {
 
                 <div className="flex justify-between">
                   <span className="text-lg font-semibold">Total</span>
-                  <span className="text-2xl font-bold text-emerald-600">
+                  <span className="text-2xl font-bold text-primary">
                     {formatCurrency(total)}
                   </span>
                 </div>
@@ -606,7 +606,7 @@ export function QuoteCreate() {
         <div className="flex items-center justify-between gap-4 px-4 py-3 max-w-full">
           <div className="min-w-0">
             <p className="text-xs text-gray-500">Total</p>
-            <p className="text-xl font-bold text-emerald-600 truncate">
+            <p className="text-xl font-bold text-primary truncate">
               {formatCurrency(total)}
             </p>
           </div>

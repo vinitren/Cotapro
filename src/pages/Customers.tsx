@@ -156,8 +156,8 @@ export function Customers() {
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                        <User className="h-5 w-5 text-emerald-600" />
+                      <div className="h-10 w-10 bg-primary-100 rounded-full flex items-center justify-center">
+                        <User className="h-5 w-5 text-primary" />
                       </div>
                       <div>
                         <h3 className="font-semibold text-gray-900">{customer?.nome ?? ''}</h3>

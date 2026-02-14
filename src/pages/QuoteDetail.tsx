@@ -161,7 +161,7 @@ export function QuoteDetail() {
   const getStatusIcon = (status: QuoteStatus) => {
     switch (status) {
       case 'aprovado':
-        return <CheckCircle className="h-5 w-5 text-emerald-600" />;
+        return <CheckCircle className="h-5 w-5 text-primary" />;
       case 'recusado':
         return <XCircle className="h-5 w-5 text-red-600" />;
       case 'expirado':
@@ -215,8 +215,8 @@ export function QuoteDetail() {
             </CardHeader>
             <CardContent>
               <div className="flex items-start gap-4">
-                <div className="h-12 w-12 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-lg font-semibold text-emerald-600">
+                <div className="h-12 w-12 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-lg font-semibold text-primary">
                     {quote.cliente.nome.charAt(0).toUpperCase()}
                   </span>
                 </div>
@@ -352,7 +352,7 @@ export function QuoteDetail() {
 
               <div className="flex justify-between">
                 <span className="text-lg font-semibold">Total</span>
-                <span className="text-2xl font-bold text-emerald-600">
+                <span className="text-2xl font-bold text-primary">
                   {formatCurrency(quote.total)}
                 </span>
               </div>

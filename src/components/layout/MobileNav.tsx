@@ -36,7 +36,7 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
       <div className="fixed inset-y-0 left-0 w-72 bg-white shadow-xl">
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
           <div className="flex items-center">
-            <Receipt className="h-8 w-8 text-emerald-600" />
+            <Receipt className="h-8 w-8 text-primary" />
             <span className="ml-2 text-xl font-bold text-gray-900">CotaPro</span>
           </div>
           <button
@@ -57,7 +57,7 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
                 cn(
                   'flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                   isActive
-                    ? 'bg-emerald-50 text-emerald-700'
+                    ? 'bg-primary-50 text-primary-700'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 )
               }

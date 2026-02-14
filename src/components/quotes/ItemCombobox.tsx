@@ -125,7 +125,7 @@ export function ItemCombobox({
                   aria-selected={index === highlightIndex}
                   className={cn(
                     'cursor-pointer px-3 py-2 text-sm flex items-center justify-between gap-2',
-                    index === highlightIndex ? 'bg-emerald-50 text-emerald-900' : 'hover:bg-gray-50'
+                    index === highlightIndex ? 'bg-primary-50 text-primary-900' : 'hover:bg-gray-50'
                   )}
                   onMouseEnter={() => setHighlightIndex(index)}
                   onMouseDown={(e) => {
@@ -134,7 +134,7 @@ export function ItemCombobox({
                   }}
                 >
                   <span className="truncate">{desc}</span>
-                  <span className="shrink-0 text-emerald-600 font-medium">
+                  <span className="shrink-0 text-primary font-medium">
                     {formatCurrency(Number(item.unit_price))} / {item.unit_type}
                   </span>
                 </li>

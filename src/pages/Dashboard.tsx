@@ -82,8 +82,8 @@ export function Dashboard() {
                   {totalQuotesThisMonth}
                 </p>
               </div>
-              <div className="h-10 w-10 lg:h-12 lg:w-12 bg-emerald-100 rounded-xl flex items-center justify-center">
-                <FileText className="h-5 w-5 lg:h-6 lg:w-6 text-emerald-600" />
+              <div className="h-10 w-10 lg:h-12 lg:w-12 bg-primary-100 rounded-xl flex items-center justify-center">
+                <FileText className="h-5 w-5 lg:h-6 lg:w-6 text-primary" />
               </div>
             </div>
           </CardContent>
@@ -130,8 +130,8 @@ export function Dashboard() {
                   {approvedQuotes.length}
                 </p>
               </div>
-              <div className="h-10 w-10 lg:h-12 lg:w-12 bg-emerald-100 rounded-xl flex items-center justify-center">
-                <CheckCircle className="h-5 w-5 lg:h-6 lg:w-6 text-emerald-600" />
+              <div className="h-10 w-10 lg:h-12 lg:w-12 bg-primary-100 rounded-xl flex items-center justify-center">
+                <CheckCircle className="h-5 w-5 lg:h-6 lg:w-6 text-primary" />
               </div>
             </div>
           </CardContent>
@@ -161,7 +161,7 @@ export function Dashboard() {
                           : status === 'enviado'
                           ? 'bg-blue-500'
                           : status === 'aprovado'
-                          ? 'bg-emerald-500'
+                          ? 'bg-primary'
                           : status === 'recusado'
                           ? 'bg-red-500'
                           : 'bg-amber-500'
@@ -182,7 +182,7 @@ export function Dashboard() {
             <CardTitle className="text-lg">Últimos Orçamentos</CardTitle>
             <Link
               to="/quotes"
-              className="text-sm text-emerald-600 hover:text-emerald-700 font-medium flex items-center"
+              className="text-sm text-primary hover:text-primary-hover font-medium flex items-center"
             >
               Ver todos
               <ArrowRight className="h-4 w-4 ml-1" />
@@ -195,7 +195,7 @@ export function Dashboard() {
                 <p className="text-gray-500">Nenhum orçamento criado ainda</p>
                 <Link
                   to="/quotes/new"
-                  className="text-emerald-600 hover:text-emerald-700 font-medium text-sm mt-2 inline-block"
+                  className="text-primary hover:text-primary-hover font-medium text-sm mt-2 inline-block"
                 >
                   Criar primeiro orçamento
                 </Link>

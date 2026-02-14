@@ -208,7 +208,7 @@ export function Quotes() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold text-emerald-600">
+                    <p className="text-lg font-bold text-primary">
                       {formatCurrency(quote.total)}
                     </p>
                   </div>

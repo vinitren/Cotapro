@@ -12,7 +12,7 @@ export function Layout() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-page-bg">
       <Sidebar />
       <div className="lg:pl-64">
         <Header />

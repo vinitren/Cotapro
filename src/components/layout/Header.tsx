@@ -25,7 +25,7 @@ export function Header() {
       <div className="flex items-center justify-between h-16 px-4 lg:px-6">
         <div className="flex items-center lg:hidden">
           <Link to="/" className="flex items-center -ml-2 p-2 rounded-lg hover:bg-gray-100">
-            <Receipt className="h-7 w-7 text-emerald-600" />
+            <Receipt className="h-7 w-7 text-primary" />
             <span className="ml-2 text-lg font-bold text-gray-900">CotaPro</span>
           </Link>
         </div>

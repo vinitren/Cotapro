@@ -7,13 +7,13 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-emerald-100 text-emerald-700',
+        default: 'bg-primary-100 text-primary-700',
         secondary: 'bg-gray-100 text-gray-700',
         destructive: 'bg-red-100 text-red-700',
         outline: 'border border-gray-300 text-gray-700',
         draft: 'bg-gray-100 text-gray-700',
         sent: 'bg-blue-100 text-blue-700',
-        approved: 'bg-emerald-100 text-emerald-700',
+        approved: 'bg-primary-100 text-primary-700',
         rejected: 'bg-red-100 text-red-700',
         expired: 'bg-amber-100 text-amber-700',
       },
