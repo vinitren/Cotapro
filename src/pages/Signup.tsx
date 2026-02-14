@@ -136,28 +136,28 @@ export function Signup() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-600 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-2xl border-0 rounded-3xl">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <div className="h-16 w-16 bg-emerald-100 rounded-2xl flex items-center justify-center">
               <Receipt className="h-8 w-8 text-emerald-600" />
             </div>
           </div>
-          <CardTitle className="text-2xl">Criar conta</CardTitle>
-          <CardDescription>
-            Cadastre-se para usar o CotaPro
+          <CardTitle className="text-3xl font-bold text-gray-900">Criar conta</CardTitle>
+          <CardDescription className="text-base text-gray-600">
+            Comece a criar orçamentos profissionais agora
           </CardDescription>
         </CardHeader>
         <CardContent>
           {!isSupabaseConfigured && (
-            <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+            <div className="mb-4 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm">
               Supabase não configurado. Defina <strong>VITE_SUPABASE_URL</strong> e <strong>VITE_SUPABASE_ANON_KEY</strong> nas variáveis de ambiente da Vercel e faça um novo deploy.
             </div>
           )}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -166,6 +166,7 @@ export function Signup() {
                 onChange={(e) => setEmail(e.target.value)}
                 error={!!errors.email}
                 disabled={loading}
+                className="h-11 rounded-xl"
               />
               {errors.email && (
                 <p className="text-sm text-red-500">{errors.email}</p>
@@ -173,7 +174,7 @@ export function Signup() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
+              <Label htmlFor="password" className="text-sm font-medium text-gray-700">Senha</Label>
               <Input
                 id="password"
                 type="password"
@@ -182,6 +183,7 @@ export function Signup() {
                 onChange={(e) => setPassword(e.target.value)}
                 error={!!errors.password}
                 disabled={loading}
+                className="h-11 rounded-xl"
               />
               {errors.password && (
                 <p className="text-sm text-red-500">{errors.password}</p>
@@ -189,7 +191,7 @@ export function Signup() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="company_name">Nome da empresa</Label>
+              <Label htmlFor="company_name" className="text-sm font-medium text-gray-700">Nome da empresa</Label>
               <Input
                 id="company_name"
                 type="text"
@@ -198,6 +200,7 @@ export function Signup() {
                 onChange={(e) => setCompanyName(e.target.value)}
                 error={!!errors.company_name}
                 disabled={loading}
+                className="h-11 rounded-xl"
               />
               {errors.company_name && (
                 <p className="text-sm text-red-500">{errors.company_name}</p>
@@ -205,7 +208,9 @@ export function Signup() {
             </div>
 
             {errors.submit && (
-              <p className="text-sm text-red-500">{errors.submit}</p>
+              <div className="p-3 rounded-xl bg-red-50 border border-red-200">
+                <p className="text-sm text-red-600">{errors.submit}</p>
+              </div>
             )}
             {confirmMessage && (
               <p className="text-sm text-emerald-600 bg-emerald-50 p-3 rounded-lg">
@@ -213,15 +218,30 @@ export function Signup() {
               </p>
             )}
 
-            <Button type="submit" className="w-full" disabled={loading || !isSupabaseConfigured}>
+            <Button 
+              type="submit" 
+              className="w-full h-12 rounded-xl text-base font-semibold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-lg hover:shadow-xl transition-all duration-200" 
+              disabled={loading || !isSupabaseConfigured}
+            >
               {loading ? 'Cadastrando...' : 'Cadastrar'}
             </Button>
           </form>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
-            Já tem uma conta?{' '}
-            <Link to="/login" className="text-emerald-600 hover:text-emerald-700 font-medium">
-              Entrar
+          <div className="relative mt-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-white text-gray-500">Já tem uma conta?</span>
+            </div>
+          </div>
+
+          <p className="text-center text-sm text-gray-600 mt-4">
+            <Link 
+              to="/login" 
+              className="text-emerald-600 hover:text-emerald-700 font-semibold hover:underline transition-colors"
+            >
+              Fazer login
             </Link>
           </p>
         </CardContent>
