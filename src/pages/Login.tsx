@@ -92,8 +92,11 @@ export function Login() {
               </div>
               <h1 className="text-4xl font-bold">CotaPro</h1>
             </div>
-            <p className="text-xl text-emerald-50 leading-relaxed">
-              A plataforma completa para criar orçamentos profissionais em minutos
+            <h2 className="text-3xl font-bold leading-tight">
+              Aumente suas vendas com orçamentos profissionais em poucos minutos
+            </h2>
+            <p className="text-lg text-emerald-50 leading-relaxed">
+              No celular ou computador, com rapidez e aparência profissional.
             </p>
           </div>
 
@@ -103,9 +106,9 @@ export function Login() {
                 <CheckCircle2 className="h-4 w-4 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold text-lg">Orçamentos Profissionais</h3>
+                <h3 className="font-semibold text-lg">Pare de perder tempo com ferramentas complicadas</h3>
                 <p className="text-emerald-50 text-sm">
-                  Crie propostas com visual impecável e envie por email ou PDF
+                  Nada de Canva demorado, planilhas ultrapassadas ou orçamentos sem credibilidade.
                 </p>
               </div>
             </div>
@@ -115,9 +118,9 @@ export function Login() {
                 <Zap className="h-4 w-4 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold text-lg">Agilidade no Dia a Dia</h3>
+                <h3 className="font-semibold text-lg">Mais profissionalismo no atendimento</h3>
                 <p className="text-emerald-50 text-sm">
-                  Catálogo de produtos, clientes salvos e cálculos automáticos
+                  Envie propostas com visual moderno e valores organizados.
                 </p>
               </div>
             </div>
@@ -127,9 +130,9 @@ export function Login() {
                 <TrendingUp className="h-4 w-4 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold text-lg">Controle Total</h3>
+                <h3 className="font-semibold text-lg">Acompanhe suas vendas no dashboard</h3>
                 <p className="text-emerald-50 text-sm">
-                  Acompanhe status, validade e histórico de todos os orçamentos
+                  Visualize orçamentos enviados, valores e status em um só lugar.
                 </p>
               </div>
             </div>
@@ -139,9 +142,9 @@ export function Login() {
                 <Shield className="h-4 w-4 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold text-lg">Seus Dados Seguros</h3>
+                <h3 className="font-semibold text-lg">Pensado para quem vende de verdade</h3>
                 <p className="text-emerald-50 text-sm">
-                  Armazenamento em nuvem com criptografia e backup automático
+                  Interface rápida, simples e otimizada para uso no celular.
                 </p>
               </div>
             </div>
