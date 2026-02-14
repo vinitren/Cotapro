@@ -1,11 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2, ArrowLeft, Save, UserPlus } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Save, User, Settings2, ChevronRight } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { Textarea } from '../components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent } from '../components/ui/card';
 import {
   Select,
   SelectContent,
@@ -15,22 +14,13 @@ import {
 } from '../components/ui/select';
 import { Separator } from '../components/ui/separator';
 import { useStore } from '../store';
-import { formatCurrency, formatQuoteDisplay, generateId, addDays, parseCurrency } from '../lib/utils';
-import type { QuoteItem, Quote, Customer } from '../types';
+import { formatCurrency, formatQuoteDisplay, addDays, parseCurrency } from '../lib/utils';
+import type { QuoteItem, Customer } from '../types';
 import { toast } from '../hooks/useToast';
-import { QuickCustomerModal } from '../components/customers/QuickCustomerModal';
-import { ItemCombobox } from '../components/quotes/ItemCombobox';
+import { ClientSelectModal } from '../components/quotes/ClientSelectModal';
+import { ItemFormModal } from '../components/quotes/ItemFormModal';
+import { QuoteConfigModal } from '../components/quotes/QuoteConfigModal';
 import { getItemsCatalog, type ItemCatalogDB } from '../lib/supabase';
-import { QuotePDFTemplate } from '../lib/pdf-generator';
-
-const UNIDADES = ['UN', 'M', 'M2', 'KG', 'HORA', 'SERVICO'];
-
-const OBSERVACOES_SUGERIDAS = [
-  'Pagamento: 50% entrada + 50% na entrega',
-  'Pagamento à vista com 10% de desconto',
-  'Prazo de entrega: 7 dias úteis',
-  'Validade da proposta conforme data indicada',
-];
 
 const placeholderCliente: Customer = {
   id: '',
@@ -46,7 +36,7 @@ const placeholderCliente: Customer = {
 
 export function QuoteCreate() {
   const navigate = useNavigate();
-  const { customers, settings, addQuote, getNextQuoteNumber, userId, company } = useStore();
+  const { customers, settings, addQuote, userId } = useStore();
 
   const [clienteId, setClienteId] = useState('');
   const [validadeDias, setValidadeDias] = useState(settings.validade_padrao.toString());
@@ -55,10 +45,11 @@ export function QuoteCreate() {
   const [descontoValor, setDescontoValor] = useState('0');
   const [observacoes, setObservacoes] = useState(settings.observacoes_padrao);
   const [isSaving, setIsSaving] = useState(false);
-  const [quickCustomerOpen, setQuickCustomerOpen] = useState(false);
+  const [clientModalOpen, setClientModalOpen] = useState(false);
+  const [itemModalOpen, setItemModalOpen] = useState(false);
+  const [configModalOpen, setConfigModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<QuoteItem | null>(null);
   const [catalogItems, setCatalogItems] = useState<ItemCatalogDB[]>([]);
-
-  const quoteNumber = useMemo(() => getNextQuoteNumber(), [getNextQuoteNumber]);
 
   const selectedCustomer = customers.find((c) => c.id === clienteId);
 
@@ -70,69 +61,39 @@ export function QuoteCreate() {
       : descontoValorNumerico;
   const total = Math.max(0, subtotal - descontoCalculado);
 
-  const dataEmissao = new Date().toISOString().split('T')[0];
-  const dataValidade = addDays(new Date(), parseInt(validadeDias)).toISOString().split('T')[0];
-
-  const draftQuote: Quote = useMemo(
-    () => ({
-      id: 'draft',
-      numero: Number(quoteNumber) || 0,
-      cliente_id: clienteId || '',
-      cliente: selectedCustomer || placeholderCliente,
-      data_emissao: dataEmissao,
-      data_validade: dataValidade,
-      status: 'rascunho',
-      itens,
-      subtotal,
-      desconto_tipo: descontoTipo,
-      desconto_valor: descontoValorNumerico,
-      total,
-      observacoes,
-      data_criacao: dataEmissao,
-    }),
-    [
-      quoteNumber,
-      clienteId,
-      selectedCustomer,
-      dataEmissao,
-      dataValidade,
-      itens,
-      subtotal,
-      descontoTipo,
-      descontoValorNumerico,
-      total,
-      observacoes,
-    ]
-  );
-
-  const addItem = () => {
-    const newItem: QuoteItem = {
-      id: generateId(),
-      tipo: 'servico',
-      descricao: '',
-      quantidade: 1,
-      unidade: 'UN',
-      valor_unitario: 0,
-      subtotal: 0,
-    };
-    setItens([...itens, newItem]);
+  const addItem = (item: QuoteItem) => {
+    setItens((prev) => [...prev, item]);
   };
 
-  const updateItem = (id: string, field: keyof QuoteItem, value: string | number) => {
+  const updateItem = (item: QuoteItem) => {
     setItens((prev) =>
-      prev.map((item) => {
-        if (item.id !== id) return item;
-        const updated = { ...item, [field]: value };
-        if (field === 'quantidade' || field === 'valor_unitario') {
-          updated.subtotal = updated.quantidade * updated.valor_unitario;
-        }
-        return updated;
-      })
+      prev.map((i) => (i.id === item.id ? item : i))
     );
   };
 
   const removeItem = (id: string) => {
     setItens((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const handleSaveItem = (item: QuoteItem) => {
+    const existing = itens.find((i) => i.id === item.id);
+    if (existing) {
+      updateItem(item);
+    } else {
+      addItem(item);
+    }
+    setEditingItem(null);
+    setItemModalOpen(false);
+  };
+
+  const openAddItem = () => {
+    setEditingItem(null);
+    setItemModalOpen(true);
+  };
+
+  const openEditItem = (item: QuoteItem) => {
+    setEditingItem(item);
+    setItemModalOpen(true);
   };
 
   const handleSave = async (status: 'rascunho' | 'enviado') => {
@@ -212,12 +173,6 @@ export function QuoteCreate() {
   };
 
   useEffect(() => {
-    if (itens.length === 0) {
-      addItem();
-    }
-  }, []);
-
-  useEffect(() => {
     if (!userId) return;
     getItemsCatalog(userId)
       .then(setCatalogItems)
@@ -225,401 +180,220 @@ export function QuoteCreate() {
   }, [userId]);
 
   return (
-    <div className="p-4 lg:p-6 pb-28 lg:pb-8">
-      <div className="flex items-center gap-4 mb-6">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Novo Orçamento</h1>
-          <p className="text-gray-500">O número será gerado ao salvar no banco.</p>
+    <div className="min-h-screen bg-page-bg pb-24">
+      <div className="max-w-[640px] mx-auto px-4 pt-4 space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-bold text-gray-900">Novo Orçamento</h1>
+            <p className="text-sm text-gray-500 truncate">Número gerado ao salvar</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setConfigModalOpen(true)}
+            className="shrink-0"
+          >
+            <Settings2 className="h-4 w-4 mr-1.5" />
+            Obs/Config
+          </Button>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6 min-w-0">
-          <Card>
-            <CardHeader>
-              <CardTitle>Informações Básicas</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Validade</Label>
-                  <Select value={validadeDias} onValueChange={setValidadeDias}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="7">7 dias</SelectItem>
-                      <SelectItem value="15">15 dias</SelectItem>
-                      <SelectItem value="30">30 dias</SelectItem>
-                      <SelectItem value="60">60 dias</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+        {/* Cliente - Card clicável */}
+        <Card
+          className="cursor-pointer hover:border-primary-200 transition-colors active:scale-[0.99]"
+          onClick={() => setClientModalOpen(true)}
+        >
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="h-12 w-12 rounded-xl bg-primary-100 flex items-center justify-center shrink-0">
+                <User className="h-6 w-6 text-primary" />
               </div>
-
-              <div className="space-y-2">
-                <Label>Cliente</Label>
-                <div className="flex gap-2">
-                  <Select value={clienteId} onValueChange={setClienteId} className="flex-1">
-                    <SelectTrigger error={!clienteId}>
-                      <SelectValue placeholder="Selecione um cliente" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {customers.map((customer) => (
-                        <SelectItem key={customer.id} value={customer.id}>
-                          {customer.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="shrink-0"
-                    onClick={() => setQuickCustomerOpen(true)}
-                    title="Cadastrar novo cliente rapidamente"
-                  >
-                    <UserPlus className="h-4 w-4 mr-1.5" />
-                    Novo Cliente
-                  </Button>
-                </div>
-                {customers.length === 0 && !quickCustomerOpen && (
-                  <p className="text-sm text-gray-500">
-                    Nenhum cliente cadastrado. Clique no botão <strong>+</strong> para cadastrar um cliente rapidamente.
-                  </p>
-                )}
+              <div className="min-w-0">
+                <p className="font-medium text-gray-900 truncate">
+                  {selectedCustomer?.nome ?? placeholderCliente.nome}
+                </p>
+                <p className="text-sm text-gray-500">
+                  {selectedCustomer ? 'Toque para alterar' : 'Toque para selecionar'}
+                </p>
               </div>
+            </div>
+            <ChevronRight className="h-5 w-5 text-gray-400 shrink-0" />
+          </CardContent>
+        </Card>
 
-              <QuickCustomerModal
-                open={quickCustomerOpen}
-                onClose={() => setQuickCustomerOpen(false)}
-                onSaved={(customer) => {
-                  setClienteId(customer.id);
-                  setQuickCustomerOpen(false);
-                }}
-              />
-            </CardContent>
-          </Card>
-
+        {/* Itens */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-gray-900">Itens</h2>
+            <Button size="sm" onClick={openAddItem}>
+              <Plus className="h-4 w-4 mr-1" />
+              Adicionar
+            </Button>
+          </div>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Itens do Orçamento</CardTitle>
-              <Button size="sm" onClick={addItem}>
-                <Plus className="h-4 w-4 mr-1" />
-                Adicionar
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {itens.map((item, index) => (
-                <div
-                  key={item.id}
-                  className="p-4 sm:p-4 border border-gray-200 rounded-xl sm:rounded-lg bg-white shadow-sm sm:shadow-none space-y-4 touch-manipulation"
+            <CardContent className="p-0">
+              {itens.length === 0 ? (
+                <button
+                  type="button"
+                  onClick={openAddItem}
+                  className="w-full p-6 flex flex-col items-center justify-center gap-2 text-gray-500 hover:bg-gray-50 transition-colors"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-500">Item {index + 1}</span>
-                    {itens.length > 1 && (
+                  <Plus className="h-10 w-10 text-gray-300" />
+                  <span className="text-sm font-medium">Adicione o primeiro item</span>
+                </button>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {itens.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between gap-3 p-4 hover:bg-gray-50/50 active:bg-gray-100 transition-colors"
+                    >
+                      <button
+                        type="button"
+                        className="flex-1 min-w-0 text-left"
+                        onClick={() => openEditItem(item)}
+                      >
+                        <p className="font-medium text-gray-900 truncate">
+                          {item.descricao || 'Item sem descrição'}
+                        </p>
+                        <p className="text-sm text-primary font-semibold">
+                          {formatCurrency(item.subtotal)}
+                        </p>
+                      </button>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-10 w-10 sm:h-8 sm:w-8 text-red-500 hover:text-red-600 hover:bg-red-50 -mr-2"
-                        onClick={() => removeItem(item.id)}
+                        className="h-9 w-9 text-red-500 hover:text-red-600 hover:bg-red-50 shrink-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeItem(item.id);
+                        }}
                         title="Remover item"
                       >
-                        <Trash2 className="h-5 w-5 sm:h-4 sm:w-4" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Descrição</Label>
-                    <ItemCombobox
-                      value={item.descricao}
-                      onChange={(value) => updateItem(item.id, 'descricao', value)}
-                      onSelectFromCatalog={(descricao, unitPrice, unit) => {
-                        setItens((prev) =>
-                          prev.map((i) => {
-                            if (i.id !== item.id) return i;
-                            const updated = {
-                              ...i,
-                              descricao,
-                              valor_unitario: unitPrice,
-                              unidade: unit,
-                              subtotal: i.quantidade * unitPrice,
-                            };
-                            return updated;
-                          })
-                        );
-                      }}
-                      catalogItems={catalogItems}
-                      placeholder="Digite ou selecione um item do catálogo"
-                      error={!item.descricao}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-xs sm:text-sm">Quantidade</Label>
-                      <Input
-                        type="number"
-                        min="0.01"
-                        step="0.01"
-                        value={item.quantidade}
-                        onChange={(e) =>
-                          updateItem(item.id, 'quantidade', parseFloat(e.target.value) || 0)
-                        }
-                        className="h-11 sm:h-10 min-h-[44px] text-base sm:text-sm"
-                      />
                     </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-xs sm:text-sm">Unidade</Label>
-                      <Select
-                        value={item.unidade}
-                        onValueChange={(value) => updateItem(item.id, 'unidade', value)}
-                      >
-                        <SelectTrigger className="h-11 sm:h-10 min-h-[44px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {UNIDADES.map((un) => (
-                            <SelectItem key={un} value={un}>
-                              {un}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-xs sm:text-sm">Valor Unit.</Label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm sm:text-sm">
-                          R$
-                        </span>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={item.valor_unitario || ''}
-                          onChange={(e) =>
-                            updateItem(item.id, 'valor_unitario', parseFloat(e.target.value) || 0)
-                          }
-                          className="pl-10 h-11 sm:h-10 min-h-[44px] text-base sm:text-sm"
-                          error={item.valor_unitario <= 0}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-xs sm:text-sm">Subtotal</Label>
-                      <Input
-                        value={formatCurrency(item.subtotal)}
-                        disabled
-                        className="bg-gray-50 font-semibold h-11 sm:h-10 min-h-[44px]"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Observações</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap gap-2">
-                {OBSERVACOES_SUGERIDAS.map((obs) => (
-                  <Button
-                    key={obs}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setObservacoes(obs)}
-                    className="text-xs"
-                  >
-                    {obs}
-                  </Button>
-                ))}
-              </div>
-              <Textarea
-                value={observacoes}
-                onChange={(e) => setObservacoes(e.target.value)}
-                placeholder="Condições de pagamento, prazos, etc."
-                rows={4}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Resumo mobile: desconto e total (desktop tem na sidebar) */}
-          <Card className="lg:hidden">
-            <CardHeader>
-              <CardTitle>Resumo</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Subtotal</span>
-                <span className="font-medium">{formatCurrency(subtotal)}</span>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm">Desconto</Label>
-                <div className="flex gap-2">
-                  <Select
-                    value={descontoTipo}
-                    onValueChange={(v) => setDescontoTipo(v as 'percentual' | 'fixo')}
-                  >
-                    <SelectTrigger className="w-24 h-11">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="percentual">%</SelectItem>
-                      <SelectItem value="fixo">R$</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={descontoValor}
-                    onChange={(e) => setDescontoValor(e.target.value)}
-                    className="flex-1 h-11"
-                  />
-                </div>
-              </div>
-              {descontoCalculado > 0 && (
-                <div className="flex justify-between text-sm text-red-600">
-                  <span>Desconto</span>
-                  <span>- {formatCurrency(descontoCalculado)}</span>
+                  ))}
                 </div>
               )}
-              <Separator />
-              <div className="flex justify-between">
-                <span className="text-lg font-semibold">Total</span>
-                <span className="text-2xl font-bold text-primary">
-                  {formatCurrency(total)}
-                </span>
-              </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Desktop: Preview do PDF + Resumo (oculto no mobile) */}
-        <div className="hidden lg:block lg:col-span-1">
-          <div className="sticky top-24 space-y-6">
-            {/* Preview do PDF - apenas desktop */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Preview do PDF</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="overflow-auto max-h-[420px] border-t border-gray-100 bg-gray-50">
-                  <div className="scale-[0.72] origin-top-left w-[139%] min-h-[500px]">
-                    <QuotePDFTemplate quote={draftQuote} company={company} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Resumo</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Subtotal</span>
-                  <span className="font-medium">{formatCurrency(subtotal)}</span>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-sm">Desconto</Label>
-                  <div className="flex gap-2">
-                    <Select
-                      value={descontoTipo}
-                      onValueChange={(v) => setDescontoTipo(v as 'percentual' | 'fixo')}
-                    >
-                      <SelectTrigger className="w-24">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="percentual">%</SelectItem>
-                        <SelectItem value="fixo">R$</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      type="number"
-                      min="0"
-                      value={descontoValor}
-                      onChange={(e) => setDescontoValor(e.target.value)}
-                      className="flex-1"
-                    />
-                  </div>
-                </div>
-
-                {descontoCalculado > 0 && (
-                  <div className="flex justify-between text-sm text-red-600">
-                    <span>Desconto</span>
-                    <span>- {formatCurrency(descontoCalculado)}</span>
-                  </div>
-                )}
-
-                <Separator />
-
-                <div className="flex justify-between">
-                  <span className="text-lg font-semibold">Total</span>
-                  <span className="text-2xl font-bold text-primary">
-                    {formatCurrency(total)}
-                  </span>
-                </div>
-
-                <div className="space-y-2 pt-4">
-                  <Button
-                    className="w-full"
-                    onClick={() => handleSave('enviado')}
-                    disabled={isSaving}
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    Criar Orçamento
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => handleSave('rascunho')}
-                    disabled={isSaving}
-                  >
-                    Salvar Rascunho
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+        {/* Resumo */}
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">Subtotal</span>
+              <span className="font-medium">{formatCurrency(subtotal)}</span>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm">Desconto</Label>
+              <div className="flex gap-2">
+                <Select
+                  value={descontoTipo}
+                  onValueChange={(v) => setDescontoTipo(v as 'percentual' | 'fixo')}
+                >
+                  <SelectTrigger className="w-20 h-11">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="percentual">%</SelectItem>
+                    <SelectItem value="fixo">R$</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input
+                  type="number"
+                  min="0"
+                  value={descontoValor}
+                  onChange={(e) => setDescontoValor(e.target.value)}
+                  className="flex-1 h-11"
+                />
+              </div>
+            </div>
+            {descontoCalculado > 0 && (
+              <div className="flex justify-between text-sm text-red-600">
+                <span>Desconto</span>
+                <span>- {formatCurrency(descontoCalculado)}</span>
+              </div>
+            )}
+            <Separator />
+            <div className="flex justify-between items-center">
+              <span className="font-semibold text-gray-900">Total</span>
+              <span className="text-2xl font-bold text-primary">
+                {formatCurrency(total)}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Sticky Footer - apenas mobile: Gerar Orçamento */}
+      {/* Botão fixo - Gerar Orçamento */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] lg:hidden pt-3"
-        style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))' }}
+        className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] p-4 max-w-[640px] mx-auto"
+        style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
       >
-        <div className="flex items-center justify-between gap-4 px-4 py-3 max-w-full">
+        <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
             <p className="text-xs text-gray-500">Total</p>
-            <p className="text-xl font-bold text-primary truncate">
+            <p className="text-lg font-bold text-primary truncate">
               {formatCurrency(total)}
             </p>
           </div>
-          <Button
-            className="shrink-0 flex-1 max-w-[220px] h-12 text-base font-semibold"
-            onClick={() => handleSave('enviado')}
-            disabled={isSaving}
-          >
-            <Save className="h-5 w-5 mr-2" />
-            {isSaving ? 'Salvando...' : 'Gerar Orçamento'}
-          </Button>
+          <div className="flex gap-2 shrink-0">
+            <Button
+              variant="outline"
+              className="h-12"
+              onClick={() => handleSave('rascunho')}
+              disabled={isSaving}
+            >
+              Rascunho
+            </Button>
+            <Button
+              className="h-12 min-w-[140px]"
+              onClick={() => handleSave('enviado')}
+              disabled={isSaving}
+            >
+              <Save className="h-5 w-5 mr-2" />
+              {isSaving ? 'Salvando...' : 'Gerar Orçamento'}
+            </Button>
+          </div>
         </div>
       </div>
+
+      {/* Modais */}
+      <ClientSelectModal
+        open={clientModalOpen}
+        onClose={() => setClientModalOpen(false)}
+        onSelect={(c) => {
+          setClienteId(c.id);
+          setClientModalOpen(false);
+        }}
+        customers={customers}
+        selectedId={clienteId}
+      />
+      <ItemFormModal
+        open={itemModalOpen}
+        onClose={() => {
+          setItemModalOpen(false);
+          setEditingItem(null);
+        }}
+        onSave={handleSaveItem}
+        catalogItems={catalogItems}
+        editingItem={editingItem}
+      />
+      <QuoteConfigModal
+        open={configModalOpen}
+        onClose={() => setConfigModalOpen(false)}
+        validadeDias={validadeDias}
+        onValidadeChange={setValidadeDias}
+        observacoes={observacoes}
+        onObservacoesChange={setObservacoes}
+      />
     </div>
   );
 }
