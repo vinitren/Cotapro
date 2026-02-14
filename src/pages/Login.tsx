@@ -155,10 +155,16 @@ export function Login() {
         <div className="w-full">
           <Card className="w-full max-w-md mx-auto shadow-2xl border-0 rounded-3xl">
             <CardHeader className="text-center space-y-3 pb-6">
-              {/* Logo mobile */}
-              <div className="flex justify-center lg:hidden mb-2">
-                <div className="h-14 w-14 bg-emerald-100 rounded-2xl flex items-center justify-center">
-                  <Receipt className="h-7 w-7 text-emerald-600" />
+              {/* Logo e branding mobile */}
+              <div className="lg:hidden mb-4">
+                <div className="flex justify-center mb-3">
+                  <div className="h-14 w-14 bg-emerald-100 rounded-2xl flex items-center justify-center">
+                    <Receipt className="h-7 w-7 text-emerald-600" />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-lg font-bold text-emerald-600">CotaPro</p>
+                  <p className="text-sm text-gray-500">Orçamentos automáticos.</p>
                 </div>
               </div>
               <CardTitle className="text-3xl font-bold text-gray-900">
@@ -251,7 +257,7 @@ export function Login() {
           {/* Benefícios Mobile */}
           <div className="lg:hidden mt-8 space-y-3 text-white text-center px-4">
             <p className="text-sm text-emerald-50 font-medium">
-              ✓ Orçamentos profissionais • ✓ Catálogo de produtos • ✓ Dados seguros
+              Mais vendas • Rápido no seu dia a dia • Logo personalizada
             </p>
           </div>
         </div>
