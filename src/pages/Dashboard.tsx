@@ -1,17 +1,35 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FileText, DollarSign, TrendingUp, CheckCircle, Clock, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { useStore } from '../store';
 import { formatCurrency, formatDate, formatQuoteDisplay, getStatusColor, getStatusLabel } from '../lib/utils';
+import { LoadingSkeleton } from '../components/LoadingSkeleton';
+import { toast } from '../hooks/useToast';
 
 export function Dashboard() {
-  const { quotes, checkExpiredQuotes } = useStore();
+  const { quotes, checkExpiredQuotes, loadQuotes } = useStore();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    checkExpiredQuotes();
-  }, [checkExpiredQuotes]);
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        await loadQuotes();
+        checkExpiredQuotes();
+      } catch (error) {
+        toast({
+          title: 'Erro ao carregar dados',
+          description: 'Não foi possível carregar os orçamentos. Verifique sua conexão.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, [loadQuotes, checkExpiredQuotes]);
 
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
@@ -42,6 +60,10 @@ export function Dashboard() {
   const recentQuotes = [...quotes]
     .sort((a, b) => new Date(b.data_criacao).getTime() - new Date(a.data_criacao).getTime())
     .slice(0, 5);
+
+  if (isLoading) {
+    return <LoadingSkeleton />;
+  }
 
   return (
     <div className="p-4 lg:p-6 space-y-6">

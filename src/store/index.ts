@@ -294,6 +294,8 @@ export const useStore = create<AppState>()(
           await get().loadQuotes();
         } catch (error) {
           console.error('Erro ao carregar clientes:', error);
+          // Nota: toast não pode ser usado diretamente no store.
+          // O erro será propagado para as páginas que chamam loadCustomers.
         }
       },
 
@@ -380,6 +382,8 @@ export const useStore = create<AppState>()(
           set({ quotes });
         } catch (error) {
           console.error('Erro ao carregar orçamentos:', error);
+          // Nota: toast não pode ser usado diretamente no store.
+          // O erro será propagado para as páginas que chamam loadQuotes.
         }
       },
 
