@@ -180,10 +180,13 @@ export function QuoteCreate() {
   }, [userId]);
 
   return (
-    <div className="min-h-screen bg-page-bg pb-24">
-      <div className="max-w-[640px] mx-auto px-4 pt-4 space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-3">
+    <div className="min-h-screen bg-page-bg pb-24 lg:pb-8">
+      <div className="max-w-[640px] lg:max-w-6xl mx-auto px-4 lg:px-6 pt-4 lg:pt-6">
+        <div className="lg:grid lg:grid-cols-[1fr_340px] lg:gap-8 lg:items-start">
+          {/* Coluna esquerda: Header + Cliente + Itens */}
+          <div className="space-y-6 min-w-0">
+            {/* Header */}
+            <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -284,57 +287,128 @@ export function QuoteCreate() {
           </Card>
         </div>
 
-        {/* Resumo */}
-        <Card>
-          <CardContent className="p-4 space-y-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Subtotal</span>
-              <span className="font-medium">{formatCurrency(subtotal)}</span>
+            {/* Resumo - mobile (dentro da coluna esquerda) */}
+            <div className="lg:hidden">
+              <Card>
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Subtotal</span>
+                    <span className="font-medium">{formatCurrency(subtotal)}</span>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm">Desconto</Label>
+                    <div className="flex gap-2">
+                      <Select
+                        value={descontoTipo}
+                        onValueChange={(v) => setDescontoTipo(v as 'percentual' | 'fixo')}
+                      >
+                        <SelectTrigger className="w-20 h-11">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="percentual">%</SelectItem>
+                          <SelectItem value="fixo">R$</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={descontoValor}
+                        onChange={(e) => setDescontoValor(e.target.value)}
+                        className="flex-1 h-11"
+                      />
+                    </div>
+                  </div>
+                  {descontoCalculado > 0 && (
+                    <div className="flex justify-between text-sm text-red-600">
+                      <span>Desconto</span>
+                      <span>- {formatCurrency(descontoCalculado)}</span>
+                    </div>
+                  )}
+                  <Separator />
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold text-gray-900">Total</span>
+                    <span className="text-2xl font-bold text-primary">
+                      {formatCurrency(total)}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-            <div className="space-y-2">
-              <Label className="text-sm">Desconto</Label>
-              <div className="flex gap-2">
-                <Select
-                  value={descontoTipo}
-                  onValueChange={(v) => setDescontoTipo(v as 'percentual' | 'fixo')}
-                >
-                  <SelectTrigger className="w-20 h-11">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="percentual">%</SelectItem>
-                    <SelectItem value="fixo">R$</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Input
-                  type="number"
-                  min="0"
-                  value={descontoValor}
-                  onChange={(e) => setDescontoValor(e.target.value)}
-                  className="flex-1 h-11"
-                />
-              </div>
+          </div>
+
+          {/* Coluna direita: Resumo (sticky) + Botões - desktop */}
+          <div className="hidden lg:block lg:sticky lg:top-24 lg:self-start space-y-4">
+            <Card>
+              <CardContent className="p-4 space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Subtotal</span>
+                  <span className="font-medium">{formatCurrency(subtotal)}</span>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm">Desconto</Label>
+                  <div className="flex gap-2">
+                    <Select
+                      value={descontoTipo}
+                      onValueChange={(v) => setDescontoTipo(v as 'percentual' | 'fixo')}
+                    >
+                      <SelectTrigger className="w-20 h-11">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="percentual">%</SelectItem>
+                        <SelectItem value="fixo">R$</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={descontoValor}
+                      onChange={(e) => setDescontoValor(e.target.value)}
+                      className="flex-1 h-11"
+                    />
+                  </div>
+                </div>
+                {descontoCalculado > 0 && (
+                  <div className="flex justify-between text-sm text-red-600">
+                    <span>Desconto</span>
+                    <span>- {formatCurrency(descontoCalculado)}</span>
+                  </div>
+                )}
+                <Separator />
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold text-gray-900">Total</span>
+                  <span className="text-2xl font-bold text-primary">
+                    {formatCurrency(total)}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+            <div className="flex flex-col gap-2">
+              <Button
+                className="w-full h-12"
+                onClick={() => handleSave('enviado')}
+                disabled={isSaving}
+              >
+                <Save className="h-5 w-5 mr-2" />
+                {isSaving ? 'Salvando...' : 'Gerar Orçamento'}
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full h-12"
+                onClick={() => handleSave('rascunho')}
+                disabled={isSaving}
+              >
+                Salvar Rascunho
+              </Button>
             </div>
-            {descontoCalculado > 0 && (
-              <div className="flex justify-between text-sm text-red-600">
-                <span>Desconto</span>
-                <span>- {formatCurrency(descontoCalculado)}</span>
-              </div>
-            )}
-            <Separator />
-            <div className="flex justify-between items-center">
-              <span className="font-semibold text-gray-900">Total</span>
-              <span className="text-2xl font-bold text-primary">
-                {formatCurrency(total)}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
-      {/* Botão fixo - Gerar Orçamento */}
+      {/* Botão fixo - Gerar Orçamento (apenas mobile) */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] p-4 max-w-[640px] mx-auto"
+        className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] p-4 max-w-[640px] mx-auto lg:hidden"
         style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
       >
         <div className="flex items-center justify-between gap-4">
