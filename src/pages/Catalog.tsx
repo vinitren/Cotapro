@@ -14,6 +14,7 @@ import {
 } from '../components/ui/dialog';
 import { useStore } from '../store';
 import { formatCurrency } from '../lib/utils';
+import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import {
   getItemsCatalog,
   createItemCatalog,
@@ -184,11 +185,7 @@ export function Catalog() {
       </div>
 
       {loading ? (
-        <Card>
-          <CardContent className="flex items-center justify-center py-12">
-            <p className="text-gray-500">Carregando catálogo...</p>
-          </CardContent>
-        </Card>
+        <LoadingSkeleton />
       ) : filteredItems.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
