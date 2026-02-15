@@ -113,9 +113,8 @@ export function QuoteDetail() {
 
   const handleWhatsApp = async () => {
     const phone = quote.cliente.telefone.replace(/\D/g, '');
-    const message = `Olá ${quote.cliente.nome}, segue o orçamento #${getQuoteDisplayNumber(quote)} conforme solicitado.\n\nValor total: ${formatCurrency(
-      quote.total
-    )}\nValidade: ${formatDate(quote.data_validade)}\n\nQualquer dúvida, estou à disposição!`;
+    const link = `${window.location.origin}/orcamento/${quote.id}`;
+    const message = `Olá! Segue seu orçamento:\n${link}`;
     const url = `https://wa.me/55${phone}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
 

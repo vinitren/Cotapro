@@ -5,5 +5,6 @@ export { Customers } from './Customers';
 export { Quotes } from './Quotes';
 export { QuoteCreate } from './QuoteCreate';
 export { QuoteDetail } from './QuoteDetail';
+export { PublicQuote } from './PublicQuote';
 export { Catalog } from './Catalog';
 export { Settings } from './Settings';
