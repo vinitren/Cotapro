@@ -419,6 +419,7 @@ export async function createQuote(
     total_value: number;
     items: QuoteItemDB[];
     status: string;
+    observacoes?: string;
   }
 ): Promise<QuoteDB> {
   const { data: { session } } = await supabase.auth.getSession();
@@ -435,6 +436,7 @@ export async function createQuote(
       p_total_value: data.total_value,
       p_items: data.items as unknown as Record<string, unknown>[],
       p_status: data.status,
+      p_observacoes: data.observacoes || '',
     };
 
     console.log('[createQuote] Chamando RPC insert_quote_with_number para user:', userId);
@@ -464,6 +466,11 @@ export async function updateQuote(
     status: string;
     total_value: number;
     items: QuoteItemDB[];
+    observacoes: string;
+    data_validade: string;
+    subtotal: number;
+    desconto_tipo: string;
+    desconto_valor: number;
   }>
 ): Promise<QuoteDB> {
   const { data: { session } } = await supabase.auth.getSession();
@@ -476,6 +483,11 @@ export async function updateQuote(
   if (data.status !== undefined) updatePayload.status = data.status;
   if (data.total_value !== undefined) updatePayload.total_value = data.total_value;
   if (data.items !== undefined) updatePayload.items = data.items as unknown as Record<string, unknown>[];
+  if (data.observacoes !== undefined) updatePayload.observacoes = data.observacoes;
+  if (data.data_validade !== undefined) updatePayload.data_validade = data.data_validade;
+  if (data.subtotal !== undefined) updatePayload.subtotal = data.subtotal;
+  if (data.desconto_tipo !== undefined) updatePayload.desconto_tipo = data.desconto_tipo;
+  if (data.desconto_valor !== undefined) updatePayload.desconto_valor = data.desconto_valor;
 
   if (Object.keys(updatePayload).length === 0) return {} as QuoteDB;
 

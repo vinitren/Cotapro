@@ -539,6 +539,7 @@ export const useStore = create<AppState>()(
             total_value: quoteData.total,
             items: quoteData.itens,
             status: quoteData.status,
+            observacoes: quoteData.observacoes,
           });
 
           const dataCriacaoFromDb = quoteDB.created_at ? new Date(quoteDB.created_at).toISOString().split('T')[0] : dataCriacao;
