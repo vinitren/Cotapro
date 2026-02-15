@@ -304,6 +304,20 @@ export const useStore = create<AppState>()(
         if (!userId) return;
         
         try {
+          // Observações/condições padrão vêm do profile (default_notes)
+          // (usado para exibição no preview/PDF quando o quote não tiver campo próprio)
+          let profileDefaultNotes = '';
+          try {
+            const { data: prefs } = await supabase
+              .from('profiles')
+              .select('default_notes')
+              .eq('id', userId)
+              .maybeSingle();
+            profileDefaultNotes = String((prefs as any)?.default_notes ?? '').trim();
+          } catch {
+            profileDefaultNotes = String(get().settings?.observacoes_padrao ?? '').trim();
+          }
+
           const quotesDB = await getQuotes(userId);
           const customers = get().customers;
           const quotes: Quote[] = quotesDB.map((q) => {
@@ -352,6 +366,9 @@ export const useStore = create<AppState>()(
               subtotal: Number(it.subtotal ?? (it.valor_unitario ? Number(it.valor_unitario) * Number(it.quantidade || 0) : 0)),
             }));
 
+            const quoteObsRaw = String(((q as any).observacoes ?? (q as any).notes ?? '')).trim();
+            const observacoes = quoteObsRaw || profileDefaultNotes || '';
+
             return {
               id: q.id,
               numero: (q as any).quote_number ?? q.number ?? '',
@@ -375,7 +392,7 @@ export const useStore = create<AppState>()(
               desconto_tipo: 'percentual' as const,
               desconto_valor: 0,
               total: Number(q.total_value) || 0,
-              observacoes: '',
+              observacoes,
               data_criacao: dataCriacao,
             };
           });

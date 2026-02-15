@@ -158,6 +158,7 @@ export function PublicQuote() {
         };
 
         let company: Company = fallbackCompany;
+        let profileDefaultNotes = '';
         if (q.user_id) {
           try {
             const { data: pData } = await supabase
@@ -168,6 +169,7 @@ export function PublicQuote() {
 
             if (pData) {
               const p: any = pData;
+              profileDefaultNotes = String(p.default_notes ?? '').trim();
               company = {
                 id: String(p.id ?? q.user_id),
                 nome: String(p.company_name ?? p.nome ?? fallbackCompany.nome),
@@ -196,6 +198,8 @@ export function PublicQuote() {
           const descontoValor = Number(q.desconto_valor ?? 0) || 0;
           const subtotal = Number(q.subtotal ?? subtotalCalc) || 0;
           const total = Number(q.total ?? q.total_value ?? subtotal) || 0;
+          const quoteObsRaw = String((q.observacoes ?? q.notes ?? '')).trim();
+          const observacoes = quoteObsRaw || profileDefaultNotes || '';
 
           const quoteForTemplate: Quote = {
             id: String(q.id),
@@ -210,7 +214,7 @@ export function PublicQuote() {
             desconto_tipo: descontoTipo,
             desconto_valor: descontoValor,
             total,
-            observacoes: String(q.observacoes ?? ''),
+            observacoes,
             data_criacao: String(toIsoDateOnly(createdAt)),
           };
 
