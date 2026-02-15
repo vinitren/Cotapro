@@ -236,8 +236,65 @@ export function PublicQuote() {
   }, [id]);
 
   return (
-    <div className="min-h-screen bg-page-bg px-4 py-6">
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-screen bg-page-bg md:px-4 md:py-6">
+      {/* Ajustes visuais somente para mobile (não afeta desktop nem outras páginas) */}
+      <style>{`
+        @media (max-width: 768px) {
+          /* Força o template (fixo em 800px) a caber no mobile */
+          #quote-pdf-page {
+            width: 100% !important;
+            min-width: 0 !important;
+            max-width: 100% !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+          }
+
+          #quote-pdf-template {
+            width: 100% !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            padding: 16px 16px !important;
+            font-size: 12px !important;
+          }
+
+          /* Tabela de itens mais compacta no mobile */
+          #quote-pdf-template table {
+            width: 100% !important;
+            font-size: 12px !important;
+          }
+          #quote-pdf-template th,
+          #quote-pdf-template td {
+            padding: 8px 6px !important;
+          }
+
+          /* Nome do item: truncado para não estourar largura */
+          #public-quote-template #quote-pdf-template td:nth-child(2) {
+            max-width: 180px !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          /* Compactação quando há muitos itens */
+          #public-quote-template.pq-compact #quote-pdf-template table {
+            font-size: 11px !important;
+          }
+
+          /* Quando há itens demais, \"oculta\" detalhes extras (ex.: unidade) */
+          #public-quote-template.pq-hide-desc #quote-pdf-template td:nth-child(2) span {
+            display: none !important;
+          }
+
+          /* Evita quebra de layout por strings longas */
+          #quote-pdf-template * {
+            word-break: break-word;
+          }
+        }
+      `}</style>
+
+      <div className="max-w-2xl mx-auto p-4 md:max-w-5xl md:p-0 space-y-3">
         {loading ? (
           <Card>
             <CardContent className="p-6 text-center text-gray-500">Carregando...</CardContent>
@@ -250,7 +307,14 @@ export function PublicQuote() {
             </CardContent>
           </Card>
         ) : (
-          <div className="border border-gray-200 rounded-lg bg-white overflow-auto">
+          <div
+            id="public-quote-template"
+            className={[
+              'w-full overflow-hidden border border-gray-200 rounded-lg bg-white overflow-x-hidden md:overflow-auto',
+              ((templateQuote?.itens?.length ?? 0) > 6) ? 'pq-compact' : '',
+              ((templateQuote?.itens?.length ?? 0) > 8) ? 'pq-hide-desc' : '',
+            ].filter(Boolean).join(' ')}
+          >
             <QuotePDFTemplate quote={templateQuote as Quote} company={templateCompany as Company} />
           </div>
         )}

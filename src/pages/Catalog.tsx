@@ -272,6 +272,7 @@ export function Catalog() {
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
                 placeholder="Ex: Instalação elétrica"
+                maxLength={45}
                 required
               />
             </div>
@@ -282,6 +283,7 @@ export function Catalog() {
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}
                 placeholder="Detalhes opcionais"
+                maxLength={60}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">

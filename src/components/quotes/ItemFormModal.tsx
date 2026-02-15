@@ -38,7 +38,8 @@ export function ItemFormModal({
   catalogItems,
   editingItem,
 }: ItemFormModalProps) {
-  const [descricao, setDescricao] = React.useState('');
+  const [nomeItem, setNomeItem] = React.useState('');
+  const [descricaoItem, setDescricaoItem] = React.useState('');
   const [quantidade, setQuantidade] = React.useState(1);
   const [unidade, setUnidade] = React.useState('UN');
   const [valorUnitario, setValorUnitario] = React.useState(0);
@@ -46,12 +47,18 @@ export function ItemFormModal({
   React.useEffect(() => {
     if (open) {
       if (editingItem) {
-        setDescricao(editingItem.descricao);
+        const raw = (editingItem.descricao ?? '').toString();
+        const parts = raw.split(' - ');
+        const nome = (parts[0] ?? '').trim();
+        const desc = parts.length > 1 ? parts.slice(1).join(' - ').trim() : '';
+        setNomeItem(nome);
+        setDescricaoItem(desc);
         setQuantidade(editingItem.quantidade);
         setUnidade(editingItem.unidade);
         setValorUnitario(editingItem.valor_unitario);
       } else {
-        setDescricao('');
+        setNomeItem('');
+        setDescricaoItem('');
         setQuantidade(1);
         setUnidade('UN');
         setValorUnitario(0);
@@ -60,7 +67,10 @@ export function ItemFormModal({
   }, [open, editingItem]);
 
   const subtotal = quantidade * valorUnitario;
-  const isValid = descricao.trim() && valorUnitario > 0;
+  const nomeTrim = nomeItem.trim();
+  const descTrim = descricaoItem.trim();
+  const fullDescricao = descTrim ? `${nomeTrim} - ${descTrim}` : nomeTrim;
+  const isValid = nomeTrim && valorUnitario > 0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,7 +78,7 @@ export function ItemFormModal({
     onSave({
       id: editingItem?.id ?? generateId(),
       tipo: 'servico',
-      descricao: descricao.trim(),
+      descricao: fullDescricao,
       quantidade,
       unidade,
       valor_unitario: valorUnitario,
@@ -87,18 +97,30 @@ export function ItemFormModal({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label>Descrição</Label>
+            <Label>Nome do item</Label>
             <ItemCombobox
-              value={descricao}
-              onChange={setDescricao}
+              value={nomeItem}
+              onChange={setNomeItem}
               onSelectFromCatalog={(desc, unitPrice, unit) => {
-                setDescricao(desc);
+                const parts = (desc ?? '').split(' - ');
+                setNomeItem((parts[0] ?? '').trim());
+                setDescricaoItem(parts.length > 1 ? parts.slice(1).join(' - ').trim() : '');
                 setValorUnitario(unitPrice);
                 setUnidade(unit);
               }}
               catalogItems={catalogItems}
-              placeholder="Digite ou selecione do catálogo"
-              error={!descricao.trim()}
+              placeholder="Ex: Instalação elétrica"
+              error={!nomeItem.trim()}
+              maxLength={45}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Descrição do item</Label>
+            <Input
+              value={descricaoItem}
+              onChange={(e) => setDescricaoItem(e.target.value)}
+              placeholder="Detalhes opcionais"
+              maxLength={60}
             />
           </div>
           <div className="grid grid-cols-2 gap-4">

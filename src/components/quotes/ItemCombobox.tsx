@@ -12,6 +12,7 @@ interface ItemComboboxProps {
   placeholder?: string;
   error?: boolean;
   disabled?: boolean;
+  maxLength?: number;
 }
 
 export function ItemCombobox({
@@ -22,6 +23,7 @@ export function ItemCombobox({
   placeholder = 'Digite ou selecione um item do catálogo',
   error,
   disabled,
+  maxLength,
 }: ItemComboboxProps) {
   const [open, setOpen] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(0);
@@ -101,6 +103,7 @@ export function ItemCombobox({
         placeholder={placeholder}
         error={error}
         disabled={disabled}
+        maxLength={maxLength}
         autoComplete="off"
         role="combobox"
         aria-expanded={open}
