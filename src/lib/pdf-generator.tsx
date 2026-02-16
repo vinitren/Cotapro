@@ -127,7 +127,7 @@ export function QuotePDFTemplate({ quote, company }: QuotePDFTemplateProps) {
             <p style={{ margin: 0, fontSize: '11px', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: '500' }}>
               Orçamento
             </p>
-            <p style={{ margin: '4px 0 0', fontSize: '28px', fontWeight: '700', letterSpacing: '-0.02em' }}>
+            <p id="quote-pdf-number" style={{ margin: '4px 0 0', fontSize: '28px', fontWeight: '700', letterSpacing: '-0.02em' }}>
               #{getQuoteDisplayNumber(quote)}
             </p>
           </div>
@@ -176,6 +176,7 @@ export function QuotePDFTemplate({ quote, company }: QuotePDFTemplateProps) {
 
       {/* TABELA DE ITENS — área com altura fixa; itens só neste bloco; espaço restante em branco */}
       <div
+        id="quote-items-section"
         style={{
           height: ITEMS_SECTION_HEIGHT_PX,
           minHeight: ITEMS_SECTION_HEIGHT_PX,
@@ -287,8 +288,8 @@ export function QuotePDFTemplate({ quote, company }: QuotePDFTemplateProps) {
               borderRadius: '8px',
             }}
           >
-            <span style={{ color: '#ffffff', fontSize: '16px', fontWeight: '600' }}>TOTAL</span>
-            <span style={{ color: '#ffffff', fontSize: '24px', fontWeight: '700', letterSpacing: '-0.02em' }}>
+            <span style={{ color: '#ffffff', fontSize: '16px', fontWeight: '600', whiteSpace: 'nowrap' }}>TOTAL</span>
+            <span id="quote-pdf-total" style={{ color: '#ffffff', fontSize: '24px', fontWeight: '700', letterSpacing: '-0.02em' }}>
               {formatCurrency(quote.total)}
             </span>
           </div>

@@ -243,6 +243,27 @@ export function PublicQuote() {
     <div className="min-h-screen bg-page-bg md:px-4 md:py-6">
       {/* Ajustes visuais somente para mobile (não afeta desktop nem outras páginas) */}
       <style>{`
+        /* Na rota pública, removemos o comportamento de \"1 página\" do template (altura fixa + overflow hidden)
+           para garantir que TODOS os itens sejam exibidos, sem afetar a geração de PDF. */
+        #public-quote-template #quote-pdf-page {
+          height: auto !important;
+          min-height: 0 !important;
+          max-height: none !important;
+          overflow: visible !important;
+        }
+        #public-quote-template #quote-pdf-template {
+          height: auto !important;
+          min-height: 0 !important;
+          max-height: none !important;
+          overflow: visible !important;
+        }
+        #public-quote-template #quote-items-section {
+          height: auto !important;
+          min-height: 0 !important;
+          max-height: none !important;
+          overflow: visible !important;
+        }
+
         @media (max-width: 768px) {
           /* Força o template (fixo em 800px) a caber no mobile */
           #quote-pdf-page {
@@ -271,6 +292,12 @@ export function PublicQuote() {
           #quote-pdf-template th,
           #quote-pdf-template td {
             padding: 8px 6px !important;
+          }
+
+          /* Nunca quebrar o número do orçamento e o TOTAL no mobile */
+          #public-quote-template #quote-pdf-number,
+          #public-quote-template #quote-pdf-total {
+            white-space: nowrap !important;
           }
 
           /* Nome do item: truncado para não estourar largura */
