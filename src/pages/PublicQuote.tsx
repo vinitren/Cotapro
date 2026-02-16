@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/card';
 import { addDays, generateId } from '../lib/utils';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
-import { QuotePDFTemplate } from '../lib/pdf-generator';
+import { PublicQuoteDocument } from '../components/quotes/PublicQuoteDocument';
 import type { Quote, Company, Customer, Address, QuoteItem } from '../types';
 
 function normalizeItems(raw: unknown): QuoteItem[] {
@@ -49,6 +49,20 @@ export function PublicQuote() {
   const [templateCompany, setTemplateCompany] = useState<Company | null>(null);
 
   const canRenderTemplate = Boolean(templateQuote && templateCompany);
+
+  useEffect(() => {
+    const metaViewport = document.querySelector('meta[name="viewport"]');
+    const originalContent = metaViewport?.getAttribute('content') ?? '';
+    metaViewport?.setAttribute(
+      'content',
+      'width=device-width, initial-scale=1.0, minimum-scale=0.5, maximum-scale=3.0, user-scalable=yes'
+    );
+    document.body.classList.add('public-quote-page');
+    return () => {
+      metaViewport?.setAttribute('content', originalContent);
+      document.body.classList.remove('public-quote-page');
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -240,201 +254,36 @@ export function PublicQuote() {
   }, [id]);
 
   return (
-    <div className="w-full min-h-screen bg-page-bg py-6">
-      {/* Ajustes de responsividade (não afeta PDF) */}
+    <div className="page-wrapper">
       <style>{`
-        /* Remove altura fixa para exibir todos os itens na página pública */
-        #public-quote-template #quote-pdf-page {
-          height: auto !important;
-          min-height: 0 !important;
-          max-height: none !important;
-          overflow: visible !important;
+        .page-wrapper {
+          display: flex;
+          justify-content: center;
+          align-items: flex-start;
+          min-height: 100vh;
+          background: #f5f5f5;
+          padding: 20px;
         }
-        #public-quote-template #quote-pdf-template {
-          height: auto !important;
-          min-height: 0 !important;
-          max-height: none !important;
-          overflow: visible !important;
+        #quote-document {
+          width: 800px;
+          background: white;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-        #public-quote-template #quote-items-section {
-          height: auto !important;
-          min-height: 0 !important;
-          max-height: none !important;
-          overflow: visible !important;
-        }
-
-        /* Ocultar assinaturas apenas na página pública (não afeta PDF) */
-        #public-quote-template #quote-pdf-signatures,
-        #public-quote-template #quote-signatures,
-        #public-quote-template .quote-signatures,
-        #public-quote-template [id*="signature"],
-        #public-quote-template [class*="signature"] {
-          display: none !important;
-        }
-
-        /* Espaçamento entre blocos principais */
-        #public-quote-template #quote-pdf-header-block { margin-bottom: 1.5rem !important; }
-        #public-quote-template #quote-pdf-cliente { margin-bottom: 1.5rem !important; }
-        #public-quote-template #quote-items-section { margin-bottom: 1.5rem !important; }
-        #public-quote-template #quote-pdf-footer { margin-bottom: 1.5rem !important; }
-
-        /* Evitar quebra de números e valores importantes */
-        #public-quote-template #quote-pdf-number,
-        #public-quote-template #quote-pdf-total,
-        #public-quote-template #quote-pdf-header-block > div:last-child p,
-        #public-quote-template #quote-pdf-footer div[style*="space-between"] span { white-space: nowrap !important; }
-
-        /* Tabela: overflow horizontal + min-width */
-        #public-quote-template #quote-items-section { overflow-x: auto !important; }
-        #public-quote-template #quote-items-section table { min-width: 100% !important; }
-
-        /* Cabeçalho responsivo: 1 col mobile, 2 cols desktop */
-        #public-quote-template #quote-pdf-header-block {
-          display: grid !important;
-          grid-template-columns: 1fr !important;
-          gap: 1rem !important;
-          height: auto !important;
-          min-height: 0 !important;
-          max-height: none !important;
-        }
-        @media (min-width: 768px) {
-          #public-quote-template #quote-pdf-header-block {
-            grid-template-columns: 1fr auto !important;
-          }
-        }
-
-        @media (max-width: 640px) {
-          #public-quote-template table {
-            table-layout: fixed !important;
-            width: 100% !important;
-          }
-          #public-quote-template td:nth-child(4),
-          #public-quote-template td:nth-child(5),
-          #public-quote-template th:nth-child(4),
-          #public-quote-template th:nth-child(5) {
-            width: 90px !important;
-            min-width: 90px !important;
-            font-size: 12px !important;
-            text-align: right !important;
-            white-space: normal !important;
-            word-break: break-word !important;
-            overflow-wrap: anywhere !important;
-          }
-          #public-quote-template td {
-            white-space: normal !important;
-          }
-        }
-
         @media (max-width: 768px) {
-          #public-quote-template #quote-pdf-page {
-            width: 100% !important;
-            min-width: 0 !important;
-            max-width: 100% !important;
+          .page-wrapper {
+            padding: 0;
+            background: white;
           }
-          #public-quote-template #quote-pdf-template {
-            width: 100% !important;
-            padding: 16px !important;
-            font-size: 12px !important;
-          }
-          #public-quote-template table { font-size: 12px !important; }
-          #public-quote-template th,
-          #public-quote-template td { padding: 8px 6px !important; }
-          #public-quote-template #quote-pdf-template td:nth-child(2) {
-            max-width: 180px !important;
-            white-space: nowrap !important;
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
-          }
-          #public-quote-template.pq-compact #quote-pdf-template table { font-size: 11px !important; }
-          #public-quote-template.pq-hide-desc #quote-pdf-template td:nth-child(2) span { display: none !important; }
-          #public-quote-template * { word-break: break-word; }
-        }
-
-        @media (max-width: 480px) {
-          /* Condições e Observações: quebra correta no mobile */
-          #public-quote-template #quote-pdf-footer > div:first-child > div:first-child {
-            min-width: 0 !important;
-            width: 100% !important;
-          }
-          #public-quote-template #quote-pdf-footer [style*="pre-wrap"] {
-            white-space: pre-wrap !important;
-            word-break: break-word !important;
-            overflow-wrap: break-word !important;
-            line-height: 1.4 !important;
-            font-size: 11px !important;
-          }
-          #public-quote-template #quote-pdf-footer > div:first-child {
-            flex-direction: column !important;
-          }
-
-          /* Rodapé: empilhar tudo verticalmente, sem sobreposição */
-          #public-quote-template #quote-pdf-footer,
-          #public-quote-template #quote-pdf-footer > div {
-            position: static !important;
-          }
-          #public-quote-template #quote-pdf-footer {
-            flex-direction: column !important;
-            gap: 12px !important;
-            height: auto !important;
-            min-height: 0 !important;
-            max-height: none !important;
-          }
-          #public-quote-template #quote-pdf-footer > div:first-child {
-            flex: none !important;
-          }
-          #public-quote-template #quote-pdf-footer > div:first-child > div:last-child {
-            width: 100% !important;
-          }
-          #public-quote-template #quote-pdf-footer > div:last-child {
-            margin-top: 8px !important;
-          }
-          #public-quote-template #quote-pdf-footer > div:last-child p {
-            font-size: 11px !important;
-            line-height: 1.4 !important;
-            white-space: normal !important;
-            word-break: break-word !important;
-          }
-
-          /* Ajuste para valores muito altos (milhões) */
-          #public-quote-template #quote-items-section td:nth-child(4),
-          #public-quote-template #quote-items-section td:nth-child(5) {
-            font-size: 9px !important;
-            line-height: 1.2 !important;
-            white-space: normal !important;
-            word-break: break-word !important;
-            overflow-wrap: anywhere !important;
-          }
-
-          /* Garantir largura mínima das colunas de valor */
-          #public-quote-template #quote-items-section th:nth-child(4),
-          #public-quote-template #quote-items-section th:nth-child(5),
-          #public-quote-template #quote-items-section td:nth-child(4),
-          #public-quote-template #quote-items-section td:nth-child(5) {
-            min-width: 70px !important;
-            max-width: 90px !important;
-          }
-
-          /* Reduzir um pouco o padding da tabela em telas pequenas */
-          #public-quote-template #quote-items-section th,
-          #public-quote-template #quote-items-section td {
-            padding: 6px 4px !important;
+          #quote-document {
+            transform: scale(0.52);
+            transform-origin: top center;
+            margin: 0 auto;
           }
         }
       `}</style>
 
-      <div className="w-full px-3">
-        <div
-          className="
-            mx-auto
-            w-full
-            max-w-[820px]
-            bg-white
-            rounded-lg
-            shadow-sm
-            border border-gray-200
-            overflow-hidden
-          "
-        >
+      <div className="w-full flex justify-center">
+        <>
           {loading ? (
             <Card>
               <CardContent className="p-6 text-center text-gray-500">Carregando...</CardContent>
@@ -447,18 +296,9 @@ export function PublicQuote() {
               </CardContent>
             </Card>
           ) : (
-            <div
-              id="public-quote-template"
-              className={[
-                'w-full overflow-x-auto overflow-y-visible border border-gray-200 rounded-lg bg-white',
-                ((templateQuote?.itens?.length ?? 0) > 6) ? 'pq-compact' : '',
-                ((templateQuote?.itens?.length ?? 0) > 8) ? 'pq-hide-desc' : '',
-              ].filter(Boolean).join(' ')}
-            >
-              <QuotePDFTemplate quote={templateQuote as Quote} company={templateCompany as Company} />
-            </div>
+            <PublicQuoteDocument quote={templateQuote as Quote} company={templateCompany as Company} />
           )}
-        </div>
+        </>
       </div>
     </div>
   );

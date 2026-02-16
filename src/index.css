@@ -95,11 +95,37 @@ input[type="number"] {
     overscroll-behavior: none;
   }
 
+  /* Página pública de orçamento: permitir scroll e pinch-zoom */
+  html:has(body.public-quote-page) {
+    overflow: auto !important;
+    position: relative !important;
+  }
+
+  body.public-quote-page {
+    overflow: auto !important;
+    overflow-x: auto;
+    position: relative !important;
+    margin: 0;
+    padding: 0;
+    touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body.public-quote-page #root {
+    min-height: 100%;
+  }
+
   #root {
     height: calc(var(--vh, 1dvh) * 100);
     overflow: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: none;
+  }
+
+  body.public-quote-page #root {
+    overflow: visible;
+    height: auto;
+    min-height: 100%;
   }
 
   /* Prevenir zoom em inputs no iOS (font-size mínimo 16px) */

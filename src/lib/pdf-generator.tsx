@@ -191,25 +191,26 @@ export function QuotePDFTemplate({ quote, company }: QuotePDFTemplateProps) {
           style={{
             width: '100%',
             height: 'auto',
+            tableLayout: 'fixed',
             borderCollapse: 'collapse',
             fontSize: '14px',
           }}
         >
           <thead>
             <tr>
-              <th style={{ padding: '10px 10px', backgroundColor: '#1F2937', color: '#ffffff', textAlign: 'center', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderRadius: '6px 0 0 0', width: '40px' }}>
+              <th style={{ padding: '10px 10px', backgroundColor: '#1F2937', color: '#ffffff', textAlign: 'center', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderRadius: '6px 0 0 0', width: '8%' }}>
                 #
               </th>
-              <th style={{ padding: '10px 10px', backgroundColor: '#1F2937', color: '#ffffff', textAlign: 'left', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <th style={{ padding: '10px 10px', backgroundColor: '#1F2937', color: '#ffffff', textAlign: 'left', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', width: '44%' }}>
                 Descrição
               </th>
-              <th style={{ padding: '10px 10px', backgroundColor: '#1F2937', color: '#ffffff', textAlign: 'center', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', width: '60px' }}>
+              <th style={{ padding: '10px 10px', backgroundColor: '#1F2937', color: '#ffffff', textAlign: 'center', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', width: '12%' }}>
                 Qtd
               </th>
-              <th style={{ padding: '10px 10px', backgroundColor: '#1F2937', color: '#ffffff', textAlign: 'right', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', width: '100px' }}>
+              <th style={{ padding: '10px 10px', backgroundColor: '#1F2937', color: '#ffffff', textAlign: 'right', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', width: '18%' }}>
                 Unitário
               </th>
-              <th style={{ padding: '10px 10px', backgroundColor: '#1F2937', color: '#ffffff', textAlign: 'right', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderRadius: '0 6px 0 0', width: '110px' }}>
+              <th style={{ padding: '10px 10px', backgroundColor: '#1F2937', color: '#ffffff', textAlign: 'right', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderRadius: '0 6px 0 0', width: '18%' }}>
                 Total
               </th>
             </tr>
@@ -226,6 +227,7 @@ export function QuotePDFTemplate({ quote, company }: QuotePDFTemplateProps) {
                 backgroundColor: index % 2 === 0 ? '#ffffff' : '#F9FAFB',
                 borderBottom: '1px solid #E5E7EB',
                 fontWeight: '500',
+                wordBreak: 'break-word',
                 display: '-webkit-box',
                 WebkitBoxOrient: 'vertical',
                 WebkitLineClamp: isCompactMode ? 1 : 2,
