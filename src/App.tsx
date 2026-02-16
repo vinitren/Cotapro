@@ -114,6 +114,7 @@ function App() {
           <Route path="/customers" element={<Customers />} />
           <Route path="/quotes" element={<Quotes />} />
           <Route path="/quotes/new" element={<QuoteCreate />} />
+          <Route path="/orcamentos/novo" element={<QuoteCreate />} />
           <Route path="/quotes/:id" element={<QuoteDetail />} />
           <Route path="/catalog" element={<Catalog />} />
           <Route path="/settings" element={<Settings />} />

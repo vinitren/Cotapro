@@ -461,6 +461,7 @@ export async function updateQuote(
   userId: string,
   quoteId: string,
   data: Partial<{
+    customer_id: string;
     status: string;
     total_value: number;
     items: QuoteItemDB[];
@@ -473,6 +474,7 @@ export async function updateQuote(
   }
 
   const updatePayload: Record<string, unknown> = {};
+  if (data.customer_id !== undefined) updatePayload.customer_id = data.customer_id;
   if (data.status !== undefined) updatePayload.status = data.status;
   if (data.total_value !== undefined) updatePayload.total_value = data.total_value;
   if (data.items !== undefined) updatePayload.items = data.items as unknown as Record<string, unknown>[];

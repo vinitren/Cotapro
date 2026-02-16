@@ -628,6 +628,7 @@ export const useStore = create<AppState>()(
 
         try {
           const updatePayload: Parameters<typeof updateQuoteDB>[2] = {};
+          if (quoteData.cliente_id !== undefined) updatePayload.customer_id = quoteData.cliente_id;
           if (quoteData.status !== undefined) updatePayload.status = quoteData.status;
           if (quoteData.total !== undefined) updatePayload.total_value = quoteData.total;
           if (quoteData.itens !== undefined) updatePayload.items = quoteData.itens;

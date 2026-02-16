@@ -4,9 +4,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../ui/dialog';
-import { Button } from '../ui/button';
 import { Label } from '../ui/label';
-import { Textarea } from '../ui/textarea';
+import { Input } from '../ui/input';
 import {
   Select,
   SelectContent,
@@ -15,20 +14,17 @@ import {
   SelectValue,
 } from '../ui/select';
 
-const OBSERVACOES_SUGERIDAS = [
-  'Pagamento: 50% entrada + 50% na entrega',
-  'Pagamento à vista com 10% de desconto',
-  'Prazo de entrega: 7 dias úteis',
-  'Validade da proposta conforme data indicada',
-];
-
 interface QuoteConfigModalProps {
   open: boolean;
   onClose: () => void;
   validadeDias: string;
   onValidadeChange: (v: string) => void;
-  observacoes: string;
-  onObservacoesChange: (v: string) => void;
+  descontoTipo: 'percentual' | 'fixo';
+  onDescontoTipoChange: (v: 'percentual' | 'fixo') => void;
+  descontoValor: string;
+  onDescontoValorChange: (v: string) => void;
+  descontoCalculado: number;
+  formatCurrency: (n: number) => string;
 }
 
 export function QuoteConfigModal({
@@ -36,14 +32,18 @@ export function QuoteConfigModal({
   onClose,
   validadeDias,
   onValidadeChange,
-  observacoes,
-  onObservacoesChange,
+  descontoTipo,
+  onDescontoTipoChange,
+  descontoValor,
+  onDescontoValorChange,
+  descontoCalculado,
+  formatCurrency,
 }: QuoteConfigModalProps) {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Obs / Configurações</DialogTitle>
+          <DialogTitle>Configurações</DialogTitle>
         </DialogHeader>
         <div className="space-y-6">
           <div className="space-y-2">
@@ -62,27 +62,30 @@ export function QuoteConfigModal({
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Observações</Label>
-            <div className="flex flex-wrap gap-2">
-              {OBSERVACOES_SUGERIDAS.map((obs) => (
-                <Button
-                  key={obs}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="text-xs"
-                  onClick={() => onObservacoesChange(obs)}
-                >
-                  {obs}
-                </Button>
-              ))}
+            <Label>Desconto</Label>
+            <div className="flex gap-2">
+              <Select value={descontoTipo} onValueChange={(v) => onDescontoTipoChange(v as 'percentual' | 'fixo')}>
+                <SelectTrigger className="w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="percentual">%</SelectItem>
+                  <SelectItem value="fixo">R$</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                type="number"
+                min="0"
+                value={descontoValor}
+                onChange={(e) => onDescontoValorChange(e.target.value)}
+                className="flex-1"
+              />
             </div>
-            <Textarea
-              value={observacoes}
-              onChange={(e) => onObservacoesChange(e.target.value)}
-              placeholder="Condições de pagamento, prazos, etc."
-              rows={4}
-            />
+            {descontoCalculado > 0 && (
+              <p className="text-sm text-red-600">
+                Desconto: - {formatCurrency(descontoCalculado)}
+              </p>
+            )}
           </div>
         </div>
       </DialogContent>

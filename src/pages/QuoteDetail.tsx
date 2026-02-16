@@ -33,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select';
+import { Textarea } from '../components/ui/textarea';
 import { useStore } from '../store';
 import { formatCurrency, formatDate, formatQuoteDisplay, getQuoteDisplayNumber, getStatusColor, getStatusLabel, isSupabaseQuoteId } from '../lib/utils';
 import { generateQuotePDF, QuotePDFTemplate } from '../lib/pdf-generator';
@@ -47,6 +48,7 @@ export function QuoteDetail() {
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [newStatus, setNewStatus] = useState<QuoteStatus | ''>('');
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [mensagem, setMensagem] = useState('');
 
   const quote = getQuote(id || '');
 
@@ -134,6 +136,32 @@ export function QuoteDetail() {
         });
       }
     }
+  };
+
+  const handleEnviarWhatsApp = () => {
+    if (!mensagem.trim()) {
+      toast({
+        title: 'Digite uma mensagem',
+        description: 'Preencha o campo de mensagem antes de enviar.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const telefoneLimpo = quote.cliente.telefone.replace(/\D/g, '');
+    if (!telefoneLimpo || telefoneLimpo.length < 10) {
+      toast({
+        title: 'Telefone não cadastrado',
+        description: 'O cliente não possui um telefone válido cadastrado.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const telefone = telefoneLimpo.startsWith('55') ? telefoneLimpo : `55${telefoneLimpo}`;
+    const textoEncoded = encodeURIComponent(mensagem.trim());
+    const url = `https://wa.me/${telefone}?text=${textoEncoded}`;
+    window.open(url, '_blank');
   };
 
   const handleStatusChange = async () => {
@@ -370,8 +398,52 @@ export function QuoteDetail() {
                   <p className="text-sm text-gray-500">
                     Válido até {formatDate(quote.data_validade)}
                   </p>
+                  <p className="text-sm text-gray-500">
+                    Enviado em: {formatDate(quote.data_emissao)}
+                  </p>
                 </div>
               </div>
+
+              <div className="space-y-2">
+                <p className="font-medium text-sm text-gray-900">Mensagem para o cliente</p>
+                <Textarea
+                  value={mensagem}
+                  onChange={(e) => setMensagem(e.target.value.slice(0, 500))}
+                  placeholder="Digite sua mensagem..."
+                  rows={4}
+                  className="resize-y"
+                />
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    `E aí ${quote.cliente.nome}, conseguiu dar uma olhada no orçamento? Qualquer coisa é só chamar!`,
+                    `Opa ${quote.cliente.nome}! Só lembrando que o orçamento vence dia ${formatDate(quote.data_validade)}. Bora fechar?`,
+                    `${quote.cliente.nome}, preparei umas condições especiais pra você. Vamos conversar?`,
+                  ].map((texto) => (
+                    <button
+                      key={texto.slice(0, 30)}
+                      type="button"
+                      onClick={() => setMensagem(texto.slice(0, 500))}
+                      className="px-4 py-2 text-sm rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors max-w-[260px] truncate"
+                      title={texto}
+                    >
+                      {texto}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 text-right">
+                  {mensagem.length} / 500
+                </p>
+              </div>
+
+              <Button
+                onClick={handleEnviarWhatsApp}
+                disabled={!mensagem.trim()}
+                className="w-full bg-green-600 hover:bg-green-700 text-white"
+                title={!mensagem.trim() ? 'Digite uma mensagem' : undefined}
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Enviar Mensagem WhatsApp
+              </Button>
 
               <Button
                 variant="outline"

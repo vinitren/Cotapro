@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Plus, Search, FileText, Trash2, Eye, Download, Filter, Loader2 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Plus, Search, FileText, Trash2, Eye, Download, Filter, Loader2, Pencil } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -28,6 +28,7 @@ import { toast } from '../hooks/useToast';
 import { generateQuotePDF } from '../lib/pdf-generator';
 
 export function Quotes() {
+  const navigate = useNavigate();
   const { quotes, deleteQuote, checkExpiredQuotes, userId, loadQuotes } = useStore();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<QuoteStatus | 'all'>('all');
@@ -226,6 +227,15 @@ export function Quotes() {
                       Ver
                     </Button>
                   </Link>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => navigate(`/orcamentos/novo?edit=${quote.id}`)}
+                  >
+                    <Pencil className="h-4 w-4 mr-1" />
+                    Editar
+                  </Button>
                   <Button
                     variant="outline"
                     size="icon"
