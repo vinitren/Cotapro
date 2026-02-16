@@ -70,6 +70,9 @@ export function QuotePDFTemplate({ quote, company }: QuotePDFTemplateProps) {
           lineHeight: '1.3',
           pageBreakInside: 'avoid',
           breakInside: 'avoid',
+          display: 'flex',
+          flexDirection: 'column',
+          height: 1120,
         }}
       >
       {/* BLOCO 1: HEADER — altura fixa (logo, empresa, número, emissão, validade) */}
@@ -178,9 +181,8 @@ export function QuotePDFTemplate({ quote, company }: QuotePDFTemplateProps) {
       <div
         id="quote-items-section"
         style={{
-          height: 'auto',
-          minHeight: 420,
-          maxHeight: 500,
+          flex: 1,
+          minHeight: 0,
           marginBottom: '15px',
           backgroundColor: '#ffffff',
         }}
@@ -264,6 +266,7 @@ export function QuotePDFTemplate({ quote, company }: QuotePDFTemplateProps) {
           display: 'flex',
           flexDirection: 'column',
           boxSizing: 'border-box',
+          flexShrink: 0,
         }}
       >
       <div style={{ display: 'flex', gap: '12px', flex: 1, minHeight: 0 }}>
