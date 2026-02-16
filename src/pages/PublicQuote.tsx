@@ -263,6 +263,15 @@ export function PublicQuote() {
           overflow: visible !important;
         }
 
+        /* Ocultar assinaturas apenas na página pública (não afeta PDF) */
+        #public-quote-template #quote-pdf-signatures,
+        #public-quote-template #quote-signatures,
+        #public-quote-template .quote-signatures,
+        #public-quote-template [id*="signature"],
+        #public-quote-template [class*="signature"] {
+          display: none !important;
+        }
+
         /* Espaçamento entre blocos principais */
         #public-quote-template #quote-pdf-header-block { margin-bottom: 1.5rem !important; }
         #public-quote-template #quote-pdf-cliente { margin-bottom: 1.5rem !important; }
@@ -291,6 +300,28 @@ export function PublicQuote() {
         @media (min-width: 768px) {
           #public-quote-template #quote-pdf-header-block {
             grid-template-columns: 1fr auto !important;
+          }
+        }
+
+        @media (max-width: 640px) {
+          #public-quote-template table {
+            table-layout: fixed !important;
+            width: 100% !important;
+          }
+          #public-quote-template td:nth-child(4),
+          #public-quote-template td:nth-child(5),
+          #public-quote-template th:nth-child(4),
+          #public-quote-template th:nth-child(5) {
+            width: 90px !important;
+            min-width: 90px !important;
+            font-size: 12px !important;
+            text-align: right !important;
+            white-space: normal !important;
+            word-break: break-word !important;
+            overflow-wrap: anywhere !important;
+          }
+          #public-quote-template td {
+            white-space: normal !important;
           }
         }
 
