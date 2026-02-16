@@ -240,11 +240,10 @@ export function PublicQuote() {
   }, [id]);
 
   return (
-    <div className="min-h-screen bg-page-bg md:px-4 md:py-6">
-      {/* Ajustes visuais somente para mobile (não afeta desktop nem outras páginas) */}
+    <div className="min-h-screen bg-page-bg">
+      {/* Ajustes de responsividade (não afeta PDF) */}
       <style>{`
-        /* Na rota pública, removemos o comportamento de \"1 página\" do template (altura fixa + overflow hidden)
-           para garantir que TODOS os itens sejam exibidos, sem afetar a geração de PDF. */
+        /* Remove altura fixa para exibir todos os itens na página pública */
         #public-quote-template #quote-pdf-page {
           height: auto !important;
           min-height: 0 !important;
@@ -264,68 +263,64 @@ export function PublicQuote() {
           overflow: visible !important;
         }
 
+        /* Espaçamento entre blocos principais */
+        #public-quote-template #quote-pdf-header-block { margin-bottom: 1.5rem !important; }
+        #public-quote-template #quote-pdf-cliente { margin-bottom: 1.5rem !important; }
+        #public-quote-template #quote-items-section { margin-bottom: 1.5rem !important; }
+        #public-quote-template #quote-pdf-footer { margin-bottom: 1.5rem !important; }
+
+        /* Evitar quebra de números e valores importantes */
+        #public-quote-template #quote-pdf-number,
+        #public-quote-template #quote-pdf-total,
+        #public-quote-template #quote-pdf-header-block > div:last-child p,
+        #public-quote-template #quote-pdf-footer div[style*="space-between"] span { white-space: nowrap !important; }
+
+        /* Tabela: overflow horizontal + min-width */
+        #public-quote-template #quote-items-section { overflow-x: auto !important; }
+        #public-quote-template #quote-items-section table { min-width: 100% !important; }
+
+        /* Cabeçalho responsivo: 1 col mobile, 2 cols desktop */
+        #public-quote-template #quote-pdf-header-block {
+          display: grid !important;
+          grid-template-columns: 1fr !important;
+          gap: 1rem !important;
+          height: auto !important;
+          min-height: 0 !important;
+          max-height: none !important;
+        }
+        @media (min-width: 768px) {
+          #public-quote-template #quote-pdf-header-block {
+            grid-template-columns: 1fr auto !important;
+          }
+        }
+
         @media (max-width: 768px) {
-          /* Força o template (fixo em 800px) a caber no mobile */
-          #quote-pdf-page {
+          #public-quote-template #quote-pdf-page {
             width: 100% !important;
             min-width: 0 !important;
             max-width: 100% !important;
-            height: auto !important;
-            min-height: 0 !important;
-            max-height: none !important;
           }
-
-          #quote-pdf-template {
+          #public-quote-template #quote-pdf-template {
             width: 100% !important;
-            height: auto !important;
-            min-height: 0 !important;
-            max-height: none !important;
-            padding: 16px 16px !important;
+            padding: 16px !important;
             font-size: 12px !important;
           }
-
-          /* Tabela de itens mais compacta no mobile */
-          #quote-pdf-template table {
-            width: 100% !important;
-            font-size: 12px !important;
-          }
-          #quote-pdf-template th,
-          #quote-pdf-template td {
-            padding: 8px 6px !important;
-          }
-
-          /* Nunca quebrar o número do orçamento e o TOTAL no mobile */
-          #public-quote-template #quote-pdf-number,
-          #public-quote-template #quote-pdf-total {
-            white-space: nowrap !important;
-          }
-
-          /* Nome do item: truncado para não estourar largura */
+          #public-quote-template table { font-size: 12px !important; }
+          #public-quote-template th,
+          #public-quote-template td { padding: 8px 6px !important; }
           #public-quote-template #quote-pdf-template td:nth-child(2) {
             max-width: 180px !important;
             white-space: nowrap !important;
             overflow: hidden !important;
             text-overflow: ellipsis !important;
           }
-
-          /* Compactação quando há muitos itens */
-          #public-quote-template.pq-compact #quote-pdf-template table {
-            font-size: 11px !important;
-          }
-
-          /* Quando há itens demais, \"oculta\" detalhes extras (ex.: unidade) */
-          #public-quote-template.pq-hide-desc #quote-pdf-template td:nth-child(2) span {
-            display: none !important;
-          }
-
-          /* Evita quebra de layout por strings longas */
-          #quote-pdf-template * {
-            word-break: break-word;
-          }
+          #public-quote-template.pq-compact #quote-pdf-template table { font-size: 11px !important; }
+          #public-quote-template.pq-hide-desc #quote-pdf-template td:nth-child(2) span { display: none !important; }
+          #public-quote-template * { word-break: break-word; }
         }
       `}</style>
 
-      <div className="max-w-2xl mx-auto p-4 md:max-w-5xl md:p-0 space-y-3">
+      <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
         {loading ? (
           <Card>
             <CardContent className="p-6 text-center text-gray-500">Carregando...</CardContent>
@@ -341,7 +336,7 @@ export function PublicQuote() {
           <div
             id="public-quote-template"
             className={[
-              'w-full overflow-hidden border border-gray-200 rounded-lg bg-white overflow-x-hidden md:overflow-auto',
+              'w-full overflow-x-auto overflow-y-visible border border-gray-200 rounded-lg bg-white',
               ((templateQuote?.itens?.length ?? 0) > 6) ? 'pq-compact' : '',
               ((templateQuote?.itens?.length ?? 0) > 8) ? 'pq-hide-desc' : '',
             ].filter(Boolean).join(' ')}
