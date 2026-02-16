@@ -1,0 +1,18 @@
+[33mdb2ddef[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/fix/observacoes[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mfix/pdf-quebra-itens[m[33m, [m[1;32mfix/pdf-layout[m[33m, [m[1;32mfix/observacoes[m[33m)[m Ajuste no layout do PDF para varios itens na pagina publica
+[33m1bbaa05[m fix: observações voltam a aparecer
+[33mc6d83ec[m feat: ajustes de responsividade no link público e melhorias de UX no orçamento
+[33m5d2b33f[m feat: página pública de orçamento reutilizando layout existente
+[33mc2ea16a[m Ux : Responsivo web , pagina de criar orçamento (2)
+[33m00051e0[m Ux : reorganização da pagina de orçamento mobile
+[33m5a80613[m Design : Palheta de cores ajustadas
+[33m2544005[m Mudança design tela de login e cadastro.
+[33me15f739[m[33m ([m[1;31morigin/feature/modern-login-design[m[33m)[m refactor: Ajustes de UX na tela de login mobile para melhorar conversão
+[33m82bd77c[m feat: Ajustes visuais nas telas de autenticação
+[33m6dfe18c[m refactor: Atualizar copy da tela de login com foco em vendas
+[33me367e90[m feat: Redesign moderno da tela de login
+[33mc71b2c7[m  Fix: Adicionar loading states e tratamento de erros (FASE 1)
+[33m27d2ac6[m fix: Adicionar loading states e tratamento de erros (FASE 1)
+[33m9c376b5[m fix: corrige mistura de dados entre usuários e salvamento de preferências supabase.
+[33m769f3fe[m fix: logo upload filename
+[33me820bc2[m Correção na numeração de orçamentos e status
+[33m69894e1[m Primeira versão funcional do app

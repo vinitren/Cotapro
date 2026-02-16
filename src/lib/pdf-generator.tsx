@@ -37,10 +37,11 @@ export function QuotePDFTemplate({ quote, company }: QuotePDFTemplateProps) {
     items = [];
   }
 
-  // PDF fixo: uma única página (A4), altura constante. Área de itens com altura pré-definida.
-  const PDF_PAGE_HEIGHT_PX = 1123; // A4 portrait @96dpi
+  const isCompactMode = items.length >= 6;
+
   const PDF_PAGE_WIDTH_PX = 800;
-  const ITEMS_SECTION_HEIGHT_PX = 380;
+  const HEADER_BLOCK_HEIGHT_PX = 120;
+  const FOOTER_HEIGHT_PX = 180;
 
   return (
     <div
@@ -49,13 +50,9 @@ export function QuotePDFTemplate({ quote, company }: QuotePDFTemplateProps) {
         width: PDF_PAGE_WIDTH_PX,
         minWidth: PDF_PAGE_WIDTH_PX,
         maxWidth: PDF_PAGE_WIDTH_PX,
-        height: PDF_PAGE_HEIGHT_PX,
-        minHeight: PDF_PAGE_HEIGHT_PX,
-        maxHeight: PDF_PAGE_HEIGHT_PX,
         marginLeft: 'auto',
         marginRight: 'auto',
         boxSizing: 'border-box',
-        overflow: 'hidden',
         pageBreakInside: 'avoid',
         breakInside: 'avoid',
       }}
@@ -64,33 +61,34 @@ export function QuotePDFTemplate({ quote, company }: QuotePDFTemplateProps) {
         id="quote-pdf-template"
         style={{
           fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-          padding: '32px 36px',
+          padding: '15px 20px',
           width: PDF_PAGE_WIDTH_PX,
-          height: PDF_PAGE_HEIGHT_PX,
-          minHeight: PDF_PAGE_HEIGHT_PX,
-          maxHeight: PDF_PAGE_HEIGHT_PX,
           boxSizing: 'border-box',
-          overflow: 'hidden',
           backgroundColor: '#ffffff',
           color: '#1F2937',
           fontSize: '14px',
-          lineHeight: '1.5',
+          lineHeight: '1.3',
           pageBreakInside: 'avoid',
           breakInside: 'avoid',
         }}
       >
-      {/* HEADER */}
+      {/* BLOCO 1: HEADER — altura fixa (logo, empresa, número, emissão, validade) */}
       <div
+        id="quote-pdf-header-block"
         style={{
+          height: HEADER_BLOCK_HEIGHT_PX,
+          minHeight: HEADER_BLOCK_HEIGHT_PX,
+          maxHeight: HEADER_BLOCK_HEIGHT_PX,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '24px',
-          paddingBottom: '20px',
+          paddingBottom: '12px',
+          marginBottom: '12px',
           borderBottom: '3px solid #1F2937',
+          boxSizing: 'border-box',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {company.logo_url && (
             <img
               src={company.logo_url}
@@ -106,10 +104,10 @@ export function QuotePDFTemplate({ quote, company }: QuotePDFTemplateProps) {
             <h1 style={{ margin: 0, fontSize: '22px', fontWeight: '700', color: '#1F2937' }}>
               {company.nome}
             </h1>
-            <p style={{ margin: '4px 0 0', color: '#6B7280', fontSize: '13px' }}>
+            <p style={{ margin: '2px 0 0', color: '#6B7280', fontSize: '12px', lineHeight: '1.3' }}>
               CNPJ: {company.cnpj} | Tel: {company.telefone}
             </p>
-            <p style={{ margin: '2px 0 0', color: '#6B7280', fontSize: '13px' }}>
+            <p style={{ margin: '1px 0 0', color: '#6B7280', fontSize: '12px', lineHeight: '1.3' }}>
               {company.email}
             </p>
           </div>
@@ -131,7 +129,7 @@ export function QuotePDFTemplate({ quote, company }: QuotePDFTemplateProps) {
               #{getQuoteDisplayNumber(quote)}
             </p>
           </div>
-          <div style={{ marginTop: '10px' }}>
+          <div style={{ marginTop: '6px' }}>
             <p style={{ margin: 0, color: '#4B5563', fontSize: '13px' }}>
               <strong>Emissão:</strong> {formatDate(quote.data_emissao)}
             </p>
@@ -142,11 +140,13 @@ export function QuotePDFTemplate({ quote, company }: QuotePDFTemplateProps) {
         </div>
       </div>
 
-      {/* CLIENTE */}
+      {/* DADOS DO CLIENTE — entre header e tabela */}
       <div
+        id="quote-pdf-cliente"
         style={{
-          marginBottom: '20px',
-          padding: '16px 20px',
+          marginTop: '12px',
+          marginBottom: '15px',
+          padding: '10px 15px',
           backgroundColor: '#F9FAFB',
           borderRadius: '8px',
           border: '1px solid #E5E7EB',
@@ -157,10 +157,10 @@ export function QuotePDFTemplate({ quote, company }: QuotePDFTemplateProps) {
             <p style={{ margin: 0, color: '#6B7280', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: '600' }}>
               Cliente
             </p>
-            <p style={{ margin: '6px 0 0', fontSize: '18px', fontWeight: '600', color: '#1F2937' }}>
+            <p style={{ margin: '4px 0 0', fontSize: '16px', fontWeight: '600', color: '#1F2937' }}>
               {quote.cliente.nome}
             </p>
-            <p style={{ margin: '4px 0 0', color: '#4B5563', fontSize: '14px' }}>
+            <p style={{ margin: '2px 0 0', color: '#4B5563', fontSize: '13px' }}>
               {quote.cliente.tipo === 'pessoa_fisica' ? 'CPF' : 'CNPJ'}: {quote.cliente.cpf_cnpj} | Tel: {quote.cliente.telefone}
             </p>
           </div>
@@ -174,84 +174,112 @@ export function QuotePDFTemplate({ quote, company }: QuotePDFTemplateProps) {
         </div>
       </div>
 
-      {/* TABELA DE ITENS — área com altura fixa; itens só neste bloco; espaço restante em branco */}
+      {/* BLOCO 2: ÁREA DE ITENS — min/max height, itens do topo, sem centralizar */}
       <div
         id="quote-items-section"
         style={{
-          height: ITEMS_SECTION_HEIGHT_PX,
-          minHeight: ITEMS_SECTION_HEIGHT_PX,
-          maxHeight: ITEMS_SECTION_HEIGHT_PX,
-          overflow: 'hidden',
-          marginBottom: '20px',
+          height: 'auto',
+          minHeight: 420,
+          maxHeight: 500,
+          marginBottom: '15px',
           backgroundColor: '#ffffff',
         }}
       >
         <table
           style={{
             width: '100%',
+            height: 'auto',
             borderCollapse: 'collapse',
             fontSize: '14px',
           }}
         >
           <thead>
             <tr>
-              <th style={{ padding: '12px 10px', backgroundColor: '#1F2937', color: '#ffffff', textAlign: 'center', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderRadius: '6px 0 0 0', width: '40px' }}>
+              <th style={{ padding: '10px 10px', backgroundColor: '#1F2937', color: '#ffffff', textAlign: 'center', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderRadius: '6px 0 0 0', width: '40px' }}>
                 #
               </th>
-              <th style={{ padding: '12px 10px', backgroundColor: '#1F2937', color: '#ffffff', textAlign: 'left', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <th style={{ padding: '10px 10px', backgroundColor: '#1F2937', color: '#ffffff', textAlign: 'left', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Descrição
               </th>
-              <th style={{ padding: '12px 10px', backgroundColor: '#1F2937', color: '#ffffff', textAlign: 'center', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', width: '60px' }}>
+              <th style={{ padding: '10px 10px', backgroundColor: '#1F2937', color: '#ffffff', textAlign: 'center', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', width: '60px' }}>
                 Qtd
               </th>
-              <th style={{ padding: '12px 10px', backgroundColor: '#1F2937', color: '#ffffff', textAlign: 'right', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', width: '100px' }}>
+              <th style={{ padding: '10px 10px', backgroundColor: '#1F2937', color: '#ffffff', textAlign: 'right', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', width: '100px' }}>
                 Unitário
               </th>
-              <th style={{ padding: '12px 10px', backgroundColor: '#1F2937', color: '#ffffff', textAlign: 'right', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderRadius: '0 6px 0 0', width: '110px' }}>
+              <th style={{ padding: '10px 10px', backgroundColor: '#1F2937', color: '#ffffff', textAlign: 'right', fontWeight: '600', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.05em', borderRadius: '0 6px 0 0', width: '110px' }}>
                 Total
               </th>
             </tr>
           </thead>
           <tbody>
-            {items.map((item: any, index: number) => (
+            {items.map((item: any, index: number) => {
+              const raw = (item.descricao ?? '').toString();
+              const parts = raw.split(' - ');
+              const nome = (parts[0] ?? '').trim();
+              const descricaoExtra = parts.length > 1 ? parts.slice(1).join(' - ').trim() : '';
+              const descCellStyle: React.CSSProperties = {
+                padding: '8px 10px',
+                color: '#1F2937',
+                backgroundColor: index % 2 === 0 ? '#ffffff' : '#F9FAFB',
+                borderBottom: '1px solid #E5E7EB',
+                fontWeight: '500',
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical',
+                WebkitLineClamp: isCompactMode ? 1 : 2,
+                overflow: 'hidden',
+              };
+              return (
               <tr key={item.id}>
-                <td style={{ padding: '12px 10px', textAlign: 'center', color: '#6B7280', backgroundColor: index % 2 === 0 ? '#ffffff' : '#F9FAFB', borderBottom: '1px solid #E5E7EB', fontWeight: '500' }}>
+                <td style={{ padding: '8px 10px', textAlign: 'center', color: '#6B7280', backgroundColor: index % 2 === 0 ? '#ffffff' : '#F9FAFB', borderBottom: '1px solid #E5E7EB', fontWeight: '500' }}>
                   {index + 1}
                 </td>
-                <td style={{ padding: '12px 10px', color: '#1F2937', backgroundColor: index % 2 === 0 ? '#ffffff' : '#F9FAFB', borderBottom: '1px solid #E5E7EB', fontWeight: '500' }}>
-                  {item.descricao}
+                <td style={descCellStyle}>
+                  {isCompactMode ? nome : (descricaoExtra ? `${nome} - ${descricaoExtra}` : nome)}
                   <span style={{ color: '#9CA3AF', fontSize: '12px', marginLeft: '6px' }}>({item.unidade})</span>
                 </td>
-                <td style={{ padding: '12px 10px', textAlign: 'center', color: '#1F2937', backgroundColor: index % 2 === 0 ? '#ffffff' : '#F9FAFB', borderBottom: '1px solid #E5E7EB', fontWeight: '600' }}>
+                <td style={{ padding: '8px 10px', textAlign: 'center', color: '#1F2937', backgroundColor: index % 2 === 0 ? '#ffffff' : '#F9FAFB', borderBottom: '1px solid #E5E7EB', fontWeight: '600' }}>
                   {item.quantidade}
                 </td>
-                <td style={{ padding: '12px 10px', textAlign: 'right', color: '#4B5563', backgroundColor: index % 2 === 0 ? '#ffffff' : '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
+                <td style={{ padding: '8px 10px', textAlign: 'right', color: '#4B5563', backgroundColor: index % 2 === 0 ? '#ffffff' : '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
                   {formatCurrency(item.valor_unitario)}
                 </td>
-                <td style={{ padding: '12px 10px', textAlign: 'right', fontWeight: '600', color: '#1F2937', backgroundColor: index % 2 === 0 ? '#ffffff' : '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
+                <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: '600', color: '#1F2937', backgroundColor: index % 2 === 0 ? '#ffffff' : '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
                   {formatCurrency(item.subtotal)}
                 </td>
               </tr>
-            ))}
+            );
+            })}
           </tbody>
         </table>
       </div>
 
-      {/* TOTAIS + OBSERVACOES */}
-      <div style={{ display: 'flex', gap: '24px', marginBottom: '24px' }}>
+      {/* BLOCO 3: FOOTER — altura fixa ~180px (observações, subtotal, total, validade) */}
+      <div
+        id="quote-pdf-footer"
+        style={{
+          height: FOOTER_HEIGHT_PX,
+          minHeight: FOOTER_HEIGHT_PX,
+          maxHeight: FOOTER_HEIGHT_PX,
+          display: 'flex',
+          flexDirection: 'column',
+          boxSizing: 'border-box',
+        }}
+      >
+      <div style={{ display: 'flex', gap: '12px', flex: 1, minHeight: 0 }}>
         {/* OBSERVACOES */}
         <div style={{ flex: 1 }}>
           {quote.observacoes && (
             <div
               style={{
-                padding: '16px 20px',
+                padding: '12px 15px',
                 backgroundColor: '#F9FAFB',
                 borderRadius: '8px',
                 border: '1px solid #E5E7EB',
                 height: '100%',
               }}
             >
-              <p style={{ margin: '0 0 8px', color: '#6B7280', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: '600' }}>
+              <p style={{ margin: '0 0 6px', color: '#6B7280', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: '600' }}>
                 Condições e Observações
               </p>
               <p style={{ margin: 0, color: '#374151', fontSize: '13px', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>
@@ -263,13 +291,13 @@ export function QuotePDFTemplate({ quote, company }: QuotePDFTemplateProps) {
 
         {/* TOTAIS */}
         <div style={{ width: '240px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #E5E7EB' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #E5E7EB' }}>
             <span style={{ color: '#6B7280', fontSize: '14px' }}>Subtotal</span>
             <span style={{ color: '#1F2937', fontSize: '14px', fontWeight: '500' }}>{formatCurrency(quote.subtotal)}</span>
           </div>
 
           {quote.desconto_valor > 0 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #E5E7EB' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #E5E7EB' }}>
               <span style={{ color: '#6B7280', fontSize: '14px' }}>
                 Desconto {quote.desconto_tipo === 'percentual' && `(${quote.desconto_valor}%)`}
               </span>
@@ -282,8 +310,8 @@ export function QuotePDFTemplate({ quote, company }: QuotePDFTemplateProps) {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              padding: '16px 20px',
-              marginTop: '12px',
+              padding: '12px 15px',
+              marginTop: '10px',
               backgroundColor: '#1F2937',
               borderRadius: '8px',
             }}
@@ -296,8 +324,17 @@ export function QuotePDFTemplate({ quote, company }: QuotePDFTemplateProps) {
         </div>
       </div>
 
+      {/* Rodapé: validade */}
+      <div style={{ marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid #E5E7EB', textAlign: 'center', flexShrink: 0 }}>
+        <p style={{ margin: 0, color: '#6B7280', fontSize: '12px' }}>
+          Este orçamento tem validade até {formatDate(quote.data_validade)}. Valores sujeitos a alteração após este período.
+        </p>
+      </div>
+      </div>
+
       {/* ASSINATURAS */}
       <div
+        id="quote-pdf-signatures"
         style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -318,13 +355,6 @@ export function QuotePDFTemplate({ quote, company }: QuotePDFTemplateProps) {
             <p style={{ margin: '4px 0 0', color: '#6B7280', fontSize: '12px' }}>Cliente</p>
           </div>
         </div>
-      </div>
-
-      {/* RODAPE */}
-      <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #E5E7EB', textAlign: 'center' }}>
-        <p style={{ margin: 0, color: '#6B7280', fontSize: '12px' }}>
-          Este orçamento tem validade até {formatDate(quote.data_validade)}. Valores sujeitos a alteração após este período.
-        </p>
       </div>
       </div>
     </div>
@@ -356,6 +386,10 @@ export async function generateQuotePDF(quote: Quote): Promise<void> {
   root.render(<QuotePDFTemplate quote={normalizedQuote as Quote} company={company} />);
 
   await new Promise((resolve) => setTimeout(resolve, 100));
+
+  // PDF: remove apenas a seção de assinaturas (ganha espaço), sem alterar dados/cálculos.
+  const sig = container.querySelector('#quote-pdf-signatures') as HTMLElement | null;
+  if (sig) sig.style.display = 'none';
 
   const element = container.querySelector('#quote-pdf-page') as HTMLElement | null;
 
