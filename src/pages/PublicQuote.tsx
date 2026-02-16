@@ -240,7 +240,7 @@ export function PublicQuote() {
   }, [id]);
 
   return (
-    <div className="min-h-screen bg-page-bg">
+    <div className="w-full min-h-screen bg-page-bg py-6">
       {/* Ajustes de responsividade (não afeta PDF) */}
       <style>{`
         /* Remove altura fixa para exibir todos os itens na página pública */
@@ -394,33 +394,71 @@ export function PublicQuote() {
             white-space: normal !important;
             word-break: break-word !important;
           }
+
+          /* Ajuste para valores muito altos (milhões) */
+          #public-quote-template #quote-items-section td:nth-child(4),
+          #public-quote-template #quote-items-section td:nth-child(5) {
+            font-size: 9px !important;
+            line-height: 1.2 !important;
+            white-space: normal !important;
+            word-break: break-word !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          /* Garantir largura mínima das colunas de valor */
+          #public-quote-template #quote-items-section th:nth-child(4),
+          #public-quote-template #quote-items-section th:nth-child(5),
+          #public-quote-template #quote-items-section td:nth-child(4),
+          #public-quote-template #quote-items-section td:nth-child(5) {
+            min-width: 70px !important;
+            max-width: 90px !important;
+          }
+
+          /* Reduzir um pouco o padding da tabela em telas pequenas */
+          #public-quote-template #quote-items-section th,
+          #public-quote-template #quote-items-section td {
+            padding: 6px 4px !important;
+          }
         }
       `}</style>
 
-      <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
-        {loading ? (
-          <Card>
-            <CardContent className="p-6 text-center text-gray-500">Carregando...</CardContent>
-          </Card>
-        ) : notFound || !canRenderTemplate ? (
-          <Card>
-            <CardContent className="p-6 text-center">
-              <p className="font-semibold text-gray-900">Orçamento não encontrado</p>
-              <p className="text-sm text-gray-500 mt-1">Verifique se o link está correto.</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div
-            id="public-quote-template"
-            className={[
-              'w-full overflow-x-auto overflow-y-visible border border-gray-200 rounded-lg bg-white',
-              ((templateQuote?.itens?.length ?? 0) > 6) ? 'pq-compact' : '',
-              ((templateQuote?.itens?.length ?? 0) > 8) ? 'pq-hide-desc' : '',
-            ].filter(Boolean).join(' ')}
-          >
-            <QuotePDFTemplate quote={templateQuote as Quote} company={templateCompany as Company} />
-          </div>
-        )}
+      <div className="w-full px-3">
+        <div
+          className="
+            mx-auto
+            w-full
+            max-w-[820px]
+            bg-white
+            rounded-lg
+            shadow-sm
+            border border-gray-200
+            overflow-hidden
+          "
+        >
+          {loading ? (
+            <Card>
+              <CardContent className="p-6 text-center text-gray-500">Carregando...</CardContent>
+            </Card>
+          ) : notFound || !canRenderTemplate ? (
+            <Card>
+              <CardContent className="p-6 text-center">
+                <p className="font-semibold text-gray-900">Orçamento não encontrado</p>
+                <p className="text-sm text-gray-500 mt-1">Verifique se o link está correto.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div
+              id="public-quote-template"
+              className={[
+                'w-full overflow-x-auto overflow-y-visible border border-gray-200 rounded-lg bg-white',
+                ((templateQuote?.itens?.length ?? 0) > 6) ? 'pq-compact' : '',
+                ((templateQuote?.itens?.length ?? 0) > 8) ? 'pq-hide-desc' : '',
+              ].filter(Boolean).join(' ')}
+            >
+              <QuotePDFTemplate quote={templateQuote as Quote} company={templateCompany as Company} />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
