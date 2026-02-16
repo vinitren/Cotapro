@@ -56,6 +56,7 @@ export function QuoteCreate() {
   const [editingItem, setEditingItem] = useState<QuoteItem | null>(null);
   const [catalogItems, setCatalogItems] = useState<ItemCatalogDB[]>([]);
   const [isLoadingEdit, setIsLoadingEdit] = useState(false);
+  const [mensagemWhatsApp, setMensagemWhatsApp] = useState('Olá! Segue seu orçamento:');
 
   const selectedCustomer = customers.find((c) => c.id === clienteId);
 
@@ -160,6 +161,16 @@ export function QuoteCreate() {
           variant: 'success',
         });
 
+        if (status === 'enviado') {
+          const telefoneLimpo = selectedCustomer!.telefone.replace(/\D/g, '');
+          if (telefoneLimpo && telefoneLimpo.length >= 10) {
+            const telefone = telefoneLimpo.startsWith('55') ? telefoneLimpo : `55${telefoneLimpo}`;
+            const link = `${window.location.origin}/orcamento/${editId}`;
+            const texto = `${mensagemWhatsApp}\n${link}`;
+            window.open(`https://wa.me/${telefone}?text=${encodeURIComponent(texto)}`, '_blank');
+          }
+        }
+
         navigate(`/quotes/${editId}`);
       } else {
         const quote = await addQuote({
@@ -182,6 +193,16 @@ export function QuoteCreate() {
           }.`,
           variant: 'success',
         });
+
+        if (status === 'enviado') {
+          const telefoneLimpo = selectedCustomer!.telefone.replace(/\D/g, '');
+          if (telefoneLimpo && telefoneLimpo.length >= 10) {
+            const telefone = telefoneLimpo.startsWith('55') ? telefoneLimpo : `55${telefoneLimpo}`;
+            const link = `${window.location.origin}/orcamento/${quote.id}`;
+            const texto = `${mensagemWhatsApp}\n${link}`;
+            window.open(`https://wa.me/${telefone}?text=${encodeURIComponent(texto)}`, '_blank');
+          }
+        }
 
         navigate(`/quotes/${quote.id}`);
       }
@@ -372,6 +393,43 @@ export function QuoteCreate() {
           </Card>
         </div>
 
+            {/* Mensagem WhatsApp - mobile */}
+            <div className="lg:hidden">
+              <Card>
+                <CardContent className="p-4 space-y-2">
+                  <Label className="text-sm font-medium">Mensagem WhatsApp</Label>
+                  <Textarea
+                    value={mensagemWhatsApp}
+                    onChange={(e) => setMensagemWhatsApp(e.target.value.slice(0, 300))}
+                    placeholder="Digite a mensagem que será enviada com o link..."
+                    rows={3}
+                    maxLength={300}
+                    className="resize-none"
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      'Seu orçamento está pronto! Dá uma olhada e me avisa para fecharmos',
+                      'Orçamento enviado! Tá tudo certinho? Podemos finalizar hoje',
+                      'Pronto! Orçamento aprovado? Me confirma que a gente fecha',
+                    ].map((texto) => (
+                      <button
+                        key={texto.slice(0, 25)}
+                        type="button"
+                        onClick={() => setMensagemWhatsApp(texto.slice(0, 300))}
+                        className="px-4 py-2 text-sm rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors max-w-[260px] truncate"
+                        title={texto}
+                      >
+                        {texto}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 text-right">
+                    {mensagemWhatsApp.length}/300
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
             {/* Resumo - mobile (dentro da coluna esquerda) */}
             <div className="lg:hidden">
               <Card>
@@ -408,8 +466,41 @@ export function QuoteCreate() {
             </div>
           </div>
 
-          {/* Coluna direita: Resumo (sticky) + Botões - desktop */}
+          {/* Coluna direita: Mensagem WhatsApp + Resumo (sticky) + Botões - desktop */}
           <div className="hidden lg:block lg:sticky lg:top-24 lg:self-start space-y-4">
+            <Card>
+              <CardContent className="p-4 space-y-2">
+                <Label className="text-sm font-medium">Mensagem WhatsApp</Label>
+                <Textarea
+                  value={mensagemWhatsApp}
+                  onChange={(e) => setMensagemWhatsApp(e.target.value.slice(0, 300))}
+                  placeholder="Digite a mensagem que será enviada com o link..."
+                  rows={3}
+                  maxLength={300}
+                  className="resize-none"
+                />
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    'Seu orçamento está pronto! Dá uma olhada e me avisa para fecharmos',
+                    'Orçamento enviado! Tá tudo certinho? Podemos finalizar hoje',
+                    'Pronto! Orçamento aprovado? Me confirma que a gente fecha',
+                  ].map((texto) => (
+                    <button
+                      key={texto.slice(0, 25)}
+                      type="button"
+                      onClick={() => setMensagemWhatsApp(texto.slice(0, 300))}
+                      className="px-4 py-2 text-sm rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors max-w-[260px] truncate"
+                      title={texto}
+                    >
+                      {texto}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 text-right">
+                  {mensagemWhatsApp.length}/300
+                </p>
+              </CardContent>
+            </Card>
             <Card>
               <CardContent className="p-4 space-y-3">
                 <div className="space-y-2">

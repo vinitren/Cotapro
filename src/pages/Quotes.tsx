@@ -229,12 +229,11 @@ export function Quotes() {
                   </Link>
                   <Button
                     variant="outline"
-                    size="sm"
-                    className="flex-1"
+                    size="icon"
                     onClick={() => navigate(`/orcamentos/novo?edit=${quote.id}`)}
+                    title="Editar orçamento"
                   >
-                    <Pencil className="h-4 w-4 mr-1" />
-                    Editar
+                    <Pencil className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="outline"
