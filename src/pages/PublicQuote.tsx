@@ -349,6 +349,52 @@ export function PublicQuote() {
           #public-quote-template.pq-hide-desc #quote-pdf-template td:nth-child(2) span { display: none !important; }
           #public-quote-template * { word-break: break-word; }
         }
+
+        @media (max-width: 480px) {
+          /* Condições e Observações: quebra correta no mobile */
+          #public-quote-template #quote-pdf-footer > div:first-child > div:first-child {
+            min-width: 0 !important;
+            width: 100% !important;
+          }
+          #public-quote-template #quote-pdf-footer [style*="pre-wrap"] {
+            white-space: pre-wrap !important;
+            word-break: break-word !important;
+            overflow-wrap: break-word !important;
+            line-height: 1.4 !important;
+            font-size: 11px !important;
+          }
+          #public-quote-template #quote-pdf-footer > div:first-child {
+            flex-direction: column !important;
+          }
+
+          /* Rodapé: empilhar tudo verticalmente, sem sobreposição */
+          #public-quote-template #quote-pdf-footer,
+          #public-quote-template #quote-pdf-footer > div {
+            position: static !important;
+          }
+          #public-quote-template #quote-pdf-footer {
+            flex-direction: column !important;
+            gap: 12px !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+          }
+          #public-quote-template #quote-pdf-footer > div:first-child {
+            flex: none !important;
+          }
+          #public-quote-template #quote-pdf-footer > div:first-child > div:last-child {
+            width: 100% !important;
+          }
+          #public-quote-template #quote-pdf-footer > div:last-child {
+            margin-top: 8px !important;
+          }
+          #public-quote-template #quote-pdf-footer > div:last-child p {
+            font-size: 11px !important;
+            line-height: 1.4 !important;
+            white-space: normal !important;
+            word-break: break-word !important;
+          }
+        }
       `}</style>
 
       <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
