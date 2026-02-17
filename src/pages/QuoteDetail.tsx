@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
+import { Input } from '../components/ui/input';
 import { useStore } from '../store';
 import { formatCurrency, formatDate, formatQuoteDisplay, getQuoteDisplayNumber, getStatusColor, getStatusLabel, isSupabaseQuoteId } from '../lib/utils';
 import { generateQuotePDF, QuotePDFTemplate } from '../lib/pdf-generator';
@@ -48,7 +49,8 @@ export function QuoteDetail() {
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [newStatus, setNewStatus] = useState<QuoteStatus | ''>('');
   const [pdfLoading, setPdfLoading] = useState(false);
-  const [mensagem, setMensagem] = useState('');
+  const [mensagemLink, setMensagemLink] = useState('Olá! Segue seu orçamento:');
+  const [mensagemFollowUp, setMensagemFollowUp] = useState('');
 
   const quote = getQuote(id || '');
 
@@ -114,10 +116,19 @@ export function QuoteDetail() {
   };
 
   const handleWhatsApp = async () => {
-    const phone = quote.cliente.telefone.replace(/\D/g, '');
-    const link = `${window.location.origin}/orcamento/${quote.id}`;
-    const message = `Olá! Segue seu orçamento:\n${link}`;
-    const url = `https://wa.me/55${phone}?text=${encodeURIComponent(message)}`;
+    const telefoneLimpo = quote.cliente.telefone.replace(/\D/g, '');
+    if (!telefoneLimpo || telefoneLimpo.length < 10) {
+      toast({
+        title: 'Telefone não cadastrado',
+        description: 'O cliente não possui um telefone válido cadastrado.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    const telefone = telefoneLimpo.startsWith('55') ? telefoneLimpo : `55${telefoneLimpo}`;
+    const linkOrcamento = `${window.location.origin}/orcamento/${quote.id}`;
+    const texto = `${mensagemLink.trim()}\n${linkOrcamento}`;
+    const url = `https://wa.me/${telefone}?text=${encodeURIComponent(texto)}`;
     window.open(url, '_blank');
 
     if (quote.status === 'rascunho') {
@@ -139,7 +150,7 @@ export function QuoteDetail() {
   };
 
   const handleEnviarWhatsApp = () => {
-    if (!mensagem.trim()) {
+    if (!mensagemFollowUp.trim()) {
       toast({
         title: 'Digite uma mensagem',
         description: 'Preencha o campo de mensagem antes de enviar.',
@@ -159,8 +170,7 @@ export function QuoteDetail() {
     }
 
     const telefone = telefoneLimpo.startsWith('55') ? telefoneLimpo : `55${telefoneLimpo}`;
-    const textoEncoded = encodeURIComponent(mensagem.trim());
-    const url = `https://wa.me/${telefone}?text=${textoEncoded}`;
+    const url = `https://wa.me/${telefone}?text=${encodeURIComponent(mensagemFollowUp.trim())}`;
     window.open(url, '_blank');
   };
 
@@ -218,19 +228,36 @@ export function QuoteDetail() {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => setShowPreview(true)}>
-            <FileText className="h-4 w-4 mr-2" />
-            Visualizar
-          </Button>
-          <Button variant="outline" onClick={handleDownloadPDF} disabled={pdfLoading}>
-            {pdfLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-            {pdfLoading ? 'Gerando...' : 'PDF'}
-          </Button>
-          <Button onClick={handleWhatsApp}>
-            <Send className="h-4 w-4 mr-2" />
-            WhatsApp
-          </Button>
+        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-2 w-full sm:w-auto">
+          {/* Linha 1 (mobile) / inline (desktop): Visualizar + PDF */}
+          <div className="flex gap-2 sm:contents">
+            <Button variant="outline" onClick={() => setShowPreview(true)} className="flex-1 sm:flex-initial">
+              <FileText className="h-4 w-4 mr-2" />
+              Visualizar
+            </Button>
+            <Button variant="outline" onClick={handleDownloadPDF} disabled={pdfLoading} className="flex-1 sm:flex-initial">
+              {pdfLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+              {pdfLoading ? 'Gerando...' : 'PDF'}
+            </Button>
+          </div>
+          {/* Linha 2 (mobile) / inline (desktop): Input + WhatsApp */}
+          <div className="flex gap-2 sm:contents">
+            <Input
+              value={mensagemLink}
+              onChange={(e) => setMensagemLink(e.target.value.slice(0, 500))}
+              placeholder="Digite mensagem..."
+              className="flex-1 min-w-[120px] sm:min-w-[180px] sm:max-w-[280px]"
+              maxLength={500}
+            />
+            <Button
+              onClick={handleWhatsApp}
+              className="bg-green-600 hover:bg-green-700 text-white whitespace-nowrap shrink-0"
+              title="Enviar orçamento com link"
+            >
+              <Send className="h-4 w-4 mr-2" />
+              WhatsApp
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -407,8 +434,8 @@ export function QuoteDetail() {
               <div className="space-y-2">
                 <p className="font-medium text-sm text-gray-900">Mensagem para o cliente</p>
                 <Textarea
-                  value={mensagem}
-                  onChange={(e) => setMensagem(e.target.value.slice(0, 500))}
+                  value={mensagemFollowUp}
+                  onChange={(e) => setMensagemFollowUp(e.target.value.slice(0, 500))}
                   placeholder="Digite sua mensagem..."
                   rows={4}
                   className="resize-y"
@@ -422,7 +449,7 @@ export function QuoteDetail() {
                     <button
                       key={texto.slice(0, 30)}
                       type="button"
-                      onClick={() => setMensagem(texto.slice(0, 500))}
+                      onClick={() => setMensagemFollowUp(texto.slice(0, 500))}
                       className="px-4 py-2 text-sm rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors max-w-[260px] truncate"
                       title={texto}
                     >
@@ -431,15 +458,15 @@ export function QuoteDetail() {
                   ))}
                 </div>
                 <p className="text-xs text-gray-500 text-right">
-                  {mensagem.length} / 500
+                  {mensagemFollowUp.length} / 500
                 </p>
               </div>
 
               <Button
                 onClick={handleEnviarWhatsApp}
-                disabled={!mensagem.trim()}
+                disabled={!mensagemFollowUp.trim()}
                 className="w-full bg-green-600 hover:bg-green-700 text-white"
-                title={!mensagem.trim() ? 'Digite uma mensagem' : undefined}
+                title={!mensagemFollowUp.trim() ? 'Digite uma mensagem' : undefined}
               >
                 <Send className="h-4 w-4 mr-2" />
                 Enviar Mensagem WhatsApp
@@ -464,7 +491,7 @@ export function QuoteDetail() {
             <DialogTitle>Prévia do Orçamento</DialogTitle>
           </DialogHeader>
           <div className="border rounded-lg overflow-hidden">
-            <QuotePDFTemplate quote={quote} company={company} />
+            <QuotePDFTemplate quote={quote} company={company} hideSignatures />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowPreview(false)}>

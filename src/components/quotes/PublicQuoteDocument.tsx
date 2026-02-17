@@ -38,8 +38,6 @@ export function PublicQuoteDocument({ quote, company }: PublicQuoteDocumentProps
     items = [];
   }
 
-  const isCompactMode = items.length >= 6;
-
   const PDF_PAGE_WIDTH_PX = 800;
   const HEADER_BLOCK_HEIGHT_PX = 120;
   const FOOTER_HEIGHT_PX = 180;
@@ -70,7 +68,6 @@ export function PublicQuoteDocument({ quote, company }: PublicQuoteDocumentProps
           lineHeight: '1.3',
           display: 'flex',
           flexDirection: 'column',
-          height: TEMPLATE_HEIGHT_PX,
           minHeight: TEMPLATE_HEIGHT_PX,
         }}
       >
@@ -170,8 +167,8 @@ export function PublicQuoteDocument({ quote, company }: PublicQuoteDocumentProps
           </div>
         </div>
 
-        {/* ÁREA DE ITENS - flex: 1, minHeight: 0 (igual ao PDF) */}
-        <div style={{ flex: 1, minHeight: 0, marginBottom: '15px', backgroundColor: '#ffffff' }}>
+        {/* ÁREA DE ITENS - flex: 1 para preencher espaço, permite crescimento */}
+        <div style={{ flex: 1, minHeight: 0, marginBottom: '15px', backgroundColor: '#ffffff', overflow: 'visible' }}>
           <table
             style={{
               width: '100%',
@@ -213,10 +210,6 @@ export function PublicQuoteDocument({ quote, company }: PublicQuoteDocumentProps
                   borderBottom: '1px solid #E5E7EB',
                   fontWeight: '500',
                   wordBreak: 'break-word',
-                  display: '-webkit-box',
-                  WebkitBoxOrient: 'vertical',
-                  WebkitLineClamp: isCompactMode ? 1 : 2,
-                  overflow: 'hidden',
                 };
                 return (
                   <tr key={item.id}>
@@ -224,7 +217,7 @@ export function PublicQuoteDocument({ quote, company }: PublicQuoteDocumentProps
                       {index + 1}
                     </td>
                     <td style={descCellStyle}>
-                      {isCompactMode ? nome : (descricaoExtra ? `${nome} - ${descricaoExtra}` : nome)}
+                      {descricaoExtra ? `${nome} - ${descricaoExtra}` : nome}
                       <span style={{ color: '#9CA3AF', fontSize: '12px', marginLeft: '6px' }}>({item.unidade})</span>
                     </td>
                     <td style={{ padding: '8px 10px', textAlign: 'center', color: '#1F2937', backgroundColor: index % 2 === 0 ? '#ffffff' : '#F9FAFB', borderBottom: '1px solid #E5E7EB', fontWeight: '600' }}>
@@ -243,12 +236,10 @@ export function PublicQuoteDocument({ quote, company }: PublicQuoteDocumentProps
           </table>
         </div>
 
-        {/* FOOTER - altura fixa 180px (igual ao PDF) */}
+        {/* FOOTER - altura mínima 180px, permite crescimento se necessário */}
         <div
           style={{
-            height: FOOTER_HEIGHT_PX,
             minHeight: FOOTER_HEIGHT_PX,
-            maxHeight: FOOTER_HEIGHT_PX,
             display: 'flex',
             flexDirection: 'column',
             boxSizing: 'border-box',

@@ -7,9 +7,10 @@ import { useStore } from '../store';
 interface QuotePDFTemplateProps {
   quote: Quote;
   company: Company;
+  hideSignatures?: boolean;
 }
 
-export function QuotePDFTemplate({ quote, company }: QuotePDFTemplateProps) {
+export function QuotePDFTemplate({ quote, company, hideSignatures }: QuotePDFTemplateProps) {
   const descontoCalculado =
     quote.desconto_tipo === 'percentual'
       ? (quote.subtotal * quote.desconto_valor) / 100
@@ -337,30 +338,32 @@ export function QuotePDFTemplate({ quote, company }: QuotePDFTemplateProps) {
       </div>
       </div>
 
-      {/* ASSINATURAS */}
-      <div
-        id="quote-pdf-signatures"
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          gap: '60px',
-          paddingTop: '32px',
-          marginTop: '12px',
-        }}
-      >
-        <div style={{ flex: 1, textAlign: 'center' }}>
-          <div style={{ borderTop: '2px solid #374151', paddingTop: '10px' }}>
-            <p style={{ margin: 0, color: '#1F2937', fontSize: '14px', fontWeight: '600' }}>{company.nome}</p>
-            <p style={{ margin: '4px 0 0', color: '#6B7280', fontSize: '12px' }}>Responsável</p>
+      {/* ASSINATURAS - oculto no modal e no PDF */}
+      {!hideSignatures && (
+        <div
+          id="quote-pdf-signatures"
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            gap: '60px',
+            paddingTop: '32px',
+            marginTop: '12px',
+          }}
+        >
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ borderTop: '2px solid #374151', paddingTop: '10px' }}>
+              <p style={{ margin: 0, color: '#1F2937', fontSize: '14px', fontWeight: '600' }}>{company.nome}</p>
+              <p style={{ margin: '4px 0 0', color: '#6B7280', fontSize: '12px' }}>Responsável</p>
+            </div>
+          </div>
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ borderTop: '2px solid #374151', paddingTop: '10px' }}>
+              <p style={{ margin: 0, color: '#1F2937', fontSize: '14px', fontWeight: '600' }}>{quote.cliente.nome}</p>
+              <p style={{ margin: '4px 0 0', color: '#6B7280', fontSize: '12px' }}>Cliente</p>
+            </div>
           </div>
         </div>
-        <div style={{ flex: 1, textAlign: 'center' }}>
-          <div style={{ borderTop: '2px solid #374151', paddingTop: '10px' }}>
-            <p style={{ margin: 0, color: '#1F2937', fontSize: '14px', fontWeight: '600' }}>{quote.cliente.nome}</p>
-            <p style={{ margin: '4px 0 0', color: '#6B7280', fontSize: '12px' }}>Cliente</p>
-          </div>
-        </div>
-      </div>
+      )}
       </div>
     </div>
   );
@@ -388,13 +391,9 @@ export async function generateQuotePDF(quote: Quote): Promise<void> {
 
   const normalizedQuote = { ...quote, itens: normalizedItems };
 
-  root.render(<QuotePDFTemplate quote={normalizedQuote as Quote} company={company} />);
+  root.render(<QuotePDFTemplate quote={normalizedQuote as Quote} company={company} hideSignatures />);
 
   await new Promise((resolve) => setTimeout(resolve, 100));
-
-  // PDF: remove apenas a seção de assinaturas (ganha espaço), sem alterar dados/cálculos.
-  const sig = container.querySelector('#quote-pdf-signatures') as HTMLElement | null;
-  if (sig) sig.style.display = 'none';
 
   const element = container.querySelector('#quote-pdf-page') as HTMLElement | null;
 
