@@ -3,8 +3,18 @@ import { useParams } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/card';
 import { addDays, generateId } from '../lib/utils';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { generatePixPayload } from '../lib/pix';
 import { PublicQuoteDocument } from '../components/quotes/PublicQuoteDocument';
+import QRCode from 'qrcode';
 import type { Quote, Company, Customer, Address, QuoteItem } from '../types';
+
+interface PixData {
+  pix_key: string;
+  pix_name: string;
+  pix_city: string | null;
+  pix_type: string;
+  qrCodeDataUrl: string | null;
+}
 
 function normalizeItems(raw: unknown): QuoteItem[] {
   let arr: any[] = [];
@@ -47,6 +57,7 @@ export function PublicQuote() {
   const [notFound, setNotFound] = useState(false);
   const [templateQuote, setTemplateQuote] = useState<Quote | null>(null);
   const [templateCompany, setTemplateCompany] = useState<Company | null>(null);
+  const [templatePix, setTemplatePix] = useState<PixData | null>(null);
 
   const canRenderTemplate = Boolean(templateQuote && templateCompany);
 
@@ -89,6 +100,7 @@ export function PublicQuote() {
           if (!cancelled) {
             setTemplateQuote(null);
             setTemplateCompany(null);
+            setTemplatePix(null);
             setNotFound(true);
           }
           return;
@@ -173,6 +185,7 @@ export function PublicQuote() {
 
         let company: Company = fallbackCompany;
         let profileDefaultNotes = '';
+        let pixData: PixData | null = null;
         if (q.user_id) {
           try {
             const { data: pData } = await supabase
@@ -201,6 +214,25 @@ export function PublicQuote() {
                   cep: String(p.cep ?? ''),
                 },
               };
+              // Extrair Pix do profile e gerar QR se pix_key existir
+              const pixKey = String(p.pix_key ?? '').trim();
+              if (pixKey) {
+                const pixName = String(p.pix_name ?? '').trim() || company.nome;
+                const pixCity = String(p.pix_city ?? '').trim() || null;
+                const pixType = String(p.pix_type ?? 'cpf_cnpj').trim();
+                try {
+                  const payload = generatePixPayload({
+                    key: pixKey,
+                    name: pixName,
+                    city: pixCity,
+                    type: pixType,
+                  });
+                  const qrCodeDataUrl = await QRCode.toDataURL(payload, { width: 256, margin: 2 });
+                  pixData = { pix_key: pixKey, pix_name: pixName, pix_city: pixCity, pix_type: pixType, qrCodeDataUrl };
+                } catch (err) {
+                  console.error('Erro ao gerar QR Pix:', err);
+                }
+              }
             }
           } catch {
             company = fallbackCompany;
@@ -234,12 +266,14 @@ export function PublicQuote() {
 
           setTemplateQuote(quoteForTemplate);
           setTemplateCompany(company);
+          setTemplatePix(pixData);
           setNotFound(false);
         }
       } catch {
         if (!cancelled) {
           setTemplateQuote(null);
           setTemplateCompany(null);
+          setTemplatePix(null);
           setNotFound(true);
         }
       } finally {
@@ -296,7 +330,11 @@ export function PublicQuote() {
               </CardContent>
             </Card>
           ) : (
-            <PublicQuoteDocument quote={templateQuote as Quote} company={templateCompany as Company} />
+            <PublicQuoteDocument
+              quote={templateQuote as Quote}
+              company={templateCompany as Company}
+              pix={templatePix}
+            />
           )}
         </>
       </div>

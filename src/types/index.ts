@@ -57,6 +57,10 @@ export interface Company {
   email: string;
   endereco: Address;
   logo_url: string;
+  pix_key?: string | null;
+  pix_type?: string | null;
+  pix_name?: string | null;
+  pix_city?: string | null;
 }
 
 export interface Settings {

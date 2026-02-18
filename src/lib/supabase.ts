@@ -62,6 +62,10 @@ export interface Profile {
   company_phone?: string | null;
   company_address?: string | null;
   company_cnpj?: string | null;
+  pix_key?: string | null;
+  pix_type?: string | null;
+  pix_name?: string | null;
+  pix_city?: string | null;
   updated_at?: string;
 }
 
@@ -95,6 +99,10 @@ export async function getProfile(userId: string) {
     company_phone: profileRaw.company_phone ?? null,
     company_address: profileRaw.company_address ?? null,
     company_cnpj: profileRaw.company_cnpj ?? null,
+    pix_key: profileRaw.pix_key ?? null,
+    pix_type: profileRaw.pix_type ?? null,
+    pix_name: profileRaw.pix_name ?? null,
+    pix_city: profileRaw.pix_city ?? null,
     updated_at: profileRaw.updated_at ?? profileRaw.created_at ?? null,
   };
 
@@ -133,6 +141,10 @@ export async function upsertProfile(data: {
   city?: string | null;
   state?: string | null;
   logo_url?: string | null;
+  pix_key?: string | null;
+  pix_type?: string | null;
+  pix_name?: string | null;
+  pix_city?: string | null;
   // alternativas
   company_logo?: string | null;
   company_phone?: string | null;
@@ -167,6 +179,10 @@ export async function upsertProfile(data: {
     city: (data as any).city ?? null,
     state: (data as any).state ?? null,
     logo_url: (data as any).logo_url ?? null,
+    pix_key: data.pix_key ?? null,
+    pix_type: data.pix_type ?? null,
+    pix_name: data.pix_name ?? null,
+    pix_city: data.pix_city ?? null,
     updated_at: new Date().toISOString(),
   };
 

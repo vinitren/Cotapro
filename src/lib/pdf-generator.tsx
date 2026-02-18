@@ -1,7 +1,10 @@
+import { useState, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import QRCode from 'qrcode';
 import type { Quote, Company } from '../types';
 import { formatCurrency, formatDate, getQuoteDisplayNumber } from './utils';
+import { generatePixPayload } from './pix';
 import { useStore } from '../store';
 
 interface QuotePDFTemplateProps {
@@ -11,6 +14,31 @@ interface QuotePDFTemplateProps {
 }
 
 export function QuotePDFTemplate({ quote, company, hideSignatures }: QuotePDFTemplateProps) {
+  const [pixQrUrl, setPixQrUrl] = useState<string>('');
+
+  useEffect(() => {
+    const pixKey = company.pix_key?.trim();
+    const pixName = company.pix_name?.trim() || company.nome;
+    if (!pixKey || !pixName) {
+      setPixQrUrl('');
+      return;
+    }
+    (async () => {
+      try {
+        const payload = generatePixPayload({
+          key: pixKey,
+          name: pixName,
+          city: company.pix_city ?? null,
+          type: company.pix_type ?? 'cpf_cnpj',
+        });
+        const dataURL = await QRCode.toDataURL(payload, { margin: 1, width: 220 });
+        setPixQrUrl(dataURL);
+      } catch {
+        setPixQrUrl('');
+      }
+    })();
+  }, [company.pix_key, company.pix_name, company.pix_city, company.pix_type, company.nome]);
+
   const descontoCalculado =
     quote.desconto_tipo === 'percentual'
       ? (quote.subtotal * quote.desconto_valor) / 100
@@ -259,13 +287,11 @@ export function QuotePDFTemplate({ quote, company, hideSignatures }: QuotePDFTem
         </table>
       </div>
 
-      {/* BLOCO 3: FOOTER — altura fixa ~180px (observações, subtotal, total, validade) */}
+      {/* BLOCO 3: FOOTER — altura mínima ~180px (observações, subtotal, total, Pix, validade) */}
       <div
         id="quote-pdf-footer"
         style={{
-          height: FOOTER_HEIGHT_PX,
           minHeight: FOOTER_HEIGHT_PX,
-          maxHeight: FOOTER_HEIGHT_PX,
           display: 'flex',
           flexDirection: 'column',
           boxSizing: 'border-box',
@@ -330,6 +356,39 @@ export function QuotePDFTemplate({ quote, company, hideSignatures }: QuotePDFTem
         </div>
       </div>
 
+      {/* PIX — QR Code e chave (se configurado) */}
+      {company.pix_key?.trim() && (
+        <div
+          style={{
+            marginTop: '8px',
+            padding: '8px 12px',
+            backgroundColor: '#ffffff',
+            borderRadius: '6px',
+            border: '1px solid #E5E7EB',
+            flexShrink: 0,
+          }}
+        >
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ margin: '0 0 2px', color: '#374151', fontSize: '11px', fontWeight: '600' }}>
+                Pagamento via Pix
+              </p>
+              <p style={{ margin: '0 0 2px', color: '#6B7280', fontSize: '9px', fontWeight: '600' }}>Chave Pix</p>
+              <p style={{ margin: 0, fontSize: '10px', color: '#1F2937', wordBreak: 'break-all', lineHeight: 1.3 }}>{company.pix_key}</p>
+            </div>
+            <div style={{ flexShrink: 0 }}>
+              {pixQrUrl ? (
+                <img src={pixQrUrl} alt="QR Pix" style={{ width: 90, height: 90, borderRadius: '4px', objectFit: 'contain', border: '1px solid #E5E7EB' }} />
+              ) : (
+                <div style={{ width: 90, height: 90, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F9FAFB', borderRadius: '4px', border: '1px solid #E5E7EB', fontSize: '9px', color: '#9CA3AF' }}>
+                  Gerando QR...
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Rodapé: validade */}
       <div style={{ marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid #E5E7EB', textAlign: 'center', flexShrink: 0 }}>
         <p style={{ margin: 0, color: '#6B7280', fontSize: '12px' }}>
@@ -393,7 +452,9 @@ export async function generateQuotePDF(quote: Quote): Promise<void> {
 
   root.render(<QuotePDFTemplate quote={normalizedQuote as Quote} company={company} hideSignatures />);
 
-  await new Promise((resolve) => setTimeout(resolve, 100));
+  // Aguardar renderização (mais tempo quando há Pix para o QR carregar)
+  const hasPix = company.pix_key?.trim();
+  await new Promise((resolve) => setTimeout(resolve, hasPix ? 350 : 100));
 
   const element = container.querySelector('#quote-pdf-page') as HTMLElement | null;
 

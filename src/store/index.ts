@@ -216,6 +216,10 @@ export const useStore = create<AppState>()(
             telefone: profile?.phone ?? state.company.telefone,
             email: profile?.email ?? state.company.email,
             logo_url: profile?.logo_url ?? state.company.logo_url,
+            pix_key: profile?.pix_key ?? state.company.pix_key ?? null,
+            pix_type: profile?.pix_type ?? state.company.pix_type ?? null,
+            pix_name: profile?.pix_name ?? state.company.pix_name ?? null,
+            pix_city: profile?.pix_city ?? state.company.pix_city ?? null,
             endereco: {
               rua: profile?.street ?? state.company.endereco.rua,
               numero: profile?.number ?? state.company.endereco.numero,

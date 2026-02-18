@@ -3,15 +3,67 @@
  * NÃO modificar QuotePDFTemplate - este componente é independente.
  * Mesma aparência do PDF, adaptado para web (height: auto, sem assinaturas).
  */
+import { useState } from 'react';
 import type { Quote, Company } from '../../types';
 import { formatCurrency, formatDate, getQuoteDisplayNumber } from '../../lib/utils';
+
+interface PixData {
+  pix_key: string;
+  pix_name: string;
+  pix_city: string | null;
+  pix_type: string;
+  qrCodeDataUrl: string | null;
+}
 
 interface PublicQuoteDocumentProps {
   quote: Quote;
   company: Company;
+  pix?: PixData | null;
 }
 
-export function PublicQuoteDocument({ quote, company }: PublicQuoteDocumentProps) {
+function CopyablePixKey({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(value).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        padding: '8px 12px',
+        backgroundColor: '#ffffff',
+        borderRadius: '6px',
+        border: '1px solid #E5E7EB',
+      }}
+    >
+      <code style={{ flex: 1, fontSize: '13px', color: '#1F2937', wordBreak: 'break-all' }}>{value}</code>
+      <button
+        type="button"
+        onClick={handleCopy}
+        style={{
+          flexShrink: 0,
+          padding: '6px 12px',
+          fontSize: '12px',
+          fontWeight: '600',
+          color: copied ? '#15803D' : '#1F2937',
+          backgroundColor: copied ? '#DCFCE7' : '#F3F4F6',
+          border: '1px solid #E5E7EB',
+          borderRadius: '6px',
+          cursor: 'pointer',
+        }}
+      >
+        {copied ? 'Copiado!' : 'Copiar'}
+      </button>
+    </div>
+  );
+}
+
+export function PublicQuoteDocument({ quote, company, pix }: PublicQuoteDocumentProps) {
   const descontoCalculado =
     quote.desconto_tipo === 'percentual'
       ? (quote.subtotal * quote.desconto_valor) / 100
@@ -301,6 +353,49 @@ export function PublicQuoteDocument({ quote, company }: PublicQuoteDocumentProps
               </div>
             </div>
           </div>
+
+          {pix && pix.pix_key && (
+            <div
+              className="p-3"
+              style={{
+                marginTop: '10px',
+                backgroundColor: '#ffffff',
+                borderRadius: '8px',
+                border: '1px solid #E5E7EB',
+                flexShrink: 0,
+              }}
+            >
+              <h3 className="text-sm font-medium text-gray-700 mb-3">
+                Pagamento via Pix
+              </h3>
+              <div
+                className="flex flex-col md:flex-row gap-3 md:gap-4 md:items-start items-center"
+                style={{ minWidth: 0 }}
+              >
+                <div className="w-full md:flex-1 md:min-w-0 order-2 md:order-1">
+                  <p style={{ margin: '0 0 4px', color: '#6B7280', fontSize: '11px', fontWeight: '600' }}>
+                    Chave Pix
+                  </p>
+                  <CopyablePixKey value={pix.pix_key} />
+                </div>
+                {pix.qrCodeDataUrl && (
+                  <div className="flex-shrink-0 order-1 md:order-2">
+                    <img
+                      src={pix.qrCodeDataUrl}
+                      alt="QR Code Pix"
+                      style={{
+                        width: '110px',
+                        height: '110px',
+                        borderRadius: '6px',
+                        objectFit: 'contain',
+                        border: '1px solid #E5E7EB',
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div style={{ marginTop: 'auto', paddingTop: '12px', borderTop: '1px solid #E5E7EB', textAlign: 'center', flexShrink: 0 }}>
             <p style={{ margin: 0, color: '#6B7280', fontSize: '12px' }}>

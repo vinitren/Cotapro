@@ -1,7 +1,7 @@
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Building2, Save, Upload, Trash2, ImageIcon } from 'lucide-react';
+import { Building2, Save, Upload, Trash2, ImageIcon, CreditCard } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -16,10 +16,12 @@ import {
 } from '../components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { useStore } from '../store';
-import { upsertProfile, supabase } from '../lib/supabase';
+import { upsertProfile, getProfile, supabase } from '../lib/supabase';
 import { companySchema, settingsSchema } from '../lib/validations';
 import { maskPhone, maskCnpj, maskCep } from '../lib/utils';
+import { generatePixPayload } from '../lib/pix';
 import { toast } from '../hooks/useToast';
+import QRCode from 'qrcode';
 import type { Address } from '../types';
 
 interface CompanyFormData {
@@ -37,9 +39,70 @@ interface SettingsFormData {
   unidades_customizadas: string[];
 }
 
+const PIX_TYPE_OPTIONS = [
+  { value: 'cpf_cnpj', label: 'CPF/CNPJ' },
+  { value: 'email', label: 'Email' },
+  { value: 'telefone', label: 'Telefone' },
+  { value: 'aleatoria', label: 'Chave aleatória' },
+] as const;
+
+const PIX_MAX_LENGTH = 200;
+
 export function Settings() {
   const { company, settings, setCompany, setSettings } = useStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [pixType, setPixType] = useState<string>('');
+  const [pixKey, setPixKey] = useState('');
+  const [pixName, setPixName] = useState('');
+  const [pixCity, setPixCity] = useState('');
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
+
+  // Carregar profile ao abrir a página (inclui dados Pix)
+  useEffect(() => {
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const uid = session?.user?.id;
+      if (!uid) return;
+      try {
+        const profile = await getProfile(uid);
+        if (profile) {
+          setPixType(profile.pix_type ?? '');
+          setPixKey(profile.pix_key ?? '');
+          setPixName(profile.pix_name ?? '');
+          setPixCity(profile.pix_city ?? '');
+        }
+      } catch (err) {
+        console.error('Erro ao carregar profile:', err);
+      }
+    })();
+  }, []);
+
+  // Gerar QR Code Pix quando pix_key, pix_name e pix_type estiverem preenchidos
+  useEffect(() => {
+    const keyOk = pixKey.trim().length > 0;
+    const nameOk = pixName.trim().length > 0;
+    const typeOk = pixType.trim().length > 0;
+    if (!keyOk || !nameOk || !typeOk) {
+      setQrCodeDataUrl(null);
+      return;
+    }
+    (async () => {
+      try {
+        const payload = generatePixPayload({
+          key: pixKey.trim(),
+          name: pixName.trim(),
+          city: pixCity.trim() || null,
+          type: pixType,
+        });
+        const dataUrl = await QRCode.toDataURL(payload, { width: 256, margin: 2 });
+        setQrCodeDataUrl(dataUrl);
+      } catch (err) {
+        console.error('Erro ao gerar QR Code Pix:', err);
+        setQrCodeDataUrl(null);
+      }
+    })();
+  }, [pixKey, pixName, pixType, pixCity]);
 
   const companyForm = useForm<CompanyFormData>({
     resolver: zodResolver(companySchema) as any,
@@ -63,7 +126,46 @@ export function Settings() {
   });
 
   const onCompanySubmit = async (data: CompanyFormData) => {
-    setCompany({ ...company, ...data });
+    // Validação Pix: pix_type obrigatório se pix_key preenchido, pix_key obrigatório se pix_type selecionado, pix_name obrigatório se pix_key existir
+    const hasPixKey = pixKey.trim().length > 0;
+    const hasPixType = pixType.trim().length > 0;
+    if (hasPixKey && !hasPixType) {
+      toast({
+        title: 'Dados Pix incompletos',
+        description: 'Selecione o tipo da chave Pix.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (hasPixType && !hasPixKey) {
+      toast({
+        title: 'Dados Pix incompletos',
+        description: 'Informe a chave Pix.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (hasPixKey && !pixName.trim()) {
+      toast({
+        title: 'Dados Pix incompletos',
+        description: 'Informe o nome do recebedor.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    // Limitar 200 caracteres
+    const pixKeyTrimmed = pixKey.trim().slice(0, PIX_MAX_LENGTH);
+    const pixNameTrimmed = pixName.trim().slice(0, PIX_MAX_LENGTH);
+    const pixCityTrimmed = pixCity.trim().slice(0, PIX_MAX_LENGTH);
+
+    setCompany({
+      ...company,
+      ...data,
+      pix_key: hasPixKey ? pixKeyTrimmed : null,
+      pix_type: hasPixType ? pixType : null,
+      pix_name: hasPixKey ? pixNameTrimmed : null,
+      pix_city: hasPixKey ? (pixCityTrimmed || null) : null,
+    });
 
     const { data: { session } } = await supabase.auth.getSession();
     const actualUserId = session?.user?.id;
@@ -85,6 +187,10 @@ export function Settings() {
           city: data.endereco?.cidade ?? null,
           state: data.endereco?.estado ?? null,
           logo_url: data.logo_url ?? null,
+          pix_key: hasPixKey ? pixKeyTrimmed : null,
+          pix_type: hasPixType ? pixType : null,
+          pix_name: hasPixKey ? pixNameTrimmed : null,
+          pix_city: hasPixKey ? (pixCityTrimmed || null) : null,
         });
         toast({
           title: 'Dados sincronizados',
@@ -564,6 +670,93 @@ export function Settings() {
                         )}
                       />
                     </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="lg:col-span-3">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5" />
+                    Pagamento (Pix)
+                  </CardTitle>
+                  <CardDescription>
+                    Dados para recebimento via Pix
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="pix_type">Tipo da chave Pix</Label>
+                      <Select value={pixType} onValueChange={setPixType}>
+                        <SelectTrigger id="pix_type">
+                          <SelectValue placeholder="Selecione o tipo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {PIX_TYPE_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="pix_key">Chave Pix</Label>
+                      <Input
+                        id="pix_key"
+                        value={pixKey}
+                        onChange={(e) => setPixKey(e.target.value.slice(0, PIX_MAX_LENGTH))}
+                        placeholder="Ex: 123.456.789-00 ou email@exemplo.com"
+                        maxLength={PIX_MAX_LENGTH}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="pix_name">Nome do recebedor</Label>
+                      <Input
+                        id="pix_name"
+                        value={pixName}
+                        onChange={(e) => setPixName(e.target.value.slice(0, PIX_MAX_LENGTH))}
+                        placeholder="Nome ou razão social"
+                        maxLength={PIX_MAX_LENGTH}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="pix_city">Cidade (opcional)</Label>
+                      <Input
+                        id="pix_city"
+                        value={pixCity}
+                        onChange={(e) => setPixCity(e.target.value.slice(0, PIX_MAX_LENGTH))}
+                        placeholder="Cidade do titular"
+                        maxLength={PIX_MAX_LENGTH}
+                      />
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-muted-foreground">
+                    Esses dados serão exibidos no orçamento público e no PDF.
+                  </p>
+
+                  <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
+                    <p className="text-sm font-medium">
+                      Pix: {pixKey.trim() || '—'}
+                    </p>
+                    {qrCodeDataUrl ? (
+                      <img
+                        src={qrCodeDataUrl}
+                        alt="QR Code Pix"
+                        className="w-32 h-32 rounded object-contain"
+                      />
+                    ) : (
+                      <div className="w-32 h-32 rounded border-2 border-dashed border-muted-foreground/30 flex items-center justify-center text-muted-foreground text-xs text-center px-2">
+                        QR code será exibido aqui
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
