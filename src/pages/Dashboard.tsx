@@ -180,15 +180,15 @@ export function Dashboard() {
         {/* 1. Orçamentos — sempre primeiro */}
         <Card className="order-1 lg:order-1 h-full flex flex-col">
           <CardContent className="p-3 lg:p-6 flex-1 flex flex-col justify-center">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex flex-col justify-center min-w-0">
-                <p className="text-xs text-gray-600 font-medium">Orçamentos</p>
-                <p className="text-xl sm:text-2xl font-semibold leading-none mt-1 text-gray-900">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+              <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 rounded-xl flex items-center justify-center bg-primary-100 order-1 md:order-2 self-end md:self-auto mb-2 md:mb-0">
+                <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+              </div>
+              <div className="flex flex-col justify-center min-w-0 order-2 md:order-1">
+                <p className="text-lg font-bold text-gray-900">Orçamentos</p>
+                <p className="text-xl sm:text-2xl font-bold leading-none mt-1 text-green-600 tracking-tight">
                   {totalQuotesThisMonth}
                 </p>
-              </div>
-              <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 rounded-xl flex items-center justify-center bg-primary-100">
-                <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               </div>
             </div>
           </CardContent>
@@ -197,15 +197,15 @@ export function Dashboard() {
         {/* 2. Taxa de Aprovação — mobile: 2º | desktop: 4º */}
         <Card className="order-2 lg:order-4 h-full flex flex-col">
           <CardContent className="p-3 lg:p-6 flex-1 flex flex-col justify-center">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex flex-col justify-center min-w-0">
-                <p className="text-xs text-gray-600 font-medium">Taxa de Aprovação</p>
-                <p className="text-xl sm:text-2xl font-semibold leading-none mt-1 text-gray-900">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+              <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 rounded-xl flex items-center justify-center bg-amber-100 order-1 md:order-2 self-end md:self-auto mb-2 md:mb-0">
+                <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600" />
+              </div>
+              <div className="flex flex-col justify-center min-w-0 order-2 md:order-1">
+                <p className="text-lg font-bold text-gray-900 whitespace-nowrap md:whitespace-normal">Taxa de Aprovação</p>
+                <p className="text-xl sm:text-2xl font-bold leading-none mt-1 text-green-600 tracking-tight">
                   {approvalRate.toFixed(0)}%
                 </p>
-              </div>
-              <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 rounded-xl flex items-center justify-center bg-amber-100">
-                <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600" />
               </div>
             </div>
           </CardContent>
@@ -214,15 +214,15 @@ export function Dashboard() {
         {/* 3. Valor Aprovado — mobile: 3º | desktop: 3º */}
         <Card className="order-3 lg:order-3 h-full flex flex-col">
           <CardContent className="p-3 lg:p-6 flex-1 flex flex-col justify-center">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex flex-col justify-center min-w-0">
-                <p className="text-xs text-gray-600 font-medium">Valor Aprovado</p>
-                <p className="text-xl sm:text-2xl font-semibold leading-none mt-1 text-gray-900">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+              <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 rounded-xl flex items-center justify-center bg-green-100 order-1 md:order-2 self-end md:self-auto mb-2 md:mb-0">
+                <Banknote className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+              </div>
+              <div className="flex flex-col justify-center min-w-0 order-2 md:order-1">
+                <p className="text-lg font-bold text-gray-900 whitespace-nowrap md:whitespace-normal">Valor Aprovado</p>
+                <p className="text-xl sm:text-2xl font-bold leading-none mt-1 text-green-600 tracking-tight">
                   {formatCurrency(closedValue)}
                 </p>
-              </div>
-              <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 rounded-xl flex items-center justify-center bg-green-100">
-                <Banknote className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
               </div>
             </div>
           </CardContent>
@@ -231,15 +231,15 @@ export function Dashboard() {
         {/* 4. Em Aberto — mobile: 4º | desktop: 2º */}
         <Card className="order-4 lg:order-2 h-full flex flex-col">
           <CardContent className="p-3 lg:p-6 flex-1 flex flex-col justify-center">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex flex-col justify-center min-w-0">
-                <p className="text-xs text-gray-600 font-medium">Em Aberto</p>
-                <p className="text-xl sm:text-2xl font-semibold leading-none mt-1 text-gray-900">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+              <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 rounded-xl flex items-center justify-center bg-blue-100 order-1 md:order-2 self-end md:self-auto mb-2 md:mb-0">
+                <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+              </div>
+              <div className="flex flex-col justify-center min-w-0 order-2 md:order-1">
+                <p className="text-lg font-bold text-gray-900">Em Aberto</p>
+                <p className="text-xl sm:text-2xl font-bold leading-none mt-1 text-green-600 tracking-tight">
                   {formatCurrency(openValue)}
                 </p>
-              </div>
-              <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 rounded-xl flex items-center justify-center bg-blue-100">
-                <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
               </div>
             </div>
           </CardContent>
@@ -248,15 +248,15 @@ export function Dashboard() {
         {/* 5. Aprovados — mobile: 5º, col-span-2 | desktop: 5º, 1 col */}
         <Card className="order-5 lg:order-5 col-span-2 lg:col-span-1 h-full flex flex-col">
           <CardContent className="p-3 lg:p-6 flex-1 flex flex-col justify-center">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex flex-col justify-center min-w-0">
-                <p className="text-xs text-gray-600 font-medium">Aprovados</p>
-                <p className="text-xl sm:text-2xl font-semibold leading-none mt-1 text-gray-900">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+              <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 rounded-xl flex items-center justify-center bg-primary-100 order-1 md:order-2 self-end md:self-auto mb-2 md:mb-0">
+                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+              </div>
+              <div className="flex flex-col justify-center min-w-0 order-2 md:order-1">
+                <p className="text-lg font-bold text-gray-900">Aprovados</p>
+                <p className="text-xl sm:text-2xl font-bold leading-none mt-1 text-green-600 tracking-tight">
                   {approvedQuotes.length}
                 </p>
-              </div>
-              <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 rounded-xl flex items-center justify-center bg-primary-100">
-                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               </div>
             </div>
           </CardContent>
@@ -266,7 +266,7 @@ export function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Orçamentos por Status</CardTitle>
+            <CardTitle className="text-lg font-semibold text-gray-900">Orçamentos por Status</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {Object.entries(statusCounts).map(([status, count]) => (
@@ -305,7 +305,7 @@ export function Dashboard() {
         <div className="flex flex-col lg:flex-row gap-4">
           <Card className="flex-1 min-w-0">
             <CardContent className="p-4">
-              <p className="text-sm font-medium text-gray-800 uppercase tracking-wide mb-2">
+              <p className="text-lg font-semibold text-gray-900 mb-2">
                 Top Clientes (Fechado no mês)
               </p>
               {topClientesFechado.length === 0 ? (
@@ -333,7 +333,7 @@ export function Dashboard() {
 
           <Card className="flex-1 min-w-0">
             <CardContent className="p-4">
-              <p className="text-sm font-medium text-gray-800 uppercase tracking-wide mb-2">
+              <p className="text-lg font-semibold text-gray-900 mb-2">
                 Maiores valores em aberto
               </p>
               {maioresEmAberto.length === 0 ? (

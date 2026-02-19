@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '../ui/dialog';
@@ -22,6 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { useStore } from '../../store';
 import { customerSchema } from '../../lib/validations';
 import { maskPhone, maskCpfCnpj, maskCep } from '../../lib/utils';
+import { CustomerQuickPaste } from './CustomerQuickPaste';
 import type { Customer, Address } from '../../types';
 import { toast } from '../../hooks/useToast';
 
@@ -150,7 +152,18 @@ export function CustomerForm({ open, onClose, customer }: CustomerFormProps) {
     setValue('endereco.cep', masked);
   };
 
+  const handlePasteFill = (parsed: { nome?: string; telefone?: string; email?: string; cpf_cnpj?: string }) => {
+    if (parsed.nome) setValue('nome', parsed.nome);
+    if (parsed.telefone) setValue('telefone', maskPhone(parsed.telefone));
+    if (parsed.email) setValue('email', parsed.email);
+    if (parsed.cpf_cnpj) {
+      setValue('cpf_cnpj', maskCpfCnpj(parsed.cpf_cnpj));
+      setValue('tipo', parsed.cpf_cnpj.length === 14 ? 'pessoa_juridica' : 'pessoa_fisica');
+    }
+  };
+
   return (
+    <>
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -167,6 +180,8 @@ export function CustomerForm({ open, onClose, customer }: CustomerFormProps) {
             </TabsList>
 
             <TabsContent value="dados" className="space-y-4 mt-4">
+              <CustomerQuickPaste onFill={handlePasteFill} />
+
               <div className="space-y-2">
                 <Label>Tipo</Label>
                 <Controller
@@ -354,5 +369,6 @@ export function CustomerForm({ open, onClose, customer }: CustomerFormProps) {
         </form>
       </DialogContent>
     </Dialog>
+    </>
   );
 }

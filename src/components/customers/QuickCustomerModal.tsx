@@ -9,6 +9,7 @@ import {
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
+import { CustomerQuickPaste } from './CustomerQuickPaste';
 import { useStore } from '../../store';
 import { maskPhone } from '../../lib/utils';
 import type { Customer } from '../../types';
@@ -96,6 +97,13 @@ export function QuickCustomerModal({ open, onClose, onSaved }: QuickCustomerModa
           <DialogTitle>Novo Cliente (cadastro rápido)</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <CustomerQuickPaste
+            onFill={(data) => {
+              if (data.nome) setNome(data.nome);
+              if (data.email) setEmail(data.email);
+              if (data.telefone) setTelefone(maskPhone(data.telefone));
+            }}
+          />
           <div className="space-y-2">
             <Label htmlFor="quick-nome">Nome *</Label>
             <Input

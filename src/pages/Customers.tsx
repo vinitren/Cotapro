@@ -209,60 +209,51 @@ export function Customers() {
             const lastQuote = getLastQuote(customer.id);
             return (
               <Card key={customer.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-2.5 sm:p-3">
-                  <div className="flex items-center justify-between gap-2 min-w-0">
-                    <div className="min-w-0 flex-1 space-y-0.5">
-                      <p className="text-sm font-semibold text-gray-900 truncate">
-                        {[customer?.nome, customer?.telefone, customer?.email].filter(Boolean).join(' • ')}
-                      </p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {lastQuote
-                          ? `${formatQuoteDisplay(lastQuote)} — ${formatDate(lastQuote.data_emissao)}`
-                          : '—'}
-                      </p>
+                <CardContent className="p-3 sm:p-4">
+                  <div className="space-y-1.5 sm:space-y-4">
+                    <div className="flex items-center justify-between gap-2 min-w-0">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-base sm:text-xl font-bold text-gray-900 truncate">
+                          {customer?.nome ?? ''}
+                        </p>
+                        <p className="text-sm text-gray-500 truncate mt-0.5">
+                          {[customer?.telefone, lastQuote ? `${formatQuoteDisplay(lastQuote)} — ${formatDate(lastQuote.data_emissao)}` : null].filter(Boolean).join(' • ') || '—'}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <Badge variant="secondary" className="text-xs">
+                          {customer.tipo === 'pessoa_fisica' ? 'PF' : 'PJ'}
+                        </Badge>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8 sm:h-10 sm:w-10"
+                              aria-label="Mais opções"
+                            >
+                              <MoreVertical className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem
+                              onClick={() => handleEdit(customer)}
+                              className="cursor-pointer"
+                            >
+                              <Edit className="h-4 w-4 mr-2" />
+                              Editar cliente
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => setDeleteConfirm(customer)}
+                              className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Excluir cliente
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
-                    <Badge variant="secondary" className="text-xs flex-shrink-0">
-                      {customer.tipo === 'pessoa_fisica' ? 'PF' : 'PJ'}
-                    </Badge>
-                  </div>
-                  <div className="flex gap-1.5 mt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 h-7 sm:h-8 px-2 text-xs"
-                      onClick={() => handleEdit(customer)}
-                    >
-                      <Edit className="h-3 w-3 mr-1" />
-                      Editar
-                    </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-7 w-7 sm:h-8 sm:w-8 shrink-0"
-                          aria-label="Mais opções"
-                        >
-                          <MoreVertical className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem
-                          onClick={() => handleEdit(customer)}
-                          className="cursor-pointer"
-                        >
-                          <Edit className="h-4 w-4 mr-2" />
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => setDeleteConfirm(customer)}
-                          className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Excluir
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
                   </div>
                 </CardContent>
               </Card>

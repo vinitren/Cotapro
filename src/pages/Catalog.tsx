@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Package, Trash2, Edit, Pencil } from 'lucide-react';
+import { Plus, Search, Package, Trash2, Pencil, MoreVertical } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -12,8 +12,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu';
 import { useStore } from '../store';
-import { formatCurrency } from '../lib/utils';
 import {
   getItemsCatalog,
   createItemCatalog,
@@ -215,38 +220,45 @@ export function Catalog() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredItems.map((item) => (
             <Card key={item.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-semibold text-gray-900">{item.name}</h3>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => openEdit(item)}
-                      title="Editar"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                      onClick={() => setDeleteConfirm(item)}
-                      title="Excluir"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+              <CardContent className="p-3 sm:p-4">
+                <div className="space-y-1.5 sm:space-y-4">
+                  <div className="flex items-center justify-between gap-2 min-w-0">
+                    <p className="text-lg font-bold text-gray-900 truncate">
+                      {item.name}
+                    </p>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0"
+                          aria-label="Mais opções"
+                        >
+                          <MoreVertical className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem
+                          onClick={() => openEdit(item)}
+                          className="cursor-pointer"
+                        >
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setDeleteConfirm(item)}
+                          className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                </div>
-                {item.description && (
-                  <p className="text-sm text-gray-500 mb-2 line-clamp-2">{item.description}</p>
-                )}
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-500">{item.unit_type}</span>
-                  <span className="font-semibold text-primary">
-                    {formatCurrency(Number(item.unit_price))}
-                  </span>
+                  {item.description && (
+                    <p className="text-sm text-gray-500 truncate">{item.description}</p>
+                  )}
+                  <p className="text-sm text-gray-500">{item.unit_type}</p>
                 </div>
               </CardContent>
             </Card>

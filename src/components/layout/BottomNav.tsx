@@ -4,7 +4,7 @@ import { cn } from '../../lib/utils';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Início' },
-  { to: '/quotes', icon: FileText, label: 'Orç.' },
+  { to: '/quotes', icon: FileText, label: 'Orçamentos' },
   { to: '/customers', icon: Users, label: 'Clientes' },
   { to: '/catalog', icon: Package, label: 'Catálogo' },
   { to: '/settings', icon: Settings, label: 'Config.' },
@@ -24,7 +24,7 @@ export function BottomNav() {
             to={item.to}
             className={({ isActive }) =>
               cn(
-                'flex flex-col items-center justify-center flex-1 h-full px-2 text-xs font-medium transition-colors',
+                'flex flex-col items-center justify-center flex-1 h-full px-2 text-[11px] font-medium transition-colors',
                 isActive ? 'text-primary' : 'text-gray-500'
               )
             }
