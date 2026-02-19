@@ -13,6 +13,9 @@ import {
   MapPin,
   FileText,
   Loader2,
+  ChevronDown,
+  ChevronUp,
+  Copy,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -37,7 +40,7 @@ import { Textarea } from '../components/ui/textarea';
 import { Input } from '../components/ui/input';
 import { useStore } from '../store';
 import { formatCurrency, formatDate, formatQuoteDisplay, getQuoteDisplayNumber, getStatusColor, getStatusLabel, isSupabaseQuoteId } from '../lib/utils';
-import { generateQuotePDF, QuotePDFTemplate } from '../lib/pdf-generator';
+import { generateQuotePDF } from '../lib/pdf-generator';
 import { toast } from '../hooks/useToast';
 import type { QuoteStatus } from '../types';
 
@@ -45,12 +48,14 @@ export function QuoteDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { getQuote, updateQuoteStatus, company, userId } = useStore();
-  const [showPreview, setShowPreview] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [newStatus, setNewStatus] = useState<QuoteStatus | ''>('');
   const [pdfLoading, setPdfLoading] = useState(false);
   const [mensagemLink, setMensagemLink] = useState('Olá! Segue seu orçamento:');
   const [mensagemFollowUp, setMensagemFollowUp] = useState('');
+  const [clienteOpen, setClienteOpen] = useState(false);
+  const [observacoesOpen, setObservacoesOpen] = useState(false);
+  const [followUpCardOpen, setFollowUpCardOpen] = useState(false);
 
   const quote = getQuote(id || '');
 
@@ -195,6 +200,13 @@ export function QuoteDetail() {
     }
   };
 
+  const linkOrcamento = `${typeof window !== 'undefined' ? window.location.origin : ''}/orcamento/${quote.id}`;
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(linkOrcamento);
+    toast({ title: 'Link copiado', description: 'O link do orçamento foi copiado para a área de transferência.', variant: 'success' });
+  };
+
   const getStatusIcon = (status: QuoteStatus) => {
     switch (status) {
       case 'aprovado':
@@ -209,102 +221,176 @@ export function QuoteDetail() {
   };
 
   return (
-    <div className="p-4 lg:p-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/quotes')}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-gray-900">
-                {formatQuoteDisplay(quote)}
-              </h1>
-              <Badge className={getStatusColor(quote.status)}>
-                {getStatusLabel(quote.status)}
-              </Badge>
-            </div>
-            <p className="text-gray-500">Criado em {formatDate(quote.data_criacao)}</p>
-          </div>
+    <div className="p-4 lg:p-6 pb-44 sm:pb-6">
+      {/* Header: voltar + título */}
+      <div className="flex items-start gap-4 mb-4">
+        <Button variant="ghost" size="icon" onClick={() => navigate('/quotes')} className="flex-shrink-0">
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
+            {formatQuoteDisplay(quote)}
+          </h1>
+          <p className="text-gray-500 text-sm mt-0.5">Criado em {formatDate(quote.data_criacao)}</p>
         </div>
+      </div>
 
-        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-2 w-full sm:w-auto">
-          {/* Linha 1 (mobile) / inline (desktop): Visualizar + PDF */}
-          <div className="flex gap-2 sm:contents">
-            <Button variant="outline" onClick={() => setShowPreview(true)} className="flex-1 sm:flex-initial">
-              <FileText className="h-4 w-4 mr-2" />
-              Visualizar
-            </Button>
-            <Button variant="outline" onClick={handleDownloadPDF} disabled={pdfLoading} className="flex-1 sm:flex-initial">
-              {pdfLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-              {pdfLoading ? 'Gerando...' : 'PDF'}
-            </Button>
-          </div>
-          {/* Linha 2 (mobile) / inline (desktop): Input + WhatsApp */}
-          <div className="flex gap-2 sm:contents">
-            <Input
-              value={mensagemLink}
-              onChange={(e) => setMensagemLink(e.target.value.slice(0, 500))}
-              placeholder="Digite mensagem..."
-              className="flex-1 min-w-[120px] sm:min-w-[180px] sm:max-w-[280px]"
-              maxLength={500}
-            />
-            <Button
-              onClick={handleWhatsApp}
-              className="bg-green-600 hover:bg-green-700 text-white whitespace-nowrap shrink-0"
-              title="Enviar orçamento com link"
-            >
-              <Send className="h-4 w-4 mr-2" />
-              WhatsApp
-            </Button>
-          </div>
-        </div>
+      {/* Header operacional: Total + Status (padrão dos cards) */}
+      <Card className="mb-6">
+        <CardContent className="p-4 sm:p-6">
+          <p className="text-2xl sm:text-3xl font-bold text-primary">{formatCurrency(quote.total)}</p>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+            <Badge className={`${getStatusColor(quote.status)} text-xs`}>{getStatusLabel(quote.status)}</Badge>
+            <span className="text-gray-400">•</span>
+            <span>Válido até {formatDate(quote.data_validade)}</span>
+            <span className="text-gray-400">•</span>
+            <span className="text-gray-500">Enviado em {formatDate(quote.data_emissao)}</span>
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* sm: PDF solto no topo | md+: removido (vai para o card Resumo) */}
+      <div className="hidden sm:flex md:hidden justify-end mb-6">
+        <Button variant="outline" onClick={handleDownloadPDF} disabled={pdfLoading}>
+          {pdfLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+          {pdfLoading ? 'Gerando...' : 'PDF'}
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle>Cliente</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-start gap-4">
-                <div className="h-12 w-12 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-lg font-semibold text-primary">
-                    {quote.cliente.nome.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">{quote.cliente.nome}</h3>
-                  <p className="text-sm text-gray-500">{quote.cliente.cpf_cnpj}</p>
-
-                  <div className="mt-3 space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Phone className="h-4 w-4" />
-                      <span>{quote.cliente.telefone}</span>
-                    </div>
-                    {quote.cliente.email && (
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Mail className="h-4 w-4" />
-                        <span>{quote.cliente.email}</span>
-                      </div>
-                    )}
-                    {quote.cliente.endereco.cidade && (
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <MapPin className="h-4 w-4" />
-                        <span>
-                          {quote.cliente.endereco.rua}, {quote.cliente.endereco.numero}
-                          {quote.cliente.endereco.complemento &&
-                            ` - ${quote.cliente.endereco.complemento}`}
-                          , {quote.cliente.endereco.bairro} - {quote.cliente.endereco.cidade}/
-                          {quote.cliente.endereco.estado}
-                        </span>
+            <button
+              type="button"
+              onClick={() => setClienteOpen(!clienteOpen)}
+              className="w-full text-left p-4 sm:p-6"
+              aria-expanded={clienteOpen}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="h-10 w-10 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-sm font-semibold text-primary">{quote.cliente.nome.charAt(0).toUpperCase()}</span>
+                  </div>
+                  <div className="min-w-0">
+                    <CardTitle className="text-base truncate">{quote.cliente.nome}</CardTitle>
+                    {!clienteOpen && (
+                      <div className="flex gap-2 text-gray-400 mt-0.5">
+                        <Phone className="h-4 w-4" />
+                        {quote.cliente.email && <Mail className="h-4 w-4" />}
+                        {quote.cliente.endereco?.cidade && <MapPin className="h-4 w-4" />}
                       </div>
                     )}
                   </div>
                 </div>
+                {clienteOpen ? <ChevronUp className="h-4 w-4 flex-shrink-0" /> : <ChevronDown className="h-4 w-4 flex-shrink-0" />}
               </div>
-            </CardContent>
+            </button>
+            {clienteOpen && (
+              <CardContent className="pt-0 px-4 sm:px-6 pb-4 sm:pb-6">
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-500">{quote.cliente.cpf_cnpj}</p>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Phone className="h-4 w-4 flex-shrink-0" />
+                    <span>{quote.cliente.telefone}</span>
+                  </div>
+                  {quote.cliente.email && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Mail className="h-4 w-4 flex-shrink-0" />
+                      <span>{quote.cliente.email}</span>
+                    </div>
+                  )}
+                  {quote.cliente.endereco?.cidade && (
+                    <div className="flex items-start gap-2 text-sm text-gray-600">
+                      <MapPin className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                      <span>
+                        {quote.cliente.endereco.rua}, {quote.cliente.endereco.numero}
+                        {quote.cliente.endereco.complemento && ` - ${quote.cliente.endereco.complemento}`}
+                        , {quote.cliente.endereco.bairro} - {quote.cliente.endereco.cidade}/{quote.cliente.endereco.estado}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            )}
+          </Card>
+
+          {/* Card: Enviar mensagem de follow-up (accordion) - mensagem simples, sem link */}
+          <Card>
+            {!followUpCardOpen ? (
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex items-start gap-3">
+                  <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 text-xl">
+                    💬
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-gray-900">Enviar mensagem de follow-up</h3>
+                    <p className="text-sm text-gray-500 mt-0.5">Se o cliente ainda não respondeu, envie uma mensagem e aumente suas chances de fechar.</p>
+                    <Button
+                      variant="outline"
+                      onClick={() => setFollowUpCardOpen(true)}
+                      className="mt-3"
+                    >
+                      Escrever mensagem
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            ) : (
+              <CardContent className="p-4 sm:p-6 space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Sua mensagem</label>
+                  <Textarea
+                    value={mensagemFollowUp}
+                    onChange={(e) => setMensagemFollowUp(e.target.value.slice(0, 500))}
+                    placeholder="Digite sua mensagem..."
+                    rows={4}
+                    className="mt-2 resize-y"
+                    maxLength={500}
+                  />
+                  <p className="text-xs text-gray-500 text-right mt-1">{mensagemFollowUp.length} / 500</p>
+                </div>
+
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">Tipos de abordagem</p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { label: 'Lembrete', text: `Olá ${quote.cliente.nome.split(' ')[0] || quote.cliente.nome}, conseguiu analisar o orçamento?` },
+                      { label: 'Consultivo', text: `${quote.cliente.nome.split(' ')[0] || quote.cliente.nome}, ficou alguma dúvida ou ponto que possamos ajustar no orçamento?` },
+                      { label: 'Direto', text: `${quote.cliente.nome.split(' ')[0] || quote.cliente.nome}, podemos confirmar o orçamento para dar andamento?` },
+                      { label: 'Agressivo estratégico', text: `${quote.cliente.nome.split(' ')[0] || quote.cliente.nome}, estou fechando a agenda e preciso confirmar se seguimos com seu pedido.` },
+                      { label: 'Urgência', text: `${quote.cliente.nome.split(' ')[0] || quote.cliente.nome}, o orçamento está dentro do prazo, posso reservar para você?` },
+                    ].map(({ label, text }) => (
+                      <button
+                        key={label}
+                        type="button"
+                        onClick={() => setMensagemFollowUp(text.slice(0, 500))}
+                        className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 hover:border-gray-300 transition-colors"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => {
+                      handleEnviarWhatsApp();
+                      setFollowUpCardOpen(false);
+                    }}
+                    disabled={!mensagemFollowUp.trim()}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                    title={!mensagemFollowUp.trim() ? 'Digite uma mensagem' : undefined}
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    Enviar mensagem
+                  </Button>
+                  <Button variant="outline" onClick={() => setFollowUpCardOpen(false)}>
+                    Cancelar
+                  </Button>
+                </div>
+              </CardContent>
+            )}
           </Card>
 
           <Card>
@@ -312,25 +398,28 @@ export function QuoteDetail() {
               <CardTitle>Itens</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
+              {/* Mobile: lista/cards */}
+              <div className="block sm:hidden space-y-3">
+                {items.map((item: any, index: number) => (
+                  <div key={item.id} className="p-3 rounded-lg border border-gray-100 bg-gray-50/50">
+                    <p className="text-sm font-medium text-gray-900 line-clamp-2">{item.descricao}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {item.quantidade} {item.unidade} • {formatCurrency(item.valor_unitario)}/un
+                    </p>
+                    <p className="text-sm font-semibold text-gray-900 mt-2">{formatCurrency(item.subtotal)}</p>
+                  </div>
+                ))}
+              </div>
+              {/* Desktop: tabela */}
+              <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-500">
-                        Descrição
-                      </th>
-                      <th className="text-center py-3 px-2 text-sm font-medium text-gray-500">
-                        Qtd
-                      </th>
-                      <th className="text-center py-3 px-2 text-sm font-medium text-gray-500">
-                        Un
-                      </th>
-                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-500">
-                        Valor Unit.
-                      </th>
-                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-500">
-                        Subtotal
-                      </th>
+                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-500">Descrição</th>
+                      <th className="text-center py-3 px-2 text-sm font-medium text-gray-500">Qtd</th>
+                      <th className="text-center py-3 px-2 text-sm font-medium text-gray-500">Un</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-500">Valor Unit.</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-500">Subtotal</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -342,18 +431,10 @@ export function QuoteDetail() {
                             <span className="text-sm text-gray-900">{item.descricao}</span>
                           </div>
                         </td>
-                        <td className="text-center py-3 px-2 text-sm text-gray-700">
-                          {item.quantidade}
-                        </td>
-                        <td className="text-center py-3 px-2 text-sm text-gray-700">
-                          {item.unidade}
-                        </td>
-                        <td className="text-right py-3 px-2 text-sm text-gray-700">
-                          {formatCurrency(item.valor_unitario)}
-                        </td>
-                        <td className="text-right py-3 px-2 text-sm font-medium text-gray-900">
-                          {formatCurrency(item.subtotal)}
-                        </td>
+                        <td className="text-center py-3 px-2 text-sm text-gray-700">{item.quantidade}</td>
+                        <td className="text-center py-3 px-2 text-sm text-gray-700">{item.unidade}</td>
+                        <td className="text-right py-3 px-2 text-sm text-gray-700">{formatCurrency(item.valor_unitario)}</td>
+                        <td className="text-right py-3 px-2 text-sm font-medium text-gray-900">{formatCurrency(item.subtotal)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -364,20 +445,44 @@ export function QuoteDetail() {
 
           {quote.observacoes && (
             <Card>
-              <CardHeader>
-                <CardTitle>Observações</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-700 whitespace-pre-wrap">{quote.observacoes}</p>
-              </CardContent>
+              <button
+                type="button"
+                onClick={() => setObservacoesOpen(!observacoesOpen)}
+                className="w-full text-left p-4 pb-2"
+                aria-expanded={observacoesOpen}
+              >
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">Observações</CardTitle>
+                  {observacoesOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </div>
+                {!observacoesOpen && (
+                  <p className="text-sm text-gray-600 line-clamp-1 mt-2">{quote.observacoes}</p>
+                )}
+                {!observacoesOpen && <p className="text-xs text-primary mt-1">Ver tudo</p>}
+              </button>
+              {observacoesOpen && (
+                <CardContent className="pt-0">
+                  <p className="text-gray-700 whitespace-pre-wrap">{quote.observacoes}</p>
+                </CardContent>
+              )}
             </Card>
           )}
         </div>
 
         <div className="space-y-6">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between gap-2">
               <CardTitle>Resumo</CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadPDF}
+                disabled={pdfLoading}
+                className="hidden md:inline-flex"
+              >
+                {pdfLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                {pdfLoading ? 'Gerando...' : 'PDF'}
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between text-sm">
@@ -422,61 +527,12 @@ export function QuoteDetail() {
                 {getStatusIcon(quote.status)}
                 <div>
                   <p className="font-medium text-gray-900">{getStatusLabel(quote.status)}</p>
-                  <p className="text-sm text-gray-500">
-                    Válido até {formatDate(quote.data_validade)}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Enviado em: {formatDate(quote.data_emissao)}
-                  </p>
+                  <p className="text-sm text-gray-500">Válido até {formatDate(quote.data_validade)}</p>
+                  <p className="text-sm text-gray-500">Enviado em: {formatDate(quote.data_emissao)}</p>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <p className="font-medium text-sm text-gray-900">Mensagem para o cliente</p>
-                <Textarea
-                  value={mensagemFollowUp}
-                  onChange={(e) => setMensagemFollowUp(e.target.value.slice(0, 500))}
-                  placeholder="Digite sua mensagem..."
-                  rows={4}
-                  className="resize-y"
-                />
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    `E aí ${quote.cliente.nome}, conseguiu dar uma olhada no orçamento? Qualquer coisa é só chamar!`,
-                    `Opa ${quote.cliente.nome}! Só lembrando que o orçamento vence dia ${formatDate(quote.data_validade)}. Bora fechar?`,
-                    `${quote.cliente.nome}, preparei umas condições especiais pra você. Vamos conversar?`,
-                  ].map((texto) => (
-                    <button
-                      key={texto.slice(0, 30)}
-                      type="button"
-                      onClick={() => setMensagemFollowUp(texto.slice(0, 500))}
-                      className="px-4 py-2 text-sm rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors max-w-[260px] truncate"
-                      title={texto}
-                    >
-                      {texto}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-xs text-gray-500 text-right">
-                  {mensagemFollowUp.length} / 500
-                </p>
-              </div>
-
-              <Button
-                onClick={handleEnviarWhatsApp}
-                disabled={!mensagemFollowUp.trim()}
-                className="w-full bg-green-600 hover:bg-green-700 text-white"
-                title={!mensagemFollowUp.trim() ? 'Digite uma mensagem' : undefined}
-              >
-                <Send className="h-4 w-4 mr-2" />
-                Enviar Mensagem WhatsApp
-              </Button>
-
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => setShowStatusDialog(true)}
-              >
+              <Button variant="outline" className="w-full" onClick={() => setShowStatusDialog(true)}>
                 <Edit className="h-4 w-4 mr-2" />
                 Alterar Status
               </Button>
@@ -485,25 +541,28 @@ export function QuoteDetail() {
         </div>
       </div>
 
-      <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Prévia do Orçamento</DialogTitle>
-          </DialogHeader>
-          <div className="border rounded-lg overflow-hidden">
-            <QuotePDFTemplate quote={quote} company={company} hideSignatures />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowPreview(false)}>
-              Fechar
-            </Button>
-            <Button onClick={handleDownloadPDF} disabled={pdfLoading}>
-              {pdfLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-              {pdfLoading ? 'Gerando...' : 'Baixar PDF'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Rodapé sticky mobile: WhatsApp + PDF (acima da bottom nav) */}
+      <div className="fixed bottom-20 left-0 right-0 px-4 pb-2 sm:hidden z-30">
+        <div className="max-w-lg mx-auto p-3 rounded-2xl bg-white/80 backdrop-blur-sm shadow-lg border border-white/20 grid grid-cols-[1fr_auto] gap-2 items-stretch">
+          <Button
+            onClick={handleWhatsApp}
+            className="h-12 text-base font-semibold bg-green-600 hover:bg-green-700 text-white"
+            title="Enviar orçamento com link"
+          >
+            <Send className="h-5 w-5 mr-2" />
+            WhatsApp
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleDownloadPDF}
+            disabled={pdfLoading}
+            className="h-12 px-4 text-sm text-gray-700 border-gray-300"
+          >
+            {pdfLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+            Baixar PDF
+          </Button>
+        </div>
+      </div>
 
       <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
         <DialogContent>

@@ -1,16 +1,77 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { FileText, DollarSign, TrendingUp, CheckCircle, Clock, ArrowRight } from 'lucide-react';
+import { FileText, DollarSign, TrendingUp, CheckCircle, Banknote } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
 import { useStore } from '../store';
-import { formatCurrency, formatDate, formatQuoteDisplay, getStatusColor, getStatusLabel } from '../lib/utils';
+import { formatCurrency, getStatusLabel, isExpired } from '../lib/utils';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { toast } from '../hooks/useToast';
+
+const DASHBOARD_MONTH_KEY = 'dashboard-selected-month';
+
+const MONTH_NAMES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+function getMonthOptions(): { value: string; label: string }[] {
+  const now = new Date();
+  const options: { value: string; label: string }[] = [];
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const y = d.getFullYear();
+    const m = d.getMonth();
+    const value = `${y}-${String(m + 1).padStart(2, '0')}`;
+    const label = `${MONTH_NAMES[m]}/${y}`;
+    options.push({ value, label });
+  }
+  return options;
+}
+
+function getDefaultMonth(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** Filtra orçamentos pelo mês selecionado (YYYY-MM). Usa data_emissao ou data_criacao. Fuso local. */
+function filterQuotesByMonth<T extends { data_emissao?: string; data_criacao?: string }>(
+  quotes: T[],
+  selectedMonth: string
+): T[] {
+  const [yearStr, monthStr] = selectedMonth.split('-');
+  const targetYear = parseInt(yearStr, 10);
+  const targetMonth = parseInt(monthStr, 10) - 1; // 0-indexed
+  return quotes.filter((q) => {
+    const dateStr = q.data_emissao ?? q.data_criacao ?? '';
+    if (!dateStr) return false;
+    const date = new Date(dateStr);
+    return date.getFullYear() === targetYear && date.getMonth() === targetMonth;
+  });
+}
 
 export function Dashboard() {
   const { quotes, checkExpiredQuotes, loadQuotes } = useStore();
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem(DASHBOARD_MONTH_KEY);
+      if (saved && /^\d{4}-\d{2}$/.test(saved)) return saved;
+    } catch {
+      /* ignore */
+    }
+    return getDefaultMonth();
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(DASHBOARD_MONTH_KEY, selectedMonth);
+    } catch {
+      /* ignore */
+    }
+  }, [selectedMonth]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -31,107 +92,171 @@ export function Dashboard() {
     loadData();
   }, [loadQuotes, checkExpiredQuotes]);
 
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
+  const quotesInMonth = filterQuotesByMonth(quotes, selectedMonth);
 
-  const quotesThisMonth = quotes.filter((q) => {
-    const date = new Date(q.data_emissao);
-    return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-  });
+  const totalQuotesThisMonth = quotesInMonth.length;
 
-  const totalQuotesThisMonth = quotesThisMonth.length;
-
-  const openValue = quotes
+  const openValue = quotesInMonth
     .filter((q) => q.status === 'enviado')
     .reduce((sum, q) => sum + q.total, 0);
 
-  const approvedQuotes = quotes.filter((q) => q.status === 'aprovado');
-  const sentQuotes = quotes.filter((q) => q.status === 'enviado' || q.status === 'aprovado' || q.status === 'recusado');
+  const approvedQuotes = quotesInMonth.filter((q) => q.status === 'aprovado');
+  const closedValue = approvedQuotes.reduce((sum, q) => sum + q.total, 0);
+  const sentQuotes = quotesInMonth.filter((q) => q.status === 'enviado' || q.status === 'aprovado' || q.status === 'recusado');
   const approvalRate = sentQuotes.length > 0 ? (approvedQuotes.length / sentQuotes.length) * 100 : 0;
 
   const statusCounts = {
-    rascunho: quotes.filter((q) => q.status === 'rascunho').length,
-    enviado: quotes.filter((q) => q.status === 'enviado').length,
-    aprovado: quotes.filter((q) => q.status === 'aprovado').length,
-    recusado: quotes.filter((q) => q.status === 'recusado').length,
-    expirado: quotes.filter((q) => q.status === 'expirado').length,
+    rascunho: quotesInMonth.filter((q) => q.status === 'rascunho').length,
+    enviado: quotesInMonth.filter((q) => q.status === 'enviado').length,
+    aprovado: quotesInMonth.filter((q) => q.status === 'aprovado').length,
+    recusado: quotesInMonth.filter((q) => q.status === 'recusado').length,
+    expirado: quotesInMonth.filter((q) => q.status === 'expirado').length,
   };
 
-  const recentQuotes = [...quotes]
-    .sort((a, b) => new Date(b.data_criacao).getTime() - new Date(a.data_criacao).getTime())
-    .slice(0, 5);
+  const [topLimit, setTopLimit] = useState(5);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const update = () => setTopLimit(mq.matches ? 5 : 3);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+
+  const topClientesFechadoMap = new Map<string, { nome: string; total: number }>();
+  for (const q of approvedQuotes) {
+    const id = q.cliente_id ?? q.cliente?.nome ?? '';
+    const nome = q.cliente?.nome ?? 'Cliente';
+    const current = topClientesFechadoMap.get(id) ?? { nome, total: 0 };
+    topClientesFechadoMap.set(id, { nome: current.nome, total: current.total + q.total });
+  }
+  const topClientesFechado = [...topClientesFechadoMap.entries()]
+    .map(([id, data]) => ({ id, nome: data.nome, total: data.total }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, topLimit);
+
+  const maioresEmAberto = quotesInMonth
+    .filter((q) => q.status === 'enviado' && !isExpired(q.data_validade ?? ''))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, topLimit);
 
   if (isLoading) {
     return <LoadingSkeleton />;
   }
 
+  const monthOptions = getMonthOptions();
+
+  const getRankStyle = (idx: number) => {
+    if (idx === 0) return 'bg-green-100/80 border border-green-200/60 rounded-md';
+    if (idx === 1) return 'bg-green-100/50 border border-green-200/40 rounded-md';
+    if (idx === 2) return 'bg-green-100/30 border border-green-200/30 rounded-md';
+    return 'hover:bg-gray-50/80 rounded-md';
+  };
+  const getMedal = (idx: number) => (idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '');
+
   return (
-    <div className="p-4 lg:p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500">Visão geral dos seus orçamentos</p>
+    <div className="p-4 lg:p-6 space-y-4 lg:space-y-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-500 text-sm">Visão geral dos seus orçamentos</p>
+        </div>
+        <div className="flex-shrink-0 w-full lg:w-auto">
+          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Mês" />
+            </SelectTrigger>
+            <SelectContent>
+              {monthOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4 lg:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Orçamentos (Mês)</p>
-                <p className="text-2xl lg:text-3xl font-bold text-gray-900 mt-1">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4 items-stretch">
+        {/* 1. Orçamentos — sempre primeiro */}
+        <Card className="order-1 lg:order-1 h-full flex flex-col">
+          <CardContent className="p-3 lg:p-6 flex-1 flex flex-col justify-center">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-col justify-center min-w-0">
+                <p className="text-xs text-gray-600 font-medium">Orçamentos</p>
+                <p className="text-xl sm:text-2xl font-semibold leading-none mt-1 text-gray-900">
                   {totalQuotesThisMonth}
                 </p>
               </div>
-              <div className="h-10 w-10 lg:h-12 lg:w-12 bg-primary-100 rounded-xl flex items-center justify-center">
-                <FileText className="h-5 w-5 lg:h-6 lg:w-6 text-primary" />
+              <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 rounded-xl flex items-center justify-center bg-primary-100">
+                <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4 lg:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Valor em Aberto</p>
-                <p className="text-xl lg:text-2xl font-bold text-gray-900 mt-1">
-                  {formatCurrency(openValue)}
-                </p>
-              </div>
-              <div className="h-10 w-10 lg:h-12 lg:w-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <DollarSign className="h-5 w-5 lg:h-6 lg:w-6 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 lg:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Taxa de Aprovação</p>
-                <p className="text-2xl lg:text-3xl font-bold text-gray-900 mt-1">
+        {/* 2. Taxa de Aprovação — mobile: 2º | desktop: 4º */}
+        <Card className="order-2 lg:order-4 h-full flex flex-col">
+          <CardContent className="p-3 lg:p-6 flex-1 flex flex-col justify-center">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-col justify-center min-w-0">
+                <p className="text-xs text-gray-600 font-medium">Taxa de Aprovação</p>
+                <p className="text-xl sm:text-2xl font-semibold leading-none mt-1 text-gray-900">
                   {approvalRate.toFixed(0)}%
                 </p>
               </div>
-              <div className="h-10 w-10 lg:h-12 lg:w-12 bg-amber-100 rounded-xl flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 lg:h-6 lg:w-6 text-amber-600" />
+              <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 rounded-xl flex items-center justify-center bg-amber-100">
+                <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4 lg:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Aprovados</p>
-                <p className="text-2xl lg:text-3xl font-bold text-gray-900 mt-1">
+        {/* 3. Valor Aprovado — mobile: 3º | desktop: 3º */}
+        <Card className="order-3 lg:order-3 h-full flex flex-col">
+          <CardContent className="p-3 lg:p-6 flex-1 flex flex-col justify-center">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-col justify-center min-w-0">
+                <p className="text-xs text-gray-600 font-medium">Valor Aprovado</p>
+                <p className="text-xl sm:text-2xl font-semibold leading-none mt-1 text-gray-900">
+                  {formatCurrency(closedValue)}
+                </p>
+              </div>
+              <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 rounded-xl flex items-center justify-center bg-green-100">
+                <Banknote className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 4. Em Aberto — mobile: 4º | desktop: 2º */}
+        <Card className="order-4 lg:order-2 h-full flex flex-col">
+          <CardContent className="p-3 lg:p-6 flex-1 flex flex-col justify-center">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-col justify-center min-w-0">
+                <p className="text-xs text-gray-600 font-medium">Em Aberto</p>
+                <p className="text-xl sm:text-2xl font-semibold leading-none mt-1 text-gray-900">
+                  {formatCurrency(openValue)}
+                </p>
+              </div>
+              <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 rounded-xl flex items-center justify-center bg-blue-100">
+                <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 5. Aprovados — mobile: 5º, col-span-2 | desktop: 5º, 1 col */}
+        <Card className="order-5 lg:order-5 col-span-2 lg:col-span-1 h-full flex flex-col">
+          <CardContent className="p-3 lg:p-6 flex-1 flex flex-col justify-center">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-col justify-center min-w-0">
+                <p className="text-xs text-gray-600 font-medium">Aprovados</p>
+                <p className="text-xl sm:text-2xl font-semibold leading-none mt-1 text-gray-900">
                   {approvedQuotes.length}
                 </p>
               </div>
-              <div className="h-10 w-10 lg:h-12 lg:w-12 bg-primary-100 rounded-xl flex items-center justify-center">
-                <CheckCircle className="h-5 w-5 lg:h-6 lg:w-6 text-primary" />
+              <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 rounded-xl flex items-center justify-center bg-primary-100">
+                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               </div>
             </div>
           </CardContent>
@@ -167,7 +292,7 @@ export function Dashboard() {
                           : 'bg-amber-500'
                       }`}
                       style={{
-                        width: `${quotes.length > 0 ? (count / quotes.length) * 100 : 0}%`,
+                        width: `${quotesInMonth.length > 0 ? (count / quotesInMonth.length) * 100 : 0}%`,
                       }}
                     />
                   </div>
@@ -177,61 +302,65 @@ export function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Últimos Orçamentos</CardTitle>
-            <Link
-              to="/quotes"
-              className="text-sm text-primary hover:text-primary-hover font-medium flex items-center"
-            >
-              Ver todos
-              <ArrowRight className="h-4 w-4 ml-1" />
-            </Link>
-          </CardHeader>
-          <CardContent>
-            {recentQuotes.length === 0 ? (
-              <div className="text-center py-8">
-                <Clock className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500">Nenhum orçamento criado ainda</p>
-                <Link
-                  to="/quotes/new"
-                  className="text-primary hover:text-primary-hover font-medium text-sm mt-2 inline-block"
-                >
-                  Criar primeiro orçamento
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {recentQuotes.map((quote) => (
-                  <Link
-                    key={quote.id}
-                    to={`/quotes/${quote.id}`}
-                    className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div>
-                        <p className="font-medium text-gray-900 text-sm">
-                          {formatQuoteDisplay(quote)}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {formatDate(quote.data_emissao)}
+        <div className="flex flex-col lg:flex-row gap-4">
+          <Card className="flex-1 min-w-0">
+            <CardContent className="p-4">
+              <p className="text-sm font-medium text-gray-800 uppercase tracking-wide mb-2">
+                Top Clientes (Fechado no mês)
+              </p>
+              {topClientesFechado.length === 0 ? (
+                <p className="text-sm text-gray-500 py-4">Sem vendas fechadas neste mês.</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {topClientesFechado.map((item, idx) => (
+                    <div
+                      key={item.id}
+                      className={`flex items-center justify-between gap-2 py-2 px-3 ${getRankStyle(idx)}`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        {getMedal(idx) && <span className="text-base flex-shrink-0">{getMedal(idx)}</span>}
+                        <p className="text-sm font-medium text-gray-900 truncate">{item.nome}</p>
+                      </div>
+                      <span className="text-sm font-semibold text-gray-900 flex-shrink-0">
+                        {formatCurrency(item.total)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="flex-1 min-w-0">
+            <CardContent className="p-4">
+              <p className="text-sm font-medium text-gray-800 uppercase tracking-wide mb-2">
+                Maiores valores em aberto
+              </p>
+              {maioresEmAberto.length === 0 ? (
+                <p className="text-sm text-gray-500 py-4">Nenhum valor em aberto neste mês.</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {maioresEmAberto.map((q, idx) => (
+                    <div
+                      key={q.id}
+                      className={`flex items-center justify-between gap-2 py-2 px-3 ${getRankStyle(idx)}`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        {getMedal(idx) && <span className="text-base flex-shrink-0">{getMedal(idx)}</span>}
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {q.cliente?.nome ?? 'Cliente'}
                         </p>
                       </div>
+                      <span className="text-sm font-semibold text-gray-900 flex-shrink-0">
+                        {formatCurrency(q.total)}
+                      </span>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-gray-900">
-                        {formatCurrency(quote.total)}
-                      </p>
-                      <Badge className={getStatusColor(quote.status)}>
-                        {getStatusLabel(quote.status)}
-                      </Badge>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
