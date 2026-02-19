@@ -257,27 +257,26 @@ export function QuotePDFTemplate({ quote, company, hideSignatures }: QuotePDFTem
                 borderBottom: '1px solid #E5E7EB',
                 fontWeight: '500',
                 wordBreak: 'break-word',
-                display: '-webkit-box',
-                WebkitBoxOrient: 'vertical',
-                WebkitLineClamp: isCompactMode ? 1 : 2,
-                overflow: 'hidden',
+                whiteSpace: 'normal',
+                lineHeight: 1.35,
+                verticalAlign: 'top',
               };
               return (
-              <tr key={item.id}>
-                <td style={{ padding: '8px 10px', textAlign: 'center', color: '#6B7280', backgroundColor: index % 2 === 0 ? '#ffffff' : '#F9FAFB', borderBottom: '1px solid #E5E7EB', fontWeight: '500' }}>
+              <tr key={item.id} style={{ verticalAlign: 'top' }}>
+                <td style={{ padding: '8px 10px', textAlign: 'center', color: '#6B7280', backgroundColor: index % 2 === 0 ? '#ffffff' : '#F9FAFB', borderBottom: '1px solid #E5E7EB', fontWeight: '500', verticalAlign: 'top' }}>
                   {index + 1}
                 </td>
                 <td style={descCellStyle}>
                   {isCompactMode ? nome : (descricaoExtra ? `${nome} - ${descricaoExtra}` : nome)}
                   <span style={{ color: '#9CA3AF', fontSize: '12px', marginLeft: '6px' }}>({item.unidade})</span>
                 </td>
-                <td style={{ padding: '8px 10px', textAlign: 'center', color: '#1F2937', backgroundColor: index % 2 === 0 ? '#ffffff' : '#F9FAFB', borderBottom: '1px solid #E5E7EB', fontWeight: '600' }}>
+                <td style={{ padding: '8px 10px', textAlign: 'center', color: '#1F2937', backgroundColor: index % 2 === 0 ? '#ffffff' : '#F9FAFB', borderBottom: '1px solid #E5E7EB', fontWeight: '600', verticalAlign: 'top' }}>
                   {item.quantidade}
                 </td>
-                <td style={{ padding: '8px 10px', textAlign: 'right', color: '#4B5563', backgroundColor: index % 2 === 0 ? '#ffffff' : '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
+                <td style={{ padding: '8px 10px', textAlign: 'right', color: '#4B5563', backgroundColor: index % 2 === 0 ? '#ffffff' : '#F9FAFB', borderBottom: '1px solid #E5E7EB', verticalAlign: 'top' }}>
                   {formatCurrency(item.valor_unitario)}
                 </td>
-                <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: '600', color: '#1F2937', backgroundColor: index % 2 === 0 ? '#ffffff' : '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
+                <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: '600', color: '#1F2937', backgroundColor: index % 2 === 0 ? '#ffffff' : '#F9FAFB', borderBottom: '1px solid #E5E7EB', verticalAlign: 'top' }}>
                   {formatCurrency(item.subtotal)}
                 </td>
               </tr>
