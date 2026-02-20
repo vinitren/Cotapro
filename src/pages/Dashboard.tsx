@@ -205,6 +205,8 @@ export function Dashboard() {
           value={formatCurrency(openValue)}
           variant="blue"
           order="order-4 lg:order-2"
+          cardClassName="py-3 sm:py-4 px-4"
+          valueClassName="text-3xl sm:text-2xl leading-none mt-1 sm:mt-2"
         />
         <MetricCard
           icon={CheckCircle}

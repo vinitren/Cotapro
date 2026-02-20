@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Customer, Quote, Company, Settings, QuoteStatus } from '../types';
 import { generateId, isExpired, addDays } from '../lib/utils';
-import { supabase, getCustomers, createCustomer, updateCustomer as updateCustomerDB, deleteCustomer as deleteCustomerDB, getQuotes, createQuote as createQuoteDB, updateQuote as updateQuoteDB, deleteQuote as deleteQuoteDB } from '../lib/supabase';
+import { supabase, getCustomers, createCustomer, updateCustomer as updateCustomerDB, deleteCustomer as deleteCustomerDB, getQuotes, createQuote as createQuoteDB, updateQuote as updateQuoteDB, deleteQuote as deleteQuoteDB, buildQuoteUpdatePayload } from '../lib/supabase';
 import type { Profile } from '../lib/supabase';
 
 const defaultCompany: Company = {
@@ -370,7 +370,7 @@ export const useStore = create<AppState>()(
               subtotal: Number(it.subtotal ?? (it.valor_unitario ? Number(it.valor_unitario) * Number(it.quantidade || 0) : 0)),
             }));
 
-            const quoteObsRaw = String(((q as any).observacoes ?? (q as any).notes ?? '')).trim();
+            const quoteObsRaw = String(((q as any).observations ?? (q as any).observacoes ?? (q as any).notes ?? '')).trim();
             const observacoes = quoteObsRaw || profileDefaultNotes || '';
 
             return {
@@ -631,17 +631,19 @@ export const useStore = create<AppState>()(
         if (!userId) return;
 
         try {
-          const updatePayload: Parameters<typeof updateQuoteDB>[2] = {};
-          if (quoteData.cliente_id !== undefined) updatePayload.customer_id = quoteData.cliente_id;
-          if (quoteData.status !== undefined) updatePayload.status = quoteData.status;
-          if (quoteData.total !== undefined) updatePayload.total_value = quoteData.total;
-          if (quoteData.itens !== undefined) updatePayload.items = quoteData.itens;
-          if (quoteData.data_validade !== undefined) updatePayload.data_validade = quoteData.data_validade;
-          if (quoteData.observacoes !== undefined) updatePayload.observacoes = quoteData.observacoes;
-          if (quoteData.subtotal !== undefined) updatePayload.subtotal = quoteData.subtotal;
-          if (quoteData.desconto_tipo !== undefined) updatePayload.desconto_tipo = quoteData.desconto_tipo;
-          if (quoteData.desconto_valor !== undefined) updatePayload.desconto_valor = quoteData.desconto_valor;
-
+          const formValues = {
+            cliente_id: quoteData.cliente_id,
+            status: quoteData.status,
+            total: quoteData.total,
+            itens: quoteData.itens,
+            observacoes: quoteData.observacoes,
+            notes: (quoteData as { notes?: string }).notes,
+            data_validade: quoteData.data_validade,
+            validity_days: (quoteData as { validity_days?: number }).validity_days,
+            desconto_tipo: quoteData.desconto_tipo,
+            desconto_valor: quoteData.desconto_valor,
+          };
+          const updatePayload = buildQuoteUpdatePayload(formValues);
           if (Object.keys(updatePayload).length > 0) {
             await updateQuoteDB(userId, id, updatePayload);
           }

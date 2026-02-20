@@ -473,20 +473,55 @@ export async function createQuote(
   }
 }
 
+const QUOTES_UPDATE_WHITELIST = [
+  'customer_id', 'status', 'total_value', 'items',
+  'observations', 'notes', 'validity_days',
+  'discount_percentage', 'discount_value',
+] as const;
+
+export function buildQuoteUpdatePayload(formValues: Record<string, unknown>): Record<string, unknown> {
+  const payload: Record<string, unknown> = {};
+  if (formValues.cliente_id !== undefined) payload.customer_id = formValues.cliente_id;
+  if (formValues.status !== undefined) payload.status = formValues.status;
+  if (formValues.total !== undefined) payload.total_value = Number(formValues.total) || 0;
+  if (formValues.itens !== undefined) payload.items = formValues.itens;
+  if (formValues.observacoes !== undefined) payload.observations = String(formValues.observacoes ?? '');
+  if (formValues.notes !== undefined) payload.notes = String(formValues.notes ?? '');
+  if (formValues.data_validade !== undefined) {
+    const valDate = new Date(String(formValues.data_validade));
+    const today = new Date();
+    const days = Math.ceil((valDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+    payload.validity_days = (days > 0 && !isNaN(days)) ? days : 15;
+  }
+  if (formValues.validade !== undefined) {
+    payload.validity_days = Number(formValues.validade) || 15;
+  }
+  if (formValues.validity_days !== undefined) {
+    payload.validity_days = Number(formValues.validity_days) || 15;
+  }
+  if (formValues.desconto_tipo !== undefined || formValues.desconto_valor !== undefined) {
+    const tipo = formValues.desconto_tipo ?? 'percentual';
+    const val = Number(formValues.desconto_valor ?? 0) || 0;
+    payload.discount_percentage = tipo === 'percentual' ? val : 0;
+    payload.discount_value = tipo === 'percentual' ? 0 : val;
+  }
+
+  const cleanPayload: Record<string, unknown> = {};
+  for (const k of QUOTES_UPDATE_WHITELIST) {
+    if (payload[k] !== undefined) cleanPayload[k] = payload[k];
+  }
+  delete cleanPayload.data_validade;
+  delete cleanPayload.desconto_tipo;
+  delete cleanPayload.observacoes;
+  delete cleanPayload.subtotal;
+  delete cleanPayload.total;
+  return cleanPayload;
+}
+
 export async function updateQuote(
   userId: string,
   quoteId: string,
-  data: Partial<{
-    customer_id: string;
-    status: string;
-    total_value: number;
-    items: QuoteItemDB[];
-    observacoes: string;
-    data_validade: string;
-    subtotal: number;
-    desconto_tipo: string;
-    desconto_valor: number;
-  }>
+  payload: Record<string, unknown>
 ): Promise<QuoteDB> {
   const { data: { session } } = await supabase.auth.getSession();
 
@@ -494,22 +529,17 @@ export async function updateQuote(
     throw new Error('Usuário não autenticado ou não autorizado.');
   }
 
-  const updatePayload: Record<string, unknown> = {};
-  if (data.customer_id !== undefined) updatePayload.customer_id = data.customer_id;
-  if (data.status !== undefined) updatePayload.status = data.status;
-  if (data.total_value !== undefined) updatePayload.total_value = data.total_value;
-  if (data.items !== undefined) updatePayload.items = data.items as unknown as Record<string, unknown>[];
-  if (data.observacoes !== undefined) updatePayload.observacoes = data.observacoes;
-  if (data.data_validade !== undefined) updatePayload.data_validade = data.data_validade;
-  if (data.subtotal !== undefined) updatePayload.subtotal = data.subtotal;
-  if (data.desconto_tipo !== undefined) updatePayload.desconto_tipo = data.desconto_tipo;
-  if (data.desconto_valor !== undefined) updatePayload.desconto_valor = data.desconto_valor;
+  if (Object.keys(payload).length === 0) return {} as QuoteDB;
 
-  if (Object.keys(updatePayload).length === 0) return {} as QuoteDB;
+  delete payload.data_validade;
+  delete payload.desconto_tipo;
+  delete payload.observacoes;
+  delete payload.subtotal;
+  delete payload.total;
 
   const { data: quote, error } = await supabase
     .from('quotes')
-    .update(updatePayload)
+    .update(payload)
     .eq('id', quoteId)
     .eq('user_id', userId)
     .select()

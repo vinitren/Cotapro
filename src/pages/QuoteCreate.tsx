@@ -299,7 +299,7 @@ export function QuoteCreate() {
   }
 
   return (
-    <div className="min-h-screen bg-page-bg pb-24 lg:pb-8">
+    <div className="min-h-screen bg-page-bg pb-32 lg:pb-8">
       <div className="max-w-[640px] lg:max-w-6xl mx-auto px-4 lg:px-6 pt-4 lg:pt-6">
         <div className="lg:grid lg:grid-cols-[1fr_340px] lg:gap-8 lg:items-start">
           {/* Coluna esquerda: Header + Cliente + Itens */}
@@ -526,36 +526,28 @@ export function QuoteCreate() {
         </div>
       </div>
 
-      {/* Botão fixo - Gerar Orçamento (apenas mobile) */}
+      {/* Barra fixa - botões de ação (apenas mobile) */}
       <div
         className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] p-4 max-w-[640px] mx-auto lg:hidden"
         style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
       >
-        <div className="flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-xs text-gray-500">Total</p>
-            <p className="text-lg font-bold text-primary truncate">
-              {formatCurrency(total)}
-            </p>
-          </div>
-          <div className="flex gap-2 shrink-0">
-            <Button
-              variant="outline"
-              className="h-12"
-              onClick={() => handleSave('rascunho')}
-              disabled={isSaving}
-            >
-              Rascunho
-            </Button>
-            <Button
-              className="h-12 min-w-[140px]"
-              onClick={() => handleSave('enviado')}
-              disabled={isSaving}
-            >
-              <Save className="h-5 w-5 mr-2" />
-              {isSaving ? 'Salvando...' : editMode ? 'Atualizar' : 'Gerar Orçamento'}
-            </Button>
-          </div>
+        <div className="flex flex-col gap-2">
+          <Button
+            className="w-full h-12"
+            onClick={() => handleSave('enviado')}
+            disabled={isSaving}
+          >
+            <Save className="h-5 w-5 mr-2" />
+            {isSaving ? 'Salvando...' : editMode ? 'Atualizar Orçamento' : 'Gerar Orçamento'}
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full h-12"
+            onClick={() => handleSave('rascunho')}
+            disabled={isSaving}
+          >
+            Salvar Rascunho
+          </Button>
         </div>
       </div>
 

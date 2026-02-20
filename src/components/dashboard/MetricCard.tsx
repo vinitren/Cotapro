@@ -51,6 +51,8 @@ interface MetricCardProps {
   variant?: MetricVariant;
   className?: string;
   order?: string;
+  valueClassName?: string;
+  cardClassName?: string;
 }
 
 export function MetricCard({
@@ -60,6 +62,8 @@ export function MetricCard({
   variant = 'primary',
   className,
   order,
+  valueClassName,
+  cardClassName,
 }: MetricCardProps) {
   const styles = variantStyles[variant];
 
@@ -77,7 +81,7 @@ export function MetricCard({
         className
       )}
     >
-      <div className="p-4 flex flex-col justify-start">
+      <div className={cn('p-4 flex flex-col justify-start', cardClassName)}>
         <div className="flex items-center gap-2">
           <div
             className={cn(
@@ -89,7 +93,7 @@ export function MetricCard({
           </div>
           <p className="text-sm font-medium text-white/90 leading-tight min-w-0">{label}</p>
         </div>
-        <p className="text-xl sm:text-2xl font-bold leading-tight mt-2 text-white tracking-tight drop-shadow-sm">
+        <p className={cn('text-xl sm:text-2xl font-bold leading-tight mt-2 text-white tracking-tight drop-shadow-sm', valueClassName)}>
           {value}
         </p>
       </div>
