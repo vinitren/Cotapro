@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Search, FileText, Trash2, Eye, Download, Filter, Loader2, Pencil, MoreVertical } from 'lucide-react';
+import { Plus, Search, FileText, Trash2, Eye, Download, Filter, Loader2, Pencil, MoreVertical, List } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
+import { PageHeader } from '../components/layout/PageHeader';
+import { pageCardClasses } from '../components/layout/PageLayout';
 import { Badge } from '../components/ui/badge';
 import {
   Dialog,
@@ -19,7 +21,7 @@ import {
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
 import { useStore } from '../store';
-import { formatCurrency, formatDate, formatQuoteDisplay, getQuoteDisplayNumber, getStatusColor, getStatusLabel, isSupabaseQuoteId } from '../lib/utils';
+import { cn, formatCurrency, formatDate, formatQuoteDisplay, getQuoteDisplayNumber, getStatusColor, getStatusLabel, isSupabaseQuoteId } from '../lib/utils';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import type { Quote, QuoteStatus } from '../types';
 import { toast } from '../hooks/useToast';
@@ -36,6 +38,22 @@ export function Quotes() {
   const [deleteConfirm, setDeleteConfirm] = useState<Quote | null>(null);
   const [pdfDownloadingId, setPdfDownloadingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isListOpen, setIsListOpen] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('budgets_list_open');
+      return saved === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('budgets_list_open', String(isListOpen));
+    } catch {
+      /* ignore */
+    }
+  }, [isListOpen]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -139,35 +157,47 @@ export function Quotes() {
   }
 
   return (
-    <div className="p-4 lg:p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Orçamentos</h1>
-          <p className="text-gray-500">Gerencie seus orçamentos</p>
-        </div>
-        <Link to="/quotes/new">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Orçamento
-          </Button>
-        </Link>
-      </div>
+    <div className="p-4 lg:p-6 space-y-6 lg:space-y-8 pb-36 lg:pb-6">
+      <PageHeader
+        title="Orçamentos"
+        subtitle="Gerencie seus orçamentos"
+        action={
+          <div className="hidden sm:flex">
+            <Link to="/quotes/new">
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Orçamento
+              </Button>
+            </Link>
+          </div>
+        }
+      />
 
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
-            placeholder="Buscar por número ou cliente..."
+            placeholder={isListOpen ? 'Buscar por número ou cliente...' : 'Abra a lista para pesquisar/filtrar'}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10"
+            disabled={!isListOpen}
           />
         </div>
+        <Button
+          variant="outline"
+          className="w-full sm:w-auto"
+          onClick={() => setIsListOpen((v) => !v)}
+        >
+          <List className="h-4 w-4 mr-2" />
+          {isListOpen ? 'Ocultar orçamentos' : 'Ver orçamentos'}
+        </Button>
         <Dialog open={filterPanelOpen} onOpenChange={setFilterPanelOpen}>
           <Button
             variant="outline"
             className="w-full sm:w-auto"
             onClick={() => setFilterPanelOpen(true)}
+            disabled={!isListOpen}
           >
             <Filter className="h-4 w-4 mr-2" />
             Filtro
@@ -234,47 +264,49 @@ export function Quotes() {
         </Dialog>
       </div>
 
-      {(statusFilter !== 'all' || dateFilter !== 'all') && (
-        <div className="flex flex-wrap gap-2">
-          {statusFilter !== 'all' && (
-            <Badge
-              variant="secondary"
-              className="cursor-pointer hover:bg-gray-300"
-              onClick={() => setStatusFilter('all')}
-            >
-              Status: {getStatusLabel(statusFilter)} ×
-            </Badge>
-          )}
-          {dateFilter !== 'all' && (
-            <Badge
-              variant="secondary"
-              className="cursor-pointer hover:bg-gray-300"
-              onClick={() => setDateFilter('all')}
-            >
-              Data: {dateFilter === 'daily' ? 'Diário' : dateFilter === 'weekly' ? 'Semanal' : 'Mensal'} ×
-            </Badge>
-          )}
-        </div>
-      )}
-
-      {filteredQuotes.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <div className="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-              <FileText className="h-8 w-8 text-gray-400" />
+      {isListOpen && (
+        <>
+          {(statusFilter !== 'all' || dateFilter !== 'all') && (
+            <div className="flex flex-wrap gap-2">
+              {statusFilter !== 'all' && (
+                <Badge
+                  variant="secondary"
+                  className="cursor-pointer hover:bg-gray-300"
+                  onClick={() => setStatusFilter('all')}
+                >
+                  Status: {getStatusLabel(statusFilter)} ×
+                </Badge>
+              )}
+              {dateFilter !== 'all' && (
+                <Badge
+                  variant="secondary"
+                  className="cursor-pointer hover:bg-gray-300"
+                  onClick={() => setDateFilter('all')}
+                >
+                  Data: {dateFilter === 'daily' ? 'Diário' : dateFilter === 'weekly' ? 'Semanal' : 'Mensal'} ×
+                </Badge>
+              )}
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+          )}
+
+          {filteredQuotes.length === 0 ? (
+        <Card className={pageCardClasses}>
+          <CardContent className="flex flex-col items-center justify-center py-12 px-6">
+            <div className="h-16 w-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+              <FileText className="h-8 w-8 text-slate-400" />
+            </div>
+            <h3 className="text-base font-bold text-gray-900 mb-1">
               {search || statusFilter !== 'all' || dateFilter !== 'all'
                 ? 'Nenhum orçamento encontrado'
                 : 'Nenhum orçamento criado'}
             </h3>
-            <p className="text-gray-500 text-center mb-4">
+            <p className="text-sm text-muted-foreground text-center mb-4">
               {search || statusFilter !== 'all' || dateFilter !== 'all'
                 ? 'Tente ajustar os filtros'
                 : 'Crie seu primeiro orçamento profissional!'}
             </p>
             {!search && statusFilter === 'all' && dateFilter === 'all' && (
-              <Link to="/quotes/new">
+              <Link to="/quotes/new" className="hidden sm:inline-block">
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
                   Criar Orçamento
@@ -284,21 +316,21 @@ export function Quotes() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
           {filteredQuotes.map((quote) => (
-            <Card key={quote.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-3 sm:p-4">
-                <div className="space-y-1.5 sm:space-y-4">
+            <Card key={quote.id} className={cn(pageCardClasses, 'hover:shadow-lg transition-shadow')}>
+              <CardContent className="p-4 lg:p-5">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between gap-2 min-w-0">
-                    <p className="text-base sm:text-xl font-bold text-gray-900 truncate">
+                    <p className="text-base font-bold text-gray-900 truncate tracking-tight">
                       #{getQuoteDisplayNumber(quote)} — {quote.cliente?.nome ?? 'Cliente'}
                     </p>
-                    <p className="text-base sm:text-lg font-bold text-primary flex-shrink-0">
+                    <p className="text-base font-semibold text-primary flex-shrink-0 tabular-nums">
                       {formatCurrency(quote.total)}
                     </p>
                   </div>
 
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     <span className={quote.status === 'enviado' ? 'text-blue-600' : quote.status === 'aprovado' ? 'text-primary' : quote.status === 'recusado' ? 'text-red-600' : quote.status === 'expirado' ? 'text-amber-600' : 'text-gray-600'}>
                       {getStatusLabel(quote.status)}
                     </span>
@@ -361,7 +393,24 @@ export function Quotes() {
             </Card>
           ))}
         </div>
+          )}
+        </>
       )}
+
+      {/* Botão fixo no rodapé - apenas mobile */}
+      <div
+        className="fixed bottom-16 left-0 right-0 z-30 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] p-4 lg:hidden"
+        style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
+      >
+        <div className="flex justify-center max-w-[640px] mx-auto">
+          <Link to="/quotes/new" className="w-full">
+            <Button className="w-full h-12">
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Orçamento
+            </Button>
+          </Link>
+        </div>
+      </div>
 
       <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
         <DialogContent>

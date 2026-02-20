@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
-import { FileText, DollarSign, TrendingUp, CheckCircle, Banknote } from 'lucide-react';
+import { FileText, DollarSign, TrendingUp, CheckCircle, Banknote, User, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { PageHeader } from '../components/layout/PageHeader';
+import { Badge } from '../components/ui/badge';
+import { MetricCard } from '../components/dashboard/MetricCard';
 import {
   Select,
   SelectContent,
@@ -114,6 +117,7 @@ export function Dashboard() {
   };
 
   const [topLimit, setTopLimit] = useState(5);
+  const [topClientesFilter, setTopClientesFilter] = useState<'diario' | 'semanal' | 'mensal'>('mensal');
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 1024px)');
     const update = () => setTopLimit(mq.matches ? 5 : 3);
@@ -146,23 +150,20 @@ export function Dashboard() {
   const monthOptions = getMonthOptions();
 
   const getRankStyle = (idx: number) => {
-    if (idx === 0) return 'bg-green-100/80 border border-green-200/60 rounded-md';
-    if (idx === 1) return 'bg-green-100/50 border border-green-200/40 rounded-md';
-    if (idx === 2) return 'bg-green-100/30 border border-green-200/30 rounded-md';
-    return 'hover:bg-gray-50/80 rounded-md';
+    if (idx === 0) return 'bg-emerald-50/70 border border-emerald-200/50 rounded-xl hover:bg-emerald-50/90 transition-colors';
+    if (idx === 1) return 'bg-emerald-50/50 border border-emerald-200/40 rounded-xl hover:bg-emerald-50/80 transition-colors';
+    if (idx === 2) return 'bg-emerald-50/40 border border-emerald-200/30 rounded-xl hover:bg-emerald-50/70 transition-colors';
+    return 'bg-slate-50/50 border border-slate-200/40 rounded-xl hover:bg-slate-100/60 transition-colors';
   };
-  const getMedal = (idx: number) => (idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '');
 
   return (
-    <div className="p-4 lg:p-6 space-y-4 lg:space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-500 text-sm">Visão geral dos seus orçamentos</p>
-        </div>
-        <div className="flex-shrink-0 w-full lg:w-auto">
+    <div className="p-4 lg:p-6 space-y-6 lg:space-y-8">
+      <PageHeader
+        title="Dashboard"
+        subtitle="Visão geral dos seus orçamentos"
+        action={
           <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-[140px] rounded-lg border border-slate-200 px-4 py-2 text-sm hover:bg-gray-50 transition-colors">
               <SelectValue placeholder="Mês" />
             </SelectTrigger>
             <SelectContent>
@@ -173,193 +174,193 @@ export function Dashboard() {
               ))}
             </SelectContent>
           </Select>
-        </div>
-      </div>
+        }
+      />
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4 items-stretch">
-        {/* 1. Orçamentos — sempre primeiro */}
-        <Card className="order-1 lg:order-1 h-full flex flex-col">
-          <CardContent className="p-3 lg:p-6 flex-1 flex flex-col justify-center">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-              <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 rounded-xl flex items-center justify-center bg-primary-100 order-1 md:order-2 self-end md:self-auto mb-2 md:mb-0">
-                <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-              </div>
-              <div className="flex flex-col justify-center min-w-0 order-2 md:order-1">
-                <p className="text-lg font-bold text-gray-900">Orçamentos</p>
-                <p className="text-xl sm:text-2xl font-bold leading-none mt-1 text-green-600 tracking-tight">
-                  {totalQuotesThisMonth}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 2. Taxa de Aprovação — mobile: 2º | desktop: 4º */}
-        <Card className="order-2 lg:order-4 h-full flex flex-col">
-          <CardContent className="p-3 lg:p-6 flex-1 flex flex-col justify-center">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-              <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 rounded-xl flex items-center justify-center bg-amber-100 order-1 md:order-2 self-end md:self-auto mb-2 md:mb-0">
-                <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600" />
-              </div>
-              <div className="flex flex-col justify-center min-w-0 order-2 md:order-1">
-                <p className="text-lg font-bold text-gray-900 whitespace-nowrap md:whitespace-normal">Taxa de Aprovação</p>
-                <p className="text-xl sm:text-2xl font-bold leading-none mt-1 text-green-600 tracking-tight">
-                  {approvalRate.toFixed(0)}%
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 3. Valor Aprovado — mobile: 3º | desktop: 3º */}
-        <Card className="order-3 lg:order-3 h-full flex flex-col">
-          <CardContent className="p-3 lg:p-6 flex-1 flex flex-col justify-center">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-              <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 rounded-xl flex items-center justify-center bg-green-100 order-1 md:order-2 self-end md:self-auto mb-2 md:mb-0">
-                <Banknote className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
-              </div>
-              <div className="flex flex-col justify-center min-w-0 order-2 md:order-1">
-                <p className="text-lg font-bold text-gray-900 whitespace-nowrap md:whitespace-normal">Valor Aprovado</p>
-                <p className="text-xl sm:text-2xl font-bold leading-none mt-1 text-green-600 tracking-tight">
-                  {formatCurrency(closedValue)}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 4. Em Aberto — mobile: 4º | desktop: 2º */}
-        <Card className="order-4 lg:order-2 h-full flex flex-col">
-          <CardContent className="p-3 lg:p-6 flex-1 flex flex-col justify-center">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-              <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 rounded-xl flex items-center justify-center bg-blue-100 order-1 md:order-2 self-end md:self-auto mb-2 md:mb-0">
-                <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
-              </div>
-              <div className="flex flex-col justify-center min-w-0 order-2 md:order-1">
-                <p className="text-lg font-bold text-gray-900">Em Aberto</p>
-                <p className="text-xl sm:text-2xl font-bold leading-none mt-1 text-green-600 tracking-tight">
-                  {formatCurrency(openValue)}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 5. Aprovados — mobile: 5º, col-span-2 | desktop: 5º, 1 col */}
-        <Card className="order-5 lg:order-5 col-span-2 lg:col-span-1 h-full flex flex-col">
-          <CardContent className="p-3 lg:p-6 flex-1 flex flex-col justify-center">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-              <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 rounded-xl flex items-center justify-center bg-primary-100 order-1 md:order-2 self-end md:self-auto mb-2 md:mb-0">
-                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-              </div>
-              <div className="flex flex-col justify-center min-w-0 order-2 md:order-1">
-                <p className="text-lg font-bold text-gray-900">Aprovados</p>
-                <p className="text-xl sm:text-2xl font-bold leading-none mt-1 text-green-600 tracking-tight">
-                  {approvedQuotes.length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <MetricCard
+          icon={FileText}
+          label="Orçamentos"
+          value={totalQuotesThisMonth}
+          variant="primary"
+          order="order-1 lg:order-1"
+        />
+        <MetricCard
+          icon={TrendingUp}
+          label="Taxa de Aprovação"
+          value={`${approvalRate.toFixed(0)}%`}
+          variant="amber"
+          order="order-2 lg:order-4"
+        />
+        <MetricCard
+          icon={Banknote}
+          label="Valor Aprovado"
+          value={formatCurrency(closedValue)}
+          variant="green"
+          order="order-3 lg:order-3"
+        />
+        <MetricCard
+          icon={DollarSign}
+          label="Em Aberto"
+          value={formatCurrency(openValue)}
+          variant="blue"
+          order="order-4 lg:order-2"
+        />
+        <MetricCard
+          icon={CheckCircle}
+          label="Aprovados"
+          value={approvedQuotes.length}
+          variant="emerald"
+          order="order-5 lg:order-5"
+          className="col-span-2 lg:col-span-1"
+        />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-900">Orçamentos por Status</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {Object.entries(statusCounts).map(([status, count]) => (
-              <div key={status} className="flex items-center gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-gray-700">
-                      {getStatusLabel(status)}
-                    </span>
-                    <span className="text-sm font-semibold text-gray-900">{count}</span>
-                  </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all ${
-                        status === 'rascunho'
-                          ? 'bg-gray-400'
-                          : status === 'enviado'
-                          ? 'bg-blue-500'
-                          : status === 'aprovado'
-                          ? 'bg-primary'
-                          : status === 'recusado'
-                          ? 'bg-red-500'
-                          : 'bg-amber-500'
-                      }`}
-                      style={{
-                        width: `${quotesInMonth.length > 0 ? (count / quotesInMonth.length) * 100 : 0}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <div className="flex flex-col lg:flex-row gap-4">
-          <Card className="flex-1 min-w-0">
-            <CardContent className="p-4">
-              <p className="text-lg font-semibold text-gray-900 mb-2">
-                Top Clientes (Fechado no mês)
-              </p>
-              {topClientesFechado.length === 0 ? (
-                <p className="text-sm text-gray-500 py-4">Sem vendas fechadas neste mês.</p>
-              ) : (
-                <div className="space-y-1.5">
-                  {topClientesFechado.map((item, idx) => (
-                    <div
-                      key={item.id}
-                      className={`flex items-center justify-between gap-2 py-2 px-3 ${getRankStyle(idx)}`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        {getMedal(idx) && <span className="text-base flex-shrink-0">{getMedal(idx)}</span>}
-                        <p className="text-sm font-medium text-gray-900 truncate">{item.nome}</p>
-                      </div>
-                      <span className="text-sm font-semibold text-gray-900 flex-shrink-0">
-                        {formatCurrency(item.total)}
+      {/* Grid: Desktop = Status (60%) | Top Clientes + Maiores valores (40%). Mobile = empilhado */}
+      <div className="rounded-2xl bg-gradient-to-br from-slate-50/50 via-white/70 to-slate-50/40 p-4 lg:p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
+          {/* Orçamentos por Status — maior no desktop */}
+          <Card className="lg:col-span-7 rounded-2xl border border-slate-200/60 bg-white/80 backdrop-blur-sm shadow-[0_4px_24px_-4px_rgba(0,0,0,0.08)]">
+            <CardHeader className="p-5 pb-4 border-b border-slate-200/60">
+              <CardTitle className="text-base font-bold text-gray-900">Orçamentos por Status</CardTitle>
+            </CardHeader>
+            <CardContent className="p-5 pt-4 space-y-5">
+              {Object.entries(statusCounts).map(([status, count]) => (
+                <div key={status} className="flex items-center gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-xs font-medium text-slate-600">
+                        {getStatusLabel(status)}
                       </span>
+                      <span className="text-xs font-semibold text-slate-800 tabular-nums">{count}</span>
                     </div>
-                  ))}
+                    <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all shadow-sm ${
+                          status === 'rascunho'
+                            ? 'bg-gradient-to-r from-gray-400 to-gray-500'
+                            : status === 'enviado'
+                            ? 'bg-gradient-to-r from-blue-400 to-blue-600'
+                            : status === 'aprovado'
+                            ? 'bg-gradient-to-r from-primary-400 to-primary-600'
+                            : status === 'recusado'
+                            ? 'bg-gradient-to-r from-red-400 to-red-600'
+                            : 'bg-gradient-to-r from-amber-400 to-amber-600'
+                        }`}
+                        style={{
+                          width: `${quotesInMonth.length > 0 ? (count / quotesInMonth.length) * 100 : 0}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
-              )}
+              ))}
             </CardContent>
           </Card>
 
-          <Card className="flex-1 min-w-0">
-            <CardContent className="p-4">
-              <p className="text-lg font-semibold text-gray-900 mb-2">
-                Maiores valores em aberto
-              </p>
-              {maioresEmAberto.length === 0 ? (
-                <p className="text-sm text-gray-500 py-4">Nenhum valor em aberto neste mês.</p>
-              ) : (
-                <div className="space-y-1.5">
-                  {maioresEmAberto.map((q, idx) => (
-                    <div
-                      key={q.id}
-                      className={`flex items-center justify-between gap-2 py-2 px-3 ${getRankStyle(idx)}`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        {getMedal(idx) && <span className="text-base flex-shrink-0">{getMedal(idx)}</span>}
-                        <p className="text-sm font-medium text-gray-900 truncate">
-                          {q.cliente?.nome ?? 'Cliente'}
-                        </p>
-                      </div>
-                      <span className="text-sm font-semibold text-gray-900 flex-shrink-0">
-                        {formatCurrency(q.total)}
-                      </span>
+          {/* Coluna direita: Top Clientes + Maiores valores empilhados */}
+          <div className="lg:col-span-5 flex flex-col gap-4 lg:gap-6">
+            <Card className="rounded-2xl border border-slate-200/60 bg-white/80 backdrop-blur-sm shadow-[0_4px_24px_-4px_rgba(0,0,0,0.08)]">
+              <CardHeader className="p-5 pb-4 border-b border-slate-200/60">
+                <div className="flex items-center justify-between gap-2 min-h-0">
+                  <CardTitle className="text-base font-bold text-gray-900">Top Clientes</CardTitle>
+                  <div className="flex-shrink-0">
+                    <div className="hidden sm:flex rounded-lg bg-slate-100/80 p-0.5">
+                      {(['diario', 'semanal', 'mensal'] as const).map((v) => (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() => setTopClientesFilter(v)}
+                          className={`px-2 py-1 text-[10px] font-medium rounded-md transition-colors ${
+                            topClientesFilter === v
+                              ? 'bg-white text-slate-700 shadow-sm'
+                              : 'text-slate-500 hover:text-slate-600'
+                          }`}
+                        >
+                          {v === 'diario' ? 'Diário' : v === 'semanal' ? 'Semanal' : 'Mensal'}
+                        </button>
+                      ))}
                     </div>
-                  ))}
+                    <div className="sm:hidden">
+                      <Select value={topClientesFilter} onValueChange={(v) => setTopClientesFilter(v as typeof topClientesFilter)}>
+                        <SelectTrigger className="h-7 w-[88px] text-[10px] px-2 py-1 border-slate-200/60">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="diario">Diário</SelectItem>
+                          <SelectItem value="semanal">Semanal</SelectItem>
+                          <SelectItem value="mensal">Mensal</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardHeader>
+              <CardContent className="p-5 pt-4">
+                {topClientesFechado.length === 0 ? (
+                  <p className="text-xs text-slate-500 py-4">Sem vendas fechadas neste mês.</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {topClientesFechado.map((item, idx) => (
+                      <div
+                        key={item.id}
+                        className={`flex items-center justify-between gap-2 py-2 px-3 ${getRankStyle(idx)}`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <div className="h-8 w-8 flex-shrink-0 rounded-full bg-gradient-to-br from-emerald-500 to-blue-500 flex items-center justify-center">
+                            <User className="h-4 w-4 text-white" />
+                          </div>
+                          <p className="text-xs font-medium text-slate-800 truncate">{item.nome}</p>
+                        </div>
+                        <span className="text-xs font-semibold text-slate-800 tabular-nums flex-shrink-0">
+                          {formatCurrency(item.total)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-2xl border border-slate-200/60 bg-white/80 backdrop-blur-sm shadow-[0_4px_24px_-4px_rgba(0,0,0,0.08)]">
+              <CardHeader className="p-5 pb-4 border-b border-slate-200/60">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <CardTitle className="text-base font-bold text-gray-900">Maiores valores em aberto</CardTitle>
+                  <Badge variant="secondary" className="rounded-full px-2.5 py-0.5 text-[10px] font-medium bg-primary-100/80 text-primary-700 border-0">Follow-up</Badge>
+                </div>
+                <div className="mt-1.5 space-y-0.5">
+                  <p className="text-xs font-medium text-slate-600">Envie uma mensagem em orçamentos.</p>
+                  <p className="text-[10px] text-slate-500">Em breve: recupere automaticamente com o Assistente Inteligente CotaPro.</p>
+                </div>
+              </CardHeader>
+              <CardContent className="p-5 pt-4">
+                {maioresEmAberto.length === 0 ? (
+                  <p className="text-xs text-slate-500 py-4">Nenhum valor em aberto neste mês.</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {maioresEmAberto.map((q, idx) => (
+                      <div
+                        key={q.id}
+                        className={`flex items-center justify-between gap-2 py-2 px-3 ${getRankStyle(idx)}`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <div className="h-8 w-8 flex-shrink-0 rounded-full bg-gradient-to-br from-emerald-500 to-blue-500 flex items-center justify-center">
+                            <AlertCircle className="h-4 w-4 text-white" />
+                          </div>
+                          <p className="text-xs font-medium text-slate-800 truncate">
+                            {q.cliente?.nome ?? 'Cliente'}
+                          </p>
+                        </div>
+                        <span className="text-xs font-semibold text-slate-800 tabular-nums flex-shrink-0">
+                          {formatCurrency(q.total)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

@@ -405,24 +405,7 @@ export function QuoteCreate() {
                   </div>
                 </CardContent>
               </Card>
-              <div className="flex flex-col gap-2 pb-6">
-                <Button
-                  className="w-full h-12"
-                  onClick={() => handleSave('enviado')}
-                  disabled={isSaving}
-                >
-                  <Save className="h-5 w-5 mr-2" />
-                  {isSaving ? 'Salvando...' : editMode ? 'Atualizar Orçamento' : 'Gerar Orçamento'}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full h-12"
-                  onClick={() => handleSave('rascunho')}
-                  disabled={isSaving}
-                >
-                  Salvar Rascunho
-                </Button>
-              </div>
+              {/* Botões removidos no mobile: mantém apenas o sticky bottom fixo */}
             </div>
           </div>
 

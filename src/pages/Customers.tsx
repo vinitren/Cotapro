@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Trash2, Edit, Users, MoreVertical, Filter } from 'lucide-react';
+import { Plus, Search, Trash2, Edit, Users, MoreVertical, Filter, List } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
+import { pageCardClasses } from '../components/layout/PageLayout';
 import { Badge } from '../components/ui/badge';
 import {
   Dialog,
@@ -34,6 +35,22 @@ export function Customers() {
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<Customer | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isListOpen, setIsListOpen] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('customers_list_open');
+      return saved === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('customers_list_open', String(isListOpen));
+    } catch {
+      /* ignore */
+    }
+  }, [isListOpen]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -112,13 +129,13 @@ export function Customers() {
   }
 
   return (
-    <div className="p-4 lg:p-6 space-y-6">
+    <div className="p-4 lg:p-6 space-y-6 pb-36 lg:pb-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Clientes</h1>
           <p className="text-gray-500">Gerencie seus clientes</p>
         </div>
-        <Button onClick={() => setIsFormOpen(true)}>
+        <Button onClick={() => setIsFormOpen(true)} className="hidden sm:flex">
           <Plus className="h-4 w-4 mr-2" />
           Novo Cliente
         </Button>
@@ -128,17 +145,27 @@ export function Customers() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
-            placeholder="Buscar por nome, CPF/CNPJ, telefone ou email..."
+            placeholder={isListOpen ? 'Buscar por nome, CPF/CNPJ, telefone ou email...' : 'Abra a lista para pesquisar'}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10"
+            disabled={!isListOpen}
           />
         </div>
+        <Button
+          variant="outline"
+          className="w-full sm:w-auto"
+          onClick={() => setIsListOpen((v) => !v)}
+        >
+          <List className="h-4 w-4 mr-2" />
+          {isListOpen ? 'Ocultar clientes' : 'Ver clientes'}
+        </Button>
         <Dialog open={filterPanelOpen} onOpenChange={setFilterPanelOpen}>
           <Button
             variant="outline"
-            className="w-full sm:w-auto"
+            className="w-full sm:w-auto hidden sm:flex"
             onClick={() => setFilterPanelOpen(true)}
+            disabled={!isListOpen}
           >
             <Filter className="h-4 w-4 mr-2" />
             Filtro
@@ -169,28 +196,30 @@ export function Customers() {
         </Dialog>
       </div>
 
-      {tipoFilter !== 'all' && (
-        <div className="flex flex-wrap gap-2">
-          <Badge
-            variant="secondary"
-            className="cursor-pointer hover:bg-gray-300"
-            onClick={() => setTipoFilter('all')}
-          >
-            Tipo: {tipoFilter === 'pessoa_fisica' ? 'Pessoa Física' : 'Pessoa Jurídica'} ×
-          </Badge>
-        </div>
-      )}
-
-      {filteredCustomers.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <div className="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-              <Users className="h-8 w-8 text-gray-400" />
+      {isListOpen && (
+        <>
+          {tipoFilter !== 'all' && (
+            <div className="flex flex-wrap gap-2">
+              <Badge
+                variant="secondary"
+                className="cursor-pointer hover:bg-gray-300"
+                onClick={() => setTipoFilter('all')}
+              >
+                Tipo: {tipoFilter === 'pessoa_fisica' ? 'Pessoa Física' : 'Pessoa Jurídica'} ×
+              </Badge>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+          )}
+
+          {filteredCustomers.length === 0 ? (
+            <Card className={pageCardClasses}>
+          <CardContent className="flex flex-col items-center justify-center py-10 px-6">
+            <div className="h-14 w-14 bg-slate-100 rounded-full flex items-center justify-center mb-3">
+              <Users className="h-7 w-7 text-slate-400" />
+            </div>
+            <h3 className="text-base font-bold text-gray-900 mb-1">
               {search || tipoFilter !== 'all' ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
             </h3>
-            <p className="text-gray-500 text-center mb-4">
+            <p className="text-sm text-muted-foreground text-center mb-4">
               {search || tipoFilter !== 'all'
                 ? 'Tente ajustar os filtros'
                 : 'Comece adicionando seu primeiro cliente!'}
@@ -202,40 +231,43 @@ export function Customers() {
               </Button>
             )}
           </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
           {filteredCustomers.map((customer) => {
             const lastQuote = getLastQuote(customer.id);
             return (
-              <Card key={customer.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-3 sm:p-4">
-                  <div className="space-y-1.5 sm:space-y-4">
-                    <div className="flex items-center justify-between gap-2 min-w-0">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-base sm:text-xl font-bold text-gray-900 truncate">
+              <Card
+                key={customer.id}
+                className="rounded-xl border border-slate-200/70 bg-white shadow-sm hover:shadow-md transition-shadow"
+              >
+                <CardContent className="px-3 py-2.5">
+                  <div className="flex items-center justify-between gap-2 min-w-0">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">
                           {customer?.nome ?? ''}
                         </p>
-                        <p className="text-sm text-gray-500 truncate mt-0.5">
-                          {[customer?.telefone, lastQuote ? `${formatQuoteDisplay(lastQuote)} — ${formatDate(lastQuote.data_emissao)}` : null].filter(Boolean).join(' • ') || '—'}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <Badge variant="secondary" className="text-xs">
+                        <span className="flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-slate-100 text-slate-700">
                           {customer.tipo === 'pessoa_fisica' ? 'PF' : 'PJ'}
-                        </Badge>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8 sm:h-10 sm:w-10"
-                              aria-label="Mais opções"
-                            >
-                              <MoreVertical className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48">
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 truncate mt-0.5">
+                        {[customer?.telefone, customer?.email, customer?.cpf_cnpj, lastQuote ? `${formatQuoteDisplay(lastQuote)} — ${formatDate(lastQuote.data_emissao)}` : null].filter(Boolean).join(' • ') || '—'}
+                      </p>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 flex-shrink-0 text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+                          aria-label="Mais opções"
+                        >
+                          <MoreVertical className="h-3.5 w-3.5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
                             <DropdownMenuItem
                               onClick={() => handleEdit(customer)}
                               className="cursor-pointer"
@@ -250,16 +282,16 @@ export function Customers() {
                               <Trash2 className="h-4 w-4 mr-2" />
                               Excluir cliente
                             </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     </div>
-                  </div>
                 </CardContent>
               </Card>
             );
           })}
-        </div>
+            </div>
+          )}
+        </>
       )}
 
       <CustomerForm
@@ -287,6 +319,32 @@ export function Customers() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Botões fixos no rodapé - apenas mobile */}
+      <div
+        className="fixed bottom-16 left-0 right-0 z-30 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] p-4 lg:hidden"
+        style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
+      >
+        <div className="flex items-center gap-3 max-w-[640px] mx-auto">
+          <Button onClick={() => setIsFormOpen(true)} className="flex-1 h-12">
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Cliente
+          </Button>
+          <Button
+            variant="outline"
+            className="flex-1 h-12"
+            onClick={() => setFilterPanelOpen(true)}
+          >
+            <Filter className="h-4 w-4 mr-2" />
+            Filtro
+            {tipoFilter !== 'all' && (
+              <Badge variant="secondary" className="ml-2 h-5 min-w-5 px-1.5 text-xs">
+                1
+              </Badge>
+            )}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

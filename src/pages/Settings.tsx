@@ -1,12 +1,12 @@
 import { useRef, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Building2, Save, Upload, Trash2, ImageIcon, CreditCard } from 'lucide-react';
+import { Building2, Save, Upload, Trash2, ImageIcon, CreditCard, ChevronDown, MapPin, Settings2, User, LogOut } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import {
   Select,
   SelectContent,
@@ -48,8 +48,63 @@ const PIX_TYPE_OPTIONS = [
 
 const PIX_MAX_LENGTH = 200;
 
+const EMPRESA_SECTIONS = ['logo', 'dados', 'endereco', 'pix'] as const;
+const PREFERENCIAS_SECTIONS = ['preferencias'] as const;
+const CONTA_SECTIONS = ['conta'] as const;
+
+/** Accordion card: mobile e desktop. Usuário abre/fecha manualmente. */
+function AccordionCard({
+  id,
+  title,
+  description,
+  icon,
+  openSections,
+  onToggle,
+  children,
+  className,
+}: {
+  id: string;
+  title: string;
+  description?: string;
+  icon: React.ReactNode;
+  openSections: string[];
+  onToggle: (id: string) => void;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const isOpen = openSections.includes(id);
+
+  return (
+    <div className={className ?? ''}>
+      <div className="rounded-xl border border-slate-200/70 bg-white overflow-hidden shadow-[0_2px_8px_-2px_rgba(0,0,0,0.06)]">
+        <button
+          type="button"
+          onClick={() => onToggle(id)}
+          aria-expanded={isOpen}
+          className="w-full flex items-center justify-between gap-2 p-4 text-left hover:bg-slate-50/80 transition-colors"
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            {icon}
+            <div className="min-w-0">
+              <p className="font-semibold text-gray-900">{title}</p>
+              {description && (
+                <p className="text-sm text-slate-500 truncate">{description}</p>
+              )}
+            </div>
+          </div>
+          <ChevronDown
+            className={`h-5 w-5 text-slate-400 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          />
+        </button>
+        {isOpen && <div className="border-t border-slate-100 p-4">{children}</div>}
+      </div>
+    </div>
+  );
+}
+
 export function Settings() {
-  const { company, settings, setCompany, setSettings } = useStore();
+  const navigate = useNavigate();
+  const { company, settings, setCompany, setSettings, logout } = useStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [pixType, setPixType] = useState<string>('');
@@ -417,34 +472,65 @@ export function Settings() {
   };
 
   const currentLogo = companyForm.watch('logo_url') || company.logo_url;
+  const [userEmail, setUserEmail] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'empresa' | 'preferencias' | 'conta'>('empresa');
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserEmail(session?.user?.email ?? '');
+    });
+  }, []);
+  /** Todos os cards iniciam fechados, exceto "Logo da Empresa" que inicia aberto. */
+  const [openSections, setOpenSections] = useState<string[]>(['logo']);
+
+  useEffect(() => {
+    if (activeTab === 'preferencias') {
+      setOpenSections([...PREFERENCIAS_SECTIONS]);
+    } else if (activeTab === 'conta') {
+      setOpenSections([...CONTA_SECTIONS]);
+    } else {
+      setOpenSections(['logo']);
+    }
+  }, [activeTab]);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const handleToggleSection = (id: string) => {
+    setOpenSections((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+    );
+  };
 
   return (
-    <div className="p-4 lg:p-6 space-y-6">
+    <div className="p-4 lg:p-6 space-y-6 lg:space-y-8 pb-36 lg:pb-6 min-h-screen bg-slate-50/40">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Configurações</h1>
-        <p className="text-gray-500">Gerencie as informações da sua empresa</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Configurações</h1>
+        <p className="text-sm text-muted-foreground mt-1">Gerencie as informações da sua empresa</p>
       </div>
 
-      <Tabs defaultValue="empresa" className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'empresa' | 'preferencias' | 'conta')} className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-3">
           <TabsTrigger value="empresa">Empresa</TabsTrigger>
           <TabsTrigger value="preferencias">Preferências</TabsTrigger>
+          <TabsTrigger value="conta">Conta</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="empresa" className="mt-6">
-          <form onSubmit={companyForm.handleSubmit(onCompanySubmit)}>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card className="lg:col-span-1">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ImageIcon className="h-5 w-5" />
-                    Logo da Empresa
-                  </CardTitle>
-                  <CardDescription>
-                    Aparecerá nos orçamentos em PDF
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+        <TabsContent value="empresa" className="mt-6 lg:mt-8">
+          <form id="empresa-form" onSubmit={companyForm.handleSubmit(onCompanySubmit)}>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+              <AccordionCard
+                id="logo"
+                title="Logo da Empresa"
+                description="Aparecerá nos orçamentos em PDF"
+                icon={<ImageIcon className="h-5 w-5" />}
+                openSections={openSections}
+                onToggle={handleToggleSection}
+                className="lg:col-span-1"
+              >
+                <div className="space-y-4">
                   <div className="flex flex-col items-center">
                     {currentLogo ? (
                       <div className="relative group">
@@ -508,20 +594,19 @@ export function Settings() {
                   <p className="text-xs text-gray-500 text-center">
                     Formatos: JPG, PNG, GIF. Tamanho máximo: 2MB
                   </p>
-                </CardContent>
-              </Card>
+                </div>
+              </AccordionCard>
 
-              <Card className="lg:col-span-1">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Building2 className="h-5 w-5" />
-                    Dados da Empresa
-                  </CardTitle>
-                  <CardDescription>
-                    Informações que aparecerão nos orçamentos
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+              <AccordionCard
+                id="dados"
+                title="Dados da Empresa"
+                description="Informações que aparecerão nos orçamentos"
+                icon={<Building2 className="h-5 w-5" />}
+                openSections={openSections}
+                onToggle={handleToggleSection}
+                className="lg:col-span-1"
+              >
+                <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="nome">Nome / Razão Social</Label>
                     <Input
@@ -584,17 +669,19 @@ export function Settings() {
                       )}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </AccordionCard>
 
-              <Card className="lg:col-span-1">
-                <CardHeader>
-                  <CardTitle>Endereço</CardTitle>
-                  <CardDescription>
-                    Endereço comercial da empresa
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+              <AccordionCard
+                id="endereco"
+                title="Endereço"
+                description="Endereço comercial da empresa"
+                icon={<MapPin className="h-5 w-5" />}
+                openSections={openSections}
+                onToggle={handleToggleSection}
+                className="lg:col-span-1"
+              >
+                <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="cep">CEP</Label>
                     <Input
@@ -671,20 +758,19 @@ export function Settings() {
                       />
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </AccordionCard>
 
-              <Card className="lg:col-span-3">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="h-5 w-5" />
-                    Pagamento (Pix)
-                  </CardTitle>
-                  <CardDescription>
-                    Dados para recebimento via Pix
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+              <AccordionCard
+                id="pix"
+                title="Pagamento (Pix)"
+                description="Dados para recebimento via Pix"
+                icon={<CreditCard className="h-5 w-5" />}
+                openSections={openSections}
+                onToggle={handleToggleSection}
+                className="lg:col-span-3"
+              >
+                <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="pix_type">Tipo da chave Pix</Label>
@@ -758,11 +844,11 @@ export function Settings() {
                       </div>
                     )}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </AccordionCard>
             </div>
 
-            <div className="flex justify-end mt-6">
+            <div className="flex justify-end mt-6 hidden lg:flex">
               <Button type="submit">
                 <Save className="h-4 w-4 mr-2" />
                 Salvar Dados da Empresa
@@ -771,16 +857,18 @@ export function Settings() {
           </form>
         </TabsContent>
 
-        <TabsContent value="preferencias" className="mt-6">
-          <form onSubmit={settingsForm.handleSubmit(onSettingsSubmit)}>
-            <Card className="max-w-2xl">
-              <CardHeader>
-                <CardTitle>Preferências de Orçamentos</CardTitle>
-                <CardDescription>
-                  Configurações padrão para novos orçamentos
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
+        <TabsContent value="preferencias" className="mt-6 lg:mt-8">
+          <form id="preferencias-form" onSubmit={settingsForm.handleSubmit(onSettingsSubmit)}>
+            <AccordionCard
+              id="preferencias"
+              title="Preferências de Orçamentos"
+              description="Configurações padrão para novos orçamentos"
+              icon={<Settings2 className="h-5 w-5" />}
+              openSections={openSections}
+              onToggle={handleToggleSection}
+              className="max-w-2xl"
+            >
+              <div className="space-y-6 p-4">
                 <div className="space-y-2">
                   <Label htmlFor="validade_padrao">Validade Padrão (dias)</Label>
                   <Controller
@@ -816,17 +904,82 @@ export function Settings() {
                   />
                 </div>
 
-                <div className="flex justify-end">
+                <div className="flex justify-end hidden lg:flex">
                   <Button type="submit">
                     <Save className="h-4 w-4 mr-2" />
                     Salvar Preferências
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </AccordionCard>
           </form>
         </TabsContent>
+
+        <TabsContent value="conta" className="mt-6 lg:mt-8">
+          <AccordionCard
+            id="conta"
+            title="Conta"
+            description="Dados da sua conta e sessão"
+            icon={<User className="h-5 w-5" />}
+            openSections={openSections}
+            onToggle={handleToggleSection}
+            className="max-w-2xl"
+          >
+            <div className="space-y-6 p-4">
+              <div className="space-y-2">
+                <Label className="text-sm text-gray-500">E-mail</Label>
+                <Input
+                  value={userEmail}
+                  readOnly
+                  disabled
+                  className="bg-gray-50 text-gray-700 cursor-not-allowed"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm text-gray-500">Plano atual</Label>
+                <p className="text-sm text-gray-600 py-2">Free</p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sair
+              </Button>
+            </div>
+          </AccordionCard>
+        </TabsContent>
       </Tabs>
+
+      {/* Sticky footer - apenas mobile (oculto na aba Conta) */}
+      <div
+        className={`fixed bottom-16 left-0 right-0 z-30 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] p-4 lg:hidden ${activeTab === 'conta' ? 'hidden' : ''}`}
+        style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
+      >
+        <div className="max-w-[640px] mx-auto">
+          {activeTab === 'empresa' ? (
+            <Button
+              type="submit"
+              form="empresa-form"
+              className="w-full h-12"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              Salvar dados
+            </Button>
+          ) : (
+            <Button
+              type="submit"
+              form="preferencias-form"
+              className="w-full h-12"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              Salvar preferências
+            </Button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -22,6 +22,9 @@ export default {
         page: {
           bg: '#f6fef9',
         },
+        muted: {
+          foreground: '#64748b',
+        },
       },
       keyframes: {
         'accordion-down': {
