@@ -473,16 +473,25 @@ export function QuoteDetail() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2">
               <CardTitle>Resumo</CardTitle>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDownloadPDF}
-                disabled={pdfLoading}
-                className="hidden md:inline-flex"
-              >
-                {pdfLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-                {pdfLoading ? 'Gerando...' : 'PDF'}
-              </Button>
+              <div className="hidden md:flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={handleWhatsApp}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  WhatsApp
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownloadPDF}
+                  disabled={pdfLoading}
+                >
+                  {pdfLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                  {pdfLoading ? 'Gerando...' : 'PDF'}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between text-sm">

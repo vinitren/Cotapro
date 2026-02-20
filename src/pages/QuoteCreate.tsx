@@ -49,7 +49,9 @@ export function QuoteCreate() {
   const [descontoTipo, setDescontoTipo] = useState<'percentual' | 'fixo'>('percentual');
   const [descontoValor, setDescontoValor] = useState('0');
   const [observacoes, setObservacoes] = useState(settings.observacoes_padrao);
+  const [observacoesInitial, setObservacoesInitial] = useState(settings.observacoes_padrao);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingObs, setIsSavingObs] = useState(false);
   const [clientModalOpen, setClientModalOpen] = useState(false);
   const [itemModalOpen, setItemModalOpen] = useState(false);
   const [configModalOpen, setConfigModalOpen] = useState(false);
@@ -203,6 +205,40 @@ export function QuoteCreate() {
     }
   };
 
+  const observacoesDirty = observacoes !== observacoesInitial;
+
+  const saveObservations = async () => {
+    if (!observacoesDirty) return;
+
+    if (editMode && editId) {
+      setIsSavingObs(true);
+      try {
+        await updateQuote(editId, { observacoes });
+        setObservacoesInitial(observacoes);
+        toast({
+          title: 'Observações salvas',
+          description: 'As observações foram atualizadas neste orçamento.',
+          variant: 'success',
+        });
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : '';
+        toast({
+          title: 'Erro ao salvar',
+          description: msg || 'Não foi possível salvar as observações. Tente novamente.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsSavingObs(false);
+      }
+    } else {
+      toast({
+        title: 'Salve como rascunho antes',
+        description: 'Para salvar apenas as observações neste orçamento, salve primeiro como rascunho.',
+        variant: 'default',
+      });
+    }
+  };
+
   useEffect(() => {
     if (!userId) return;
     getItemsCatalog(userId)
@@ -232,7 +268,9 @@ export function QuoteCreate() {
           setItens(quote.itens ?? []);
           setDescontoTipo(quote.desconto_tipo ?? 'percentual');
           setDescontoValor(String(quote.desconto_valor ?? 0));
-          setObservacoes(quote.observacoes ?? settings.observacoes_padrao);
+          const obs = quote.observacoes ?? settings.observacoes_padrao;
+          setObservacoes(obs);
+          setObservacoesInitial(obs);
         } else {
           toast({
             title: 'Orçamento não encontrado',
@@ -377,7 +415,19 @@ export function QuoteCreate() {
               <Card>
                 <CardContent className="p-4 space-y-3">
                   <div className="space-y-2">
-                    <Label className="text-sm">Observações</Label>
+                    <div className="flex items-center justify-between gap-2">
+                      <Label className="text-sm">Observações</Label>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={saveObservations}
+                        disabled={!observacoesDirty || isSavingObs}
+                        className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        {isSavingObs ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                        Salvar observações
+                      </Button>
+                    </div>
                     <Textarea
                       value={observacoes}
                       onChange={(e) => setObservacoes(e.target.value)}
@@ -414,7 +464,19 @@ export function QuoteCreate() {
             <Card>
               <CardContent className="p-4 space-y-3">
                 <div className="space-y-2">
-                  <Label className="text-sm">Observações</Label>
+                  <div className="flex items-center justify-between gap-2">
+                    <Label className="text-sm">Observações</Label>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={saveObservations}
+                      disabled={!observacoesDirty || isSavingObs}
+                      className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      {isSavingObs ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                      Salvar observações
+                    </Button>
+                  </div>
                   <Textarea
                     value={observacoes}
                     onChange={(e) => setObservacoes(e.target.value)}
