@@ -18,6 +18,15 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary:', error, errorInfo);
+    // ChunkLoadError: forçar reload para buscar versão atual
+    const isChunkError =
+      error?.name === 'ChunkLoadError' ||
+      error?.message?.includes('Loading chunk') ||
+      error?.message?.includes('Failed to fetch dynamically imported module');
+    if (isChunkError) {
+      window.location.reload();
+      return;
+    }
   }
 
   render() {
