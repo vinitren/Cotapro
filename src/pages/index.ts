@@ -9,3 +9,4 @@ export { PublicQuote } from './PublicQuote';
 export { Catalog } from './Catalog';
 export { Settings } from './Settings';
 export { Help } from './Help';
+export { AuthCallback } from './AuthCallback';

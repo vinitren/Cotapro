@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/layout';
-import { Login, Signup, Dashboard, Customers, Quotes, QuoteCreate, QuoteDetail, PublicQuote, Catalog, Settings, Help } from './pages';
+import { Login, Signup, AuthCallback, Dashboard, Customers, Quotes, QuoteCreate, QuoteDetail, PublicQuote, Catalog, Settings, Help } from './pages';
 import { Toaster } from './components/ui/toaster';
 import { LoadingScreen } from './components/LoadingScreen';
 import { useStore } from './store';
@@ -108,6 +108,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/orcamento/:id" element={<PublicQuote />} />
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
