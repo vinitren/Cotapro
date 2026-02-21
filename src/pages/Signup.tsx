@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
-import { Receipt } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader } from '../components/ui/card';
+import { AuthLayout } from '../components/layout/AuthLayout';
 import { useStore } from '../store';
 import { supabase, upsertProfile, isSupabaseConfigured } from '../lib/supabase';
 import { getProfile } from '../lib/supabase';
@@ -136,28 +136,43 @@ export function Signup() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-600 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-2xl border-0 rounded-3xl">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="h-16 w-16 bg-emerald-100 rounded-2xl flex items-center justify-center">
-              <Receipt className="h-8 w-8 text-emerald-600" />
-            </div>
+    <AuthLayout variant="signup">
+      <Card className="w-full max-w-md mx-auto border border-gray-100 shadow-xl shadow-gray-200/50 rounded-2xl">
+        <CardHeader className="text-center pb-8 pt-2 lg:pt-8 px-8">
+          <div className="flex flex-col items-center gap-0 lg:gap-1">
+            {/* Logo completa - somente mobile */}
+            <img
+              src="/brand/Cota%20pro%20logo%20preta%20completa%20png.png"
+              alt="CotaPro"
+              className="lg:hidden w-64 h-auto object-contain mx-auto mb-3"
+            />
+            {/* Título mobile */}
+            <h1 className="lg:hidden text-2xl font-extrabold text-gray-900 tracking-tight">
+              Criar conta
+            </h1>
+            {/* Título desktop */}
+            <p className="hidden lg:block text-xs sm:text-sm font-semibold uppercase tracking-wide text-gray-700">
+              CRIAR CONTA NO
+            </p>
+            <h1 className="hidden lg:block text-3xl sm:text-4xl font-extrabold tracking-tight">
+              <span className="text-gray-900">Cota</span><span className="text-primary">Pro</span>
+            </h1>
+            <CardDescription className="text-base text-gray-500 font-normal mt-1 lg:mt-2">
+              Comece a criar orçamentos profissionais agora
+            </CardDescription>
           </div>
-          <CardTitle className="text-3xl font-bold text-gray-900">Criar conta</CardTitle>
-          <CardDescription className="text-base text-gray-600">
-            Comece a criar orçamentos profissionais agora
-          </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6 px-8 pb-8">
           {!isSupabaseConfigured && (
-            <div className="mb-4 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+            <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm">
               Supabase não configurado. Defina <strong>VITE_SUPABASE_URL</strong> e <strong>VITE_SUPABASE_ANON_KEY</strong> nas variáveis de ambiente da Vercel e faça um novo deploy.
             </div>
           )}
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email</Label>
+              <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                Email
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -166,7 +181,7 @@ export function Signup() {
                 onChange={(e) => setEmail(e.target.value)}
                 error={!!errors.email}
                 disabled={loading}
-                className="h-11 rounded-xl"
+                className="h-12 rounded-xl"
               />
               {errors.email && (
                 <p className="text-sm text-red-500">{errors.email}</p>
@@ -174,7 +189,9 @@ export function Signup() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium text-gray-700">Senha</Label>
+              <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                Senha
+              </Label>
               <Input
                 id="password"
                 type="password"
@@ -183,7 +200,7 @@ export function Signup() {
                 onChange={(e) => setPassword(e.target.value)}
                 error={!!errors.password}
                 disabled={loading}
-                className="h-11 rounded-xl"
+                className="h-12 rounded-xl"
               />
               {errors.password && (
                 <p className="text-sm text-red-500">{errors.password}</p>
@@ -191,7 +208,9 @@ export function Signup() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="company_name" className="text-sm font-medium text-gray-700">Nome da empresa</Label>
+              <Label htmlFor="company_name" className="text-sm font-medium text-gray-700">
+                Nome da empresa
+              </Label>
               <Input
                 id="company_name"
                 type="text"
@@ -200,7 +219,7 @@ export function Signup() {
                 onChange={(e) => setCompanyName(e.target.value)}
                 error={!!errors.company_name}
                 disabled={loading}
-                className="h-11 rounded-xl"
+                className="h-12 rounded-xl"
               />
               {errors.company_name && (
                 <p className="text-sm text-red-500">{errors.company_name}</p>
@@ -213,39 +232,46 @@ export function Signup() {
               </div>
             )}
             {confirmMessage && (
-              <p className="text-sm text-emerald-600 bg-emerald-50 p-3 rounded-lg">
+              <p className="text-sm text-primary-600 bg-primary-50 p-3 rounded-xl border border-primary-100">
                 {confirmMessage}
               </p>
             )}
 
-            <Button 
-              type="submit" 
-              className="w-full h-12 rounded-xl text-base font-semibold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-lg hover:shadow-xl transition-all duration-200" 
+            <Button
+              type="submit"
+              className="w-full h-12 rounded-xl text-base font-semibold bg-primary hover:bg-primary-hover text-white shadow-sm transition-colors"
               disabled={loading || !isSupabaseConfigured}
             >
               {loading ? 'Cadastrando...' : 'Cadastrar'}
             </Button>
           </form>
 
-          <div className="relative mt-6">
+          <div className="relative pt-2">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200"></div>
+              <div className="w-full border-t border-gray-100"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-500">Já tem uma conta?</span>
+              <span className="px-4 bg-white text-gray-500">Já tem conta?</span>
             </div>
           </div>
 
-          <p className="text-center text-sm text-gray-600 mt-4">
-            <Link 
-              to="/login" 
-              className="text-emerald-600 hover:text-emerald-700 font-semibold hover:underline transition-colors"
+          <p className="text-center text-sm text-gray-500 pt-1">
+            <Link
+              to="/login"
+              className="text-primary hover:text-primary-hover font-semibold hover:underline transition-colors"
             >
               Fazer login
             </Link>
           </p>
         </CardContent>
       </Card>
-    </div>
+
+      {/* Benefícios Mobile */}
+      <div className="lg:hidden mt-6 space-y-1 text-center px-4">
+        <p className="text-sm text-gray-500 font-medium leading-tight">Propostas prontas antes do cliente pedir.</p>
+        <p className="text-sm text-gray-500 font-medium leading-tight">Pagamento sem complicação.</p>
+        <p className="text-sm text-gray-500 font-medium leading-tight">Mais fechamentos comprovados.</p>
+      </div>
+    </AuthLayout>
   );
 }
