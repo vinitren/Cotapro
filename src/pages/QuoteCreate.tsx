@@ -289,8 +289,8 @@ export function QuoteCreate() {
 
   if (editMode && isLoadingEdit) {
     return (
-      <div className="min-h-screen bg-page-bg flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3 text-gray-500">
+      <div className="min-h-screen bg-[rgb(var(--bg))] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3 text-[rgb(var(--muted))]">
           <Loader2 className="h-8 w-8 animate-spin" />
           <p className="text-sm">Carregando orçamento...</p>
         </div>
@@ -299,7 +299,7 @@ export function QuoteCreate() {
   }
 
   return (
-    <div className="min-h-screen bg-page-bg pb-32 lg:pb-8">
+    <div className="min-h-screen bg-[rgb(var(--bg))] pb-32 lg:pb-8">
       <div className="max-w-[640px] lg:max-w-6xl mx-auto px-4 lg:px-6 pt-4 lg:pt-6">
         <div className="lg:grid lg:grid-cols-[1fr_340px] lg:gap-8 lg:items-start">
           {/* Coluna esquerda: Header + Cliente + Itens */}
@@ -310,10 +310,10 @@ export function QuoteCreate() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold text-gray-900">
+            <h1 className="text-xl font-bold text-[rgb(var(--fg))]">
               {editMode ? 'Editar Orçamento' : 'Novo Orçamento'}
             </h1>
-            <p className="text-sm text-gray-500 truncate">
+            <p className="text-sm text-[rgb(var(--muted))] truncate">
               {editMode ? 'Altere os dados e salve' : 'Número gerado ao salvar'}
             </p>
           </div>
@@ -339,22 +339,22 @@ export function QuoteCreate() {
                 <User className="h-6 w-6 text-primary" />
               </div>
               <div className="min-w-0">
-                <p className="font-medium text-gray-900 truncate">
+                <p className="font-medium text-[rgb(var(--fg))] truncate">
                   {selectedCustomer?.nome ?? placeholderCliente.nome}
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-[rgb(var(--muted))]">
                   {selectedCustomer ? 'Toque para alterar' : 'Toque para selecionar'}
                 </p>
               </div>
             </div>
-            <ChevronRight className="h-5 w-5 text-gray-400 shrink-0" />
+            <ChevronRight className="h-5 w-5 text-[rgb(var(--muted))] shrink-0" />
           </CardContent>
         </Card>
 
         {/* Itens */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-gray-900">Itens</h2>
+            <h2 className="font-semibold text-[rgb(var(--fg))]">Itens</h2>
             <Button size="sm" onClick={openAddItem}>
               <Plus className="h-4 w-4 mr-1" />
               Adicionar
@@ -366,24 +366,24 @@ export function QuoteCreate() {
                 <button
                   type="button"
                   onClick={openAddItem}
-                  className="w-full p-6 flex flex-col items-center justify-center gap-2 text-gray-500 hover:bg-gray-50 transition-colors"
+                  className="w-full p-6 flex flex-col items-center justify-center gap-2 text-[rgb(var(--muted))] hover:bg-white/10 transition-colors"
                 >
-                  <Plus className="h-10 w-10 text-gray-300" />
+                  <Plus className="h-10 w-10 text-[rgb(var(--muted))]" />
                   <span className="text-sm font-medium">Adicione o primeiro item</span>
                 </button>
               ) : (
-                <div className="divide-y divide-gray-100">
+                <div className="divide-y divide-[rgb(var(--border))]">
                   {itens.map((item) => (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between gap-3 p-4 hover:bg-gray-50/50 active:bg-gray-100 transition-colors"
+                      className="flex items-center justify-between gap-3 p-4 hover:bg-white/5 active:bg-white/10 transition-colors"
                     >
                       <button
                         type="button"
                         className="flex-1 min-w-0 text-left"
                         onClick={() => openEditItem(item)}
                       >
-                        <p className="font-medium text-gray-900 truncate">
+                        <p className="font-medium text-[rgb(var(--fg))] truncate">
                           {item.descricao || 'Item sem descrição'}
                         </p>
                         <p className="text-sm text-primary font-semibold">
@@ -393,7 +393,7 @@ export function QuoteCreate() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-9 w-9 text-red-500 hover:text-red-600 hover:bg-red-50 shrink-0"
+                        className="h-9 w-9 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 shrink-0"
                         onClick={(e) => {
                           e.stopPropagation();
                           removeItem(item.id);
@@ -437,7 +437,7 @@ export function QuoteCreate() {
                     />
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Subtotal</span>
+                    <span className="text-[rgb(var(--muted))]">Subtotal</span>
                     <span className="font-medium">{formatCurrency(subtotal)}</span>
                   </div>
                   {descontoCalculado > 0 && (
@@ -448,7 +448,7 @@ export function QuoteCreate() {
                   )}
                   <Separator />
                   <div className="flex justify-between items-center">
-                    <span className="font-semibold text-gray-900">Total</span>
+                    <span className="font-semibold text-[rgb(var(--fg))]">Total</span>
                     <span className="text-2xl font-bold text-primary">
                       {formatCurrency(total)}
                     </span>
@@ -486,7 +486,7 @@ export function QuoteCreate() {
                   />
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Subtotal</span>
+                  <span className="text-[rgb(var(--muted))]">Subtotal</span>
                   <span className="font-medium">{formatCurrency(subtotal)}</span>
                 </div>
                 {descontoCalculado > 0 && (
@@ -497,7 +497,7 @@ export function QuoteCreate() {
                 )}
                 <Separator />
                 <div className="flex justify-between items-center">
-                  <span className="font-semibold text-gray-900">Total</span>
+                  <span className="font-semibold text-[rgb(var(--fg))]">Total</span>
                   <span className="text-2xl font-bold text-primary">
                     {formatCurrency(total)}
                   </span>
@@ -528,7 +528,7 @@ export function QuoteCreate() {
 
       {/* Barra fixa - botões de ação (apenas mobile) */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] p-4 max-w-[640px] mx-auto lg:hidden"
+        className="fixed bottom-0 left-0 right-0 z-30 bg-[rgb(var(--card))] border-t border-[rgb(var(--border))] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] p-4 max-w-[640px] mx-auto lg:hidden"
         style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
       >
         <div className="flex flex-col gap-2">

@@ -2,14 +2,61 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===== Tokens de cor para Dark Mode (CSS variables) ===== */
+:root {
+  --bg: 246 254 249;        /* page-bg #f6fef9 */
+  --fg: 17 24 39;           /* gray-900 */
+  --card: 255 255 255;
+  --cardFg: 17 24 39;
+  --muted: 100 116 139;     /* slate-500 */
+  --border: 229 231 235;    /* gray-200 */
+  --input: 229 231 235;
+}
+
+.dark {
+  --bg: 15 23 42;           /* slate-900 */
+  --fg: 241 245 249;        /* slate-100 */
+  --card: 30 41 59;         /* slate-800 */
+  --cardFg: 241 245 249;
+  --muted: 148 163 184;     /* slate-400 */
+  --border: 51 65 85;       /* slate-700 */
+  --input: 51 65 85;
+}
+
+/* Página pública de orçamento: sempre tema claro (não alterar) */
+.force-light {
+  --bg: 246 254 249;
+  --fg: 17 24 39;
+  --card: 255 255 255;
+  --cardFg: 17 24 39;
+  --muted: 100 116 139;
+  --border: 229 231 235;
+  --input: 229 231 235;
+}
+
 @layer base {
   * {
-    @apply border-gray-200;
+    border-color: rgb(var(--border));
+  }
+
+  html {
+    height: 100%;
+    background: rgb(var(--bg));
+    color: rgb(var(--fg));
   }
 
   body {
-    @apply bg-page-bg text-gray-900 antialiased;
+    height: 100%;
+    background: rgb(var(--bg));
+    color: rgb(var(--fg));
     font-feature-settings: "rlig" 1, "calt" 1;
+    @apply antialiased;
+  }
+
+  #root {
+    height: 100%;
+    min-height: 100%;
+    background: rgb(var(--bg));
   }
 }
 

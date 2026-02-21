@@ -1,4 +1,6 @@
-import { CheckCircle2, Zap, TrendingUp, Target, MessageSquare, Users, Puzzle } from 'lucide-react';
+import { CheckCircle2, Zap, TrendingUp, Target, MessageSquare, Users, Puzzle, Sun, Moon } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
+import { Button } from '../ui/button';
 
 interface BulletItem {
   title: string;
@@ -49,8 +51,18 @@ interface AuthLayoutProps {
  */
 export function AuthLayout({ children, variant = 'login' }: AuthLayoutProps) {
   const panel = variant === 'signup' ? SIGNUP_PANEL : LOGIN_PANEL;
+  const { theme, toggleTheme } = useTheme();
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-primary-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-primary-50 dark:bg-[rgb(var(--bg))] flex items-center justify-center p-4 relative">
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={toggleTheme}
+        className="absolute top-4 right-4 text-[rgb(var(--fg))] hover:bg-black/5 dark:hover:bg-white/10 z-10"
+        aria-label={theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
+      >
+        {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+      </Button>
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
         {/* Coluna esquerda - Painel de branding (oculto no mobile) - dark mode premium */}
         <div className="hidden lg:flex relative overflow-hidden rounded-2xl border border-white/5 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 shadow-2xl shadow-black/30 backdrop-blur-sm">
@@ -110,7 +122,7 @@ export function AuthLayout({ children, variant = 'login' }: AuthLayoutProps) {
               </div>
 
               {panel.footer && (
-                <p className="text-sm text-gray-500 pt-2">
+                <p className="text-sm text-[rgb(var(--muted))] pt-2">
                   {panel.footer}
                 </p>
               )}

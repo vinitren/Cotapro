@@ -153,7 +153,7 @@ export function Dashboard() {
     if (idx === 0) return 'bg-emerald-50/70 border border-emerald-200/50 rounded-xl hover:bg-emerald-50/90 transition-colors';
     if (idx === 1) return 'bg-emerald-50/50 border border-emerald-200/40 rounded-xl hover:bg-emerald-50/80 transition-colors';
     if (idx === 2) return 'bg-emerald-50/40 border border-emerald-200/30 rounded-xl hover:bg-emerald-50/70 transition-colors';
-    return 'bg-slate-50/50 border border-slate-200/40 rounded-xl hover:bg-slate-100/60 transition-colors';
+    return 'bg-[rgb(var(--card))]/50 border border-[rgb(var(--border))]/40 rounded-xl hover:bg-[rgb(var(--card))]/70 transition-colors';
   };
 
   return (
@@ -163,7 +163,7 @@ export function Dashboard() {
         subtitle="Visão geral dos seus orçamentos"
         action={
           <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-            <SelectTrigger className="w-[140px] rounded-lg border border-slate-200 px-4 py-2 text-sm hover:bg-gray-50 transition-colors">
+            <SelectTrigger className="w-[140px] rounded-lg border border-[rgb(var(--border))] px-4 py-2 text-sm hover:bg-white/10 transition-colors">
               <SelectValue placeholder="Mês" />
             </SelectTrigger>
             <SelectContent>
@@ -219,24 +219,24 @@ export function Dashboard() {
       </div>
 
       {/* Grid: Desktop = Status (60%) | Top Clientes + Maiores valores (40%). Mobile = empilhado */}
-      <div className="rounded-2xl bg-gradient-to-br from-slate-50/50 via-white/70 to-slate-50/40 p-4 lg:p-6">
+      <div className="rounded-2xl bg-[rgb(var(--card))]/50 border border-[rgb(var(--border))]/40 p-4 lg:p-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
           {/* Orçamentos por Status — maior no desktop */}
-          <Card className="lg:col-span-7 rounded-2xl border border-slate-200/60 bg-white/80 backdrop-blur-sm shadow-[0_4px_24px_-4px_rgba(0,0,0,0.08)]">
-            <CardHeader className="p-5 pb-4 border-b border-slate-200/60">
-              <CardTitle className="text-base font-bold text-gray-900">Orçamentos por Status</CardTitle>
+          <Card className="lg:col-span-7 rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--card))]/80 dark:bg-[rgb(var(--card))]/90 backdrop-blur-sm shadow-[0_4px_24px_-4px_rgba(0,0,0,0.08)]">
+            <CardHeader className="p-5 pb-4 border-b border-[rgb(var(--border))]/60">
+              <CardTitle className="text-base font-bold text-[rgb(var(--fg))]">Orçamentos por Status</CardTitle>
             </CardHeader>
             <CardContent className="p-5 pt-4 space-y-5">
               {Object.entries(statusCounts).map(([status, count]) => (
                 <div key={status} className="flex items-center gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-medium text-slate-600">
+                      <span className="text-xs font-medium text-[rgb(var(--muted))]">
                         {getStatusLabel(status)}
                       </span>
-                      <span className="text-xs font-semibold text-slate-800 tabular-nums">{count}</span>
+                      <span className="text-xs font-semibold text-[rgb(var(--fg))] tabular-nums">{count}</span>
                     </div>
-                    <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-2.5 bg-[rgb(var(--border))]/60 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all shadow-sm ${
                           status === 'rascunho'
@@ -262,12 +262,12 @@ export function Dashboard() {
 
           {/* Coluna direita: Top Clientes + Maiores valores empilhados */}
           <div className="lg:col-span-5 flex flex-col gap-4 lg:gap-6">
-            <Card className="rounded-2xl border border-slate-200/60 bg-white/80 backdrop-blur-sm shadow-[0_4px_24px_-4px_rgba(0,0,0,0.08)]">
-              <CardHeader className="p-5 pb-4 border-b border-slate-200/60">
+            <Card className="rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--card))]/80 dark:bg-[rgb(var(--card))]/90 backdrop-blur-sm shadow-[0_4px_24px_-4px_rgba(0,0,0,0.08)]">
+              <CardHeader className="p-5 pb-4 border-b border-[rgb(var(--border))]/60">
                 <div className="flex items-center justify-between gap-2 min-h-0">
-                  <CardTitle className="text-base font-bold text-gray-900">Top Clientes</CardTitle>
+                  <CardTitle className="text-base font-bold text-[rgb(var(--fg))]">Top Clientes</CardTitle>
                   <div className="flex-shrink-0">
-                    <div className="hidden sm:flex rounded-lg bg-slate-100/80 p-0.5">
+                    <div className="hidden sm:flex rounded-lg bg-[rgb(var(--border))]/50 p-0.5">
                       {(['diario', 'semanal', 'mensal'] as const).map((v) => (
                         <button
                           key={v}
@@ -275,8 +275,8 @@ export function Dashboard() {
                           onClick={() => setTopClientesFilter(v)}
                           className={`px-2 py-1 text-[10px] font-medium rounded-md transition-colors ${
                             topClientesFilter === v
-                              ? 'bg-white text-slate-700 shadow-sm'
-                              : 'text-slate-500 hover:text-slate-600'
+                              ? 'bg-[rgb(var(--card))] text-[rgb(var(--fg))] shadow-sm'
+                              : 'text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]'
                           }`}
                         >
                           {v === 'diario' ? 'Diário' : v === 'semanal' ? 'Semanal' : 'Mensal'}
@@ -285,7 +285,7 @@ export function Dashboard() {
                     </div>
                     <div className="sm:hidden">
                       <Select value={topClientesFilter} onValueChange={(v) => setTopClientesFilter(v as typeof topClientesFilter)}>
-                        <SelectTrigger className="h-7 w-[88px] text-[10px] px-2 py-1 border-slate-200/60">
+                        <SelectTrigger className="h-7 w-[88px] text-[10px] px-2 py-1 border-[rgb(var(--border))]/60">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -324,10 +324,10 @@ export function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="rounded-2xl border border-slate-200/60 bg-white/80 backdrop-blur-sm shadow-[0_4px_24px_-4px_rgba(0,0,0,0.08)]">
-              <CardHeader className="p-5 pb-4 border-b border-slate-200/60">
+            <Card className="rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--card))]/80 dark:bg-[rgb(var(--card))]/90 backdrop-blur-sm shadow-[0_4px_24px_-4px_rgba(0,0,0,0.08)]">
+              <CardHeader className="p-5 pb-4 border-b border-[rgb(var(--border))]/60">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <CardTitle className="text-base font-bold text-gray-900">Maiores valores em aberto</CardTitle>
+                  <CardTitle className="text-base font-bold text-[rgb(var(--fg))]">Maiores valores em aberto</CardTitle>
                   <Badge variant="secondary" className="rounded-full px-2.5 py-0.5 text-[10px] font-medium bg-primary-100/80 text-primary-700 border-0">Follow-up</Badge>
                 </div>
                 <div className="mt-1.5 space-y-0.5">

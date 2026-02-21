@@ -13,13 +13,13 @@ export function Layout() {
   }
 
   return (
-    <div className="min-h-screen bg-page-bg relative">
+    <div className="relative min-h-[100svh] min-h-screen bg-[rgb(var(--bg))] text-[rgb(var(--fg))]">
       <WatermarkBrand />
       <div className="relative z-10">
         <Sidebar />
         <div className="lg:pl-64">
           <Header />
-          <main className="pb-20 lg:pb-8">
+          <main className="pb-20 lg:pb-8 bg-transparent">
             <Outlet />
           </main>
         </div>

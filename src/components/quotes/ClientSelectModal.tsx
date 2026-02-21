@@ -86,7 +86,7 @@ export function ClientSelectModal({
 
           {/* Barra de pesquisa */}
           <div className="relative -mt-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[rgb(var(--muted))]" />
             <Input
               placeholder="Buscar por nome, CPF/CNPJ, telefone ou email..."
               value={search}
@@ -99,7 +99,7 @@ export function ClientSelectModal({
             {filteredCustomers.map((c) => (
               <div
                 key={c.id}
-                className="flex items-center gap-2 group rounded-lg border border-gray-200 bg-white hover:bg-gray-50 hover:border-primary-200 transition-colors"
+                className="flex items-center gap-2 group rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))] hover:bg-white/10 hover:border-primary-200 transition-colors"
               >
                 <button
                   type="button"
@@ -107,12 +107,12 @@ export function ClientSelectModal({
                   className="flex-1 min-w-0 flex items-center justify-between gap-2 py-2.5 px-3 text-left"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-900 truncate">{c.nome}</p>
+                    <p className="text-sm font-medium text-[rgb(var(--fg))] truncate">{c.nome}</p>
                     {c.telefone && (
-                      <p className="text-xs text-gray-500 truncate">{c.telefone}</p>
+                      <p className="text-xs text-[rgb(var(--muted))] truncate">{c.telefone}</p>
                     )}
                   </div>
-                  <ChevronRight className="h-4 w-4 text-gray-400 shrink-0" />
+                  <ChevronRight className="h-4 w-4 text-[rgb(var(--muted))] shrink-0" />
                 </button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -141,7 +141,7 @@ export function ClientSelectModal({
           </div>
 
           {/* Footer fixo dentro do modal — não usa position:fixed da página */}
-          <div className="flex-none border-t border-gray-200 pt-4 -mx-6 -mb-6 px-6 pb-6 bg-white rounded-b-lg">
+          <div className="flex-none border-t border-[rgb(var(--border))] pt-4 -mx-6 -mb-6 px-6 pb-6 bg-[rgb(var(--card))] rounded-b-lg">
             <Button
               type="button"
               className="w-full h-11"

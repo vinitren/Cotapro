@@ -76,27 +76,27 @@ function AccordionCard({
 
   return (
     <div className={className ?? ''}>
-      <div className="rounded-xl border border-slate-200/70 bg-white overflow-hidden shadow-[0_2px_8px_-2px_rgba(0,0,0,0.06)]">
+      <div className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] overflow-hidden shadow-[0_2px_8px_-2px_rgba(0,0,0,0.06)]">
         <button
           type="button"
           onClick={() => onToggle(id)}
           aria-expanded={isOpen}
-          className="w-full flex items-center justify-between gap-2 p-4 text-left hover:bg-slate-50/80 transition-colors"
+          className="w-full flex items-center justify-between gap-2 p-4 text-left hover:bg-white/10 transition-colors"
         >
           <div className="flex items-center gap-2 min-w-0">
             {icon}
             <div className="min-w-0">
-              <p className="font-semibold text-gray-900">{title}</p>
+              <p className="font-semibold text-[rgb(var(--fg))]">{title}</p>
               {description && (
-                <p className="text-sm text-slate-500 truncate">{description}</p>
+                <p className="text-sm text-[rgb(var(--muted))] truncate">{description}</p>
               )}
             </div>
           </div>
           <ChevronDown
-            className={`h-5 w-5 text-slate-400 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+            className={`h-5 w-5 text-[rgb(var(--muted))] shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
           />
         </button>
-        {isOpen && <div className="border-t border-slate-100 p-4">{children}</div>}
+        {isOpen && <div className="border-t border-[rgb(var(--border))] p-4">{children}</div>}
       </div>
     </div>
   );
@@ -505,9 +505,9 @@ export function Settings() {
   };
 
   return (
-    <div className="p-4 lg:p-6 space-y-6 lg:space-y-8 pb-36 lg:pb-6 min-h-screen bg-slate-50/40">
+    <div className="p-4 lg:p-6 space-y-6 lg:space-y-8 pb-36 lg:pb-6 min-h-screen bg-[rgb(var(--bg))]">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Configurações</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-[rgb(var(--fg))]">Configurações</h1>
         <p className="text-sm text-muted-foreground mt-1">Gerencie as informações da sua empresa</p>
       </div>
 
@@ -534,7 +534,7 @@ export function Settings() {
                   <div className="flex flex-col items-center">
                     {currentLogo ? (
                       <div className="relative group">
-                        <div className="w-40 h-40 rounded-xl border-2 border-gray-200 overflow-hidden bg-white flex items-center justify-center p-4">
+                        <div className="w-40 h-40 rounded-xl border-2 border-[rgb(var(--border))] overflow-hidden bg-[rgb(var(--card))] flex items-center justify-center p-4">
                           <img
                             src={currentLogo}
                             alt="Logo da empresa"
@@ -552,7 +552,7 @@ export function Settings() {
                         </Button>
                       </div>
                     ) : (
-                      <div className="w-40 h-40 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 bg-gray-50">
+                      <div className="w-40 h-40 rounded-xl border-2 border-dashed border-[rgb(var(--border))] flex flex-col items-center justify-center text-[rgb(var(--muted))] bg-gray-50 dark:bg-white/5">
                         <ImageIcon className="h-12 w-12 mb-2" />
                         <span className="text-sm">Sem logo</span>
                       </div>
@@ -591,7 +591,7 @@ export function Settings() {
                     )}
                   </div>
 
-                  <p className="text-xs text-gray-500 text-center">
+                  <p className="text-xs text-[rgb(var(--muted))] text-center">
                     Formatos: JPG, PNG, GIF. Tamanho máximo: 2MB
                   </p>
                 </div>
@@ -828,7 +828,7 @@ export function Settings() {
                     Esses dados serão exibidos no orçamento público e no PDF.
                   </p>
 
-                  <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
+                  <div className="border border-[rgb(var(--border))] rounded-lg p-4 space-y-3 bg-[rgb(var(--card))]/50">
                     <p className="text-sm font-medium">
                       Pix: {pixKey.trim() || '—'}
                     </p>
@@ -927,17 +927,17 @@ export function Settings() {
           >
             <div className="space-y-6 p-4">
               <div className="space-y-2">
-                <Label className="text-sm text-gray-500">E-mail</Label>
+                <Label className="text-sm text-[rgb(var(--muted))]">E-mail</Label>
                 <Input
                   value={userEmail}
                   readOnly
                   disabled
-                  className="bg-gray-50 text-gray-700 cursor-not-allowed"
+                  className="bg-gray-50 dark:bg-white/5 text-[rgb(var(--fg))] cursor-not-allowed"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm text-gray-500">Plano atual</Label>
-                <p className="text-sm text-gray-600 py-2">Free</p>
+                <Label className="text-sm text-[rgb(var(--muted))]">Plano atual</Label>
+                <p className="text-sm text-[rgb(var(--muted))] py-2">Free</p>
               </div>
               <Button
                 type="button"
@@ -955,7 +955,7 @@ export function Settings() {
 
       {/* Sticky footer - apenas mobile (oculto na aba Conta) */}
       <div
-        className={`fixed bottom-16 left-0 right-0 z-30 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] p-4 lg:hidden ${activeTab === 'conta' ? 'hidden' : ''}`}
+        className={`fixed bottom-16 left-0 right-0 z-30 bg-[rgb(var(--card))] border-t border-[rgb(var(--border))] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] p-4 lg:hidden ${activeTab === 'conta' ? 'hidden' : ''}`}
         style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
       >
         <div className="max-w-[640px] mx-auto">

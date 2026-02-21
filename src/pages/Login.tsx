@@ -125,7 +125,7 @@ export function Login() {
                   className="lg:hidden w-64 h-auto object-contain mx-auto mb-3"
                 />
                 {/* Título mobile: Bem-vindo de volta */}
-                <h1 className="lg:hidden text-2xl font-extrabold text-gray-900 tracking-tight">
+                <h1 className="lg:hidden text-2xl font-extrabold text-[rgb(var(--fg))] tracking-tight">
                   Bem-vindo de volta
                 </h1>
                 {/* Título desktop: BEM-VINDO DE VOLTA AO + CotaPro */}
@@ -133,9 +133,9 @@ export function Login() {
                   BEM-VINDO DE VOLTA AO
                 </p>
                 <h1 className="hidden lg:block text-3xl sm:text-4xl font-extrabold tracking-tight">
-                  <span className="text-gray-900">Cota</span><span className="text-primary">Pro</span>
+                  <span className="text-[rgb(var(--fg))]">Cota</span><span className="text-primary">Pro</span>
                 </h1>
-                <CardDescription className="text-base text-gray-500 font-normal mt-1 lg:mt-2">
+                <CardDescription className="text-base text-[rgb(var(--muted))] font-normal mt-1 lg:mt-2">
                   Entre com sua conta para continuar
                 </CardDescription>
               </div>
@@ -149,7 +149,7 @@ export function Login() {
               <Button
                 type="button"
                 variant="outline"
-                className="w-full h-12 rounded-xl text-base font-semibold border-gray-200 hover:bg-gray-50 gap-2"
+                className="w-full h-12 rounded-xl text-base font-semibold border-[rgb(var(--border))] hover:bg-gray-50 dark:hover:bg-white/10 gap-2"
                 onClick={handleGoogleLogin}
                 disabled={!isSupabaseConfigured}
               >
@@ -166,7 +166,7 @@ export function Login() {
                   <div className="w-full border-t border-gray-100"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-gray-500">ou</span>
+                  <span className="px-4 bg-[rgb(var(--card))] text-[rgb(var(--muted))]">ou</span>
                 </div>
               </div>
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -228,11 +228,11 @@ export function Login() {
                   <div className="w-full border-t border-gray-100"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-gray-500">Novo por aqui?</span>
+                  <span className="px-4 bg-[rgb(var(--card))] text-[rgb(var(--muted))]">Novo por aqui?</span>
                 </div>
               </div>
 
-              <p className="text-center text-sm text-gray-500 pt-1">
+              <p className="text-center text-sm text-[rgb(var(--muted))] pt-1">
                 <Link 
                   to="/signup" 
                   className="text-primary hover:text-primary-hover font-semibold hover:underline transition-colors"
@@ -245,9 +245,9 @@ export function Login() {
 
       {/* Benefícios Mobile */}
       <div className="lg:hidden mt-6 space-y-1 text-center px-4">
-        <p className="text-sm text-gray-500 font-medium leading-tight">Propostas prontas antes do cliente pedir.</p>
-        <p className="text-sm text-gray-500 font-medium leading-tight">Pagamento sem complicação.</p>
-        <p className="text-sm text-gray-500 font-medium leading-tight">Mais fechamentos comprovados.</p>
+        <p className="text-sm text-[rgb(var(--muted))] font-medium leading-tight">Propostas prontas antes do cliente pedir.</p>
+        <p className="text-sm text-[rgb(var(--muted))] font-medium leading-tight">Pagamento sem complicação.</p>
+        <p className="text-sm text-[rgb(var(--muted))] font-medium leading-tight">Mais fechamentos comprovados.</p>
       </div>
     </AuthLayout>
   );

@@ -175,7 +175,7 @@ export function Quotes() {
 
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[rgb(var(--muted))]" />
           <Input
             placeholder={isListOpen ? 'Buscar por número ou cliente...' : 'Abra a lista para pesquisar/filtrar'}
             value={search}
@@ -271,7 +271,7 @@ export function Quotes() {
               {statusFilter !== 'all' && (
                 <Badge
                   variant="secondary"
-                  className="cursor-pointer hover:bg-gray-300"
+                  className="cursor-pointer hover:bg-white/20"
                   onClick={() => setStatusFilter('all')}
                 >
                   Status: {getStatusLabel(statusFilter)} ×
@@ -280,7 +280,7 @@ export function Quotes() {
               {dateFilter !== 'all' && (
                 <Badge
                   variant="secondary"
-                  className="cursor-pointer hover:bg-gray-300"
+                  className="cursor-pointer hover:bg-white/20"
                   onClick={() => setDateFilter('all')}
                 >
                   Data: {dateFilter === 'daily' ? 'Diário' : dateFilter === 'weekly' ? 'Semanal' : 'Mensal'} ×
@@ -292,10 +292,10 @@ export function Quotes() {
           {filteredQuotes.length === 0 ? (
         <Card className={pageCardClasses}>
           <CardContent className="flex flex-col items-center justify-center py-12 px-6">
-            <div className="h-16 w-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-              <FileText className="h-8 w-8 text-slate-400" />
+            <div className="h-16 w-16 bg-[rgb(var(--border))]/40 rounded-full flex items-center justify-center mb-4">
+              <FileText className="h-8 w-8 text-[rgb(var(--muted))]" />
             </div>
-            <h3 className="text-base font-bold text-gray-900 mb-1">
+            <h3 className="text-base font-bold text-[rgb(var(--fg))] mb-1">
               {search || statusFilter !== 'all' || dateFilter !== 'all'
                 ? 'Nenhum orçamento encontrado'
                 : 'Nenhum orçamento criado'}
@@ -322,7 +322,7 @@ export function Quotes() {
               <CardContent className="p-4 lg:p-5">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between gap-2 min-w-0">
-                    <p className="text-base font-bold text-gray-900 truncate tracking-tight">
+                    <p className="text-base font-bold text-[rgb(var(--fg))] truncate tracking-tight">
                       #{getQuoteDisplayNumber(quote)} — {quote.cliente?.nome ?? 'Cliente'}
                     </p>
                     <p className="text-base font-semibold text-primary flex-shrink-0 tabular-nums">
@@ -331,7 +331,7 @@ export function Quotes() {
                   </div>
 
                   <p className="text-xs text-muted-foreground">
-                    <span className={quote.status === 'enviado' ? 'text-blue-600' : quote.status === 'aprovado' ? 'text-primary' : quote.status === 'recusado' ? 'text-red-600' : quote.status === 'expirado' ? 'text-amber-600' : 'text-gray-600'}>
+                    <span className={quote.status === 'enviado' ? 'text-blue-600' : quote.status === 'aprovado' ? 'text-primary' : quote.status === 'recusado' ? 'text-red-600' : quote.status === 'expirado' ? 'text-amber-600' : 'text-[rgb(var(--muted))]'}>
                       {getStatusLabel(quote.status)}
                     </span>
                     {' • '}
@@ -399,7 +399,7 @@ export function Quotes() {
 
       {/* Botão fixo no rodapé - apenas mobile */}
       <div
-        className="fixed bottom-16 left-0 right-0 z-30 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] p-4 lg:hidden"
+        className="fixed bottom-16 left-0 right-0 z-30 bg-[rgb(var(--card))] border-t border-[rgb(var(--border))] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] p-4 lg:hidden"
         style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
       >
         <div className="flex justify-center max-w-[640px] mx-auto">

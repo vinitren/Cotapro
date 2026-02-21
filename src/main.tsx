@@ -1,9 +1,21 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { ThemeProvider } from './context/ThemeContext';
 import { ensureStorageVersion } from './lib/app-version';
 import App from './App.tsx';
 import './index.css';
+
+// Aplicar tema salvo antes do React montar (evita flash)
+(function applyInitialTheme() {
+  try {
+    const stored = localStorage.getItem('cotapro-theme');
+    if (stored === 'dark') document.documentElement.classList.add('dark');
+    else document.documentElement.classList.remove('dark');
+  } catch {
+    /* ignore */
+  }
+})();
 
 // Remover service workers antigos (evita cache de versões anteriores)
 if ('serviceWorker' in navigator) {
@@ -50,8 +62,10 @@ ensureStorageVersion();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
+    <ThemeProvider>
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
+    </ThemeProvider>
   </StrictMode>
 );

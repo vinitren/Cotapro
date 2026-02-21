@@ -3,7 +3,8 @@ import { NavLink, Link } from 'react-router-dom';
 import { LayoutDashboard, FileText, Users, Package, Settings, Receipt, HelpCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
-const LOGO_COMPLETA_SRC = '/brand/cotapro-logo-cropped.png';
+const LOGO_BLACK = '/brand/cotapro-logo-cropped.png';
+const LOGO_WHITE = '/brand/cotapro-logo-branca-login.png';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -18,21 +19,19 @@ export function Sidebar() {
   const [logoError, setLogoError] = useState(false);
 
   return (
-    <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-white border-r border-gray-200">
-      <div className="flex items-center h-16 px-6 border-b border-gray-200">
+    <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-[rgb(var(--card))] border-r border-[rgb(var(--border))]">
+      <div className="flex items-center h-16 px-6 border-b border-[rgb(var(--border))]">
         <Link to="/" className="flex items-center min-w-0">
           {logoError ? (
             <>
               <Receipt className="h-8 w-8 shrink-0 text-primary" />
-              <span className="ml-2 text-xl font-bold text-gray-900">CotaPro</span>
+              <span className="ml-2 text-xl font-bold text-[rgb(var(--fg))]">CotaPro</span>
             </>
           ) : (
-            <img
-              src={LOGO_COMPLETA_SRC}
-              alt="CotaPro"
-              onError={() => setLogoError(true)}
-              className="h-10 w-auto object-contain object-left"
-            />
+            <>
+              <img src={LOGO_BLACK} alt="CotaPro" onError={() => setLogoError(true)} className="h-10 w-auto object-contain object-left dark:hidden" />
+              <img src={LOGO_WHITE} alt="CotaPro" onError={() => setLogoError(true)} className="h-10 w-auto object-contain object-left hidden dark:block" />
+            </>
           )}
         </Link>
       </div>
@@ -46,8 +45,8 @@ export function Sidebar() {
               cn(
                 'flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-primary-50 text-primary-700'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
+                  : 'text-[rgb(var(--muted))] hover:bg-gray-50 hover:text-[rgb(var(--fg))] dark:hover:bg-white/10 dark:text-slate-300'
               )
             }
           >

@@ -216,7 +216,7 @@ export function QuoteDetail() {
       case 'expirado':
         return <Clock className="h-5 w-5 text-amber-600" />;
       default:
-        return <FileText className="h-5 w-5 text-gray-600" />;
+        return <FileText className="h-5 w-5 text-[rgb(var(--muted))]" />;
     }
   };
 
@@ -228,10 +228,10 @@ export function QuoteDetail() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="min-w-0 flex-1">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
+          <h1 className="text-xl sm:text-2xl font-bold text-[rgb(var(--fg))] truncate">
             {formatQuoteDisplay(quote)}
           </h1>
-          <p className="text-gray-500 text-sm mt-0.5">Criado em {formatDate(quote.data_criacao)}</p>
+          <p className="text-[rgb(var(--muted))] text-sm mt-0.5">Criado em {formatDate(quote.data_criacao)}</p>
         </div>
       </div>
 
@@ -239,12 +239,12 @@ export function QuoteDetail() {
       <Card className="mb-6">
         <CardContent className="p-4 sm:p-6">
           <p className="text-2xl sm:text-3xl font-bold text-primary">{formatCurrency(quote.total)}</p>
-          <p className="text-xs sm:text-sm text-gray-600 mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+          <p className="text-xs sm:text-sm text-[rgb(var(--muted))] mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
             <Badge className={`${getStatusColor(quote.status)} text-xs`}>{getStatusLabel(quote.status)}</Badge>
-            <span className="text-gray-400">•</span>
+            <span className="text-[rgb(var(--muted))]">•</span>
             <span>Válido até {formatDate(quote.data_validade)}</span>
-            <span className="text-gray-400">•</span>
-            <span className="text-gray-500">Enviado em {formatDate(quote.data_emissao)}</span>
+            <span className="text-[rgb(var(--muted))]">•</span>
+            <span className="text-[rgb(var(--muted))]">Enviado em {formatDate(quote.data_emissao)}</span>
           </p>
         </CardContent>
       </Card>
@@ -274,7 +274,7 @@ export function QuoteDetail() {
                   <div className="min-w-0">
                     <CardTitle className="text-base truncate">{quote.cliente.nome}</CardTitle>
                     {!clienteOpen && (
-                      <div className="flex gap-2 text-gray-400 mt-0.5">
+                      <div className="flex gap-2 text-[rgb(var(--muted))] mt-0.5">
                         <Phone className="h-4 w-4" />
                         {quote.cliente.email && <Mail className="h-4 w-4" />}
                         {quote.cliente.endereco?.cidade && <MapPin className="h-4 w-4" />}
@@ -288,19 +288,19 @@ export function QuoteDetail() {
             {clienteOpen && (
               <CardContent className="pt-0 px-4 sm:px-6 pb-4 sm:pb-6">
                 <div className="space-y-2">
-                  <p className="text-sm text-gray-500">{quote.cliente.cpf_cnpj}</p>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <p className="text-sm text-[rgb(var(--muted))]">{quote.cliente.cpf_cnpj}</p>
+                  <div className="flex items-center gap-2 text-sm text-[rgb(var(--muted))]">
                     <Phone className="h-4 w-4 flex-shrink-0" />
                     <span>{quote.cliente.telefone}</span>
                   </div>
                   {quote.cliente.email && (
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <div className="flex items-center gap-2 text-sm text-[rgb(var(--muted))]">
                       <Mail className="h-4 w-4 flex-shrink-0" />
                       <span>{quote.cliente.email}</span>
                     </div>
                   )}
                   {quote.cliente.endereco?.cidade && (
-                    <div className="flex items-start gap-2 text-sm text-gray-600">
+                    <div className="flex items-start gap-2 text-sm text-[rgb(var(--muted))]">
                       <MapPin className="h-4 w-4 flex-shrink-0 mt-0.5" />
                       <span>
                         {quote.cliente.endereco.rua}, {quote.cliente.endereco.numero}
@@ -319,12 +319,12 @@ export function QuoteDetail() {
             {!followUpCardOpen ? (
               <CardContent className="p-4 sm:p-6">
                 <div className="flex items-start gap-3">
-                  <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 text-xl">
+                  <div className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 text-xl">
                     💬
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900">Enviar mensagem de follow-up</h3>
-                    <p className="text-sm text-gray-500 mt-0.5">Se o cliente ainda não respondeu, envie uma mensagem e aumente suas chances de fechar.</p>
+                    <h3 className="font-semibold text-[rgb(var(--fg))]">Enviar mensagem de follow-up</h3>
+                    <p className="text-sm text-[rgb(var(--muted))] mt-0.5">Se o cliente ainda não respondeu, envie uma mensagem e aumente suas chances de fechar.</p>
                     <Button
                       variant="outline"
                       onClick={() => setFollowUpCardOpen(true)}
@@ -338,7 +338,7 @@ export function QuoteDetail() {
             ) : (
               <CardContent className="p-4 sm:p-6 space-y-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Sua mensagem</label>
+                  <label className="text-sm font-medium text-[rgb(var(--fg))]">Sua mensagem</label>
                   <Textarea
                     value={mensagemFollowUp}
                     onChange={(e) => setMensagemFollowUp(e.target.value.slice(0, 500))}
@@ -347,11 +347,11 @@ export function QuoteDetail() {
                     className="mt-2 resize-y"
                     maxLength={500}
                   />
-                  <p className="text-xs text-gray-500 text-right mt-1">{mensagemFollowUp.length} / 500</p>
+                  <p className="text-xs text-[rgb(var(--muted))] text-right mt-1">{mensagemFollowUp.length} / 500</p>
                 </div>
 
                 <div>
-                  <p className="text-sm font-medium text-gray-700 mb-2">Tipos de abordagem</p>
+                  <p className="text-sm font-medium text-[rgb(var(--fg))] mb-2">Tipos de abordagem</p>
                   <div className="flex flex-wrap gap-2">
                     {[
                       { label: 'Lembrete', text: `Olá ${quote.cliente.nome.split(' ')[0] || quote.cliente.nome}, conseguiu analisar o orçamento?` },
@@ -364,7 +364,7 @@ export function QuoteDetail() {
                         key={label}
                         type="button"
                         onClick={() => setMensagemFollowUp(text.slice(0, 500))}
-                        className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 hover:border-gray-300 transition-colors"
+                        className="px-3 py-1.5 text-xs font-medium rounded-lg border border-[rgb(var(--border))] bg-white/5 hover:bg-white/10 transition-colors"
                       >
                         {label}
                       </button>
@@ -401,12 +401,12 @@ export function QuoteDetail() {
               {/* Mobile: lista/cards */}
               <div className="block sm:hidden space-y-3">
                 {items.map((item: any, index: number) => (
-                  <div key={item.id} className="p-3 rounded-lg border border-gray-100 bg-gray-50/50">
-                    <p className="text-sm font-medium text-gray-900 line-clamp-2">{item.descricao}</p>
-                    <p className="text-xs text-gray-500 mt-1">
+                  <div key={item.id} className="p-3 rounded-lg border border-[rgb(var(--border))] bg-white/5">
+                    <p className="text-sm font-medium text-[rgb(var(--fg))] line-clamp-2">{item.descricao}</p>
+                    <p className="text-xs text-[rgb(var(--muted))] mt-1">
                       {item.quantidade} {item.unidade} • {formatCurrency(item.valor_unitario)}/un
                     </p>
-                    <p className="text-sm font-semibold text-gray-900 mt-2">{formatCurrency(item.subtotal)}</p>
+                    <p className="text-sm font-semibold text-[rgb(var(--fg))] mt-2">{formatCurrency(item.subtotal)}</p>
                   </div>
                 ))}
               </div>
@@ -414,27 +414,27 @@ export function QuoteDetail() {
               <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-2 text-sm font-medium text-gray-500">Descrição</th>
-                      <th className="text-center py-3 px-2 text-sm font-medium text-gray-500">Qtd</th>
-                      <th className="text-center py-3 px-2 text-sm font-medium text-gray-500">Un</th>
-                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-500">Valor Unit.</th>
-                      <th className="text-right py-3 px-2 text-sm font-medium text-gray-500">Subtotal</th>
+                    <tr className="border-b border-[rgb(var(--border))]">
+                      <th className="text-left py-3 px-2 text-sm font-medium text-[rgb(var(--muted))]">Descrição</th>
+                      <th className="text-center py-3 px-2 text-sm font-medium text-[rgb(var(--muted))]">Qtd</th>
+                      <th className="text-center py-3 px-2 text-sm font-medium text-[rgb(var(--muted))]">Un</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-[rgb(var(--muted))]">Valor Unit.</th>
+                      <th className="text-right py-3 px-2 text-sm font-medium text-[rgb(var(--muted))]">Subtotal</th>
                     </tr>
                   </thead>
                   <tbody>
                     {items.map((item: any, index: number) => (
-                      <tr key={item.id} className="border-b border-gray-100">
+                      <tr key={item.id} className="border-b border-[rgb(var(--border))]">
                         <td className="py-3 px-2">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-400">{index + 1}.</span>
-                            <span className="text-sm text-gray-900">{item.descricao}</span>
+                            <span className="text-xs text-[rgb(var(--muted))]">{index + 1}.</span>
+                            <span className="text-sm text-[rgb(var(--fg))]">{item.descricao}</span>
                           </div>
                         </td>
-                        <td className="text-center py-3 px-2 text-sm text-gray-700">{item.quantidade}</td>
-                        <td className="text-center py-3 px-2 text-sm text-gray-700">{item.unidade}</td>
-                        <td className="text-right py-3 px-2 text-sm text-gray-700">{formatCurrency(item.valor_unitario)}</td>
-                        <td className="text-right py-3 px-2 text-sm font-medium text-gray-900">{formatCurrency(item.subtotal)}</td>
+                        <td className="text-center py-3 px-2 text-sm text-[rgb(var(--fg))]">{item.quantidade}</td>
+                        <td className="text-center py-3 px-2 text-sm text-[rgb(var(--fg))]">{item.unidade}</td>
+                        <td className="text-right py-3 px-2 text-sm text-[rgb(var(--fg))]">{formatCurrency(item.valor_unitario)}</td>
+                        <td className="text-right py-3 px-2 text-sm font-medium text-[rgb(var(--fg))]">{formatCurrency(item.subtotal)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -456,13 +456,13 @@ export function QuoteDetail() {
                   {observacoesOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 </div>
                 {!observacoesOpen && (
-                  <p className="text-sm text-gray-600 line-clamp-1 mt-2">{quote.observacoes}</p>
+                  <p className="text-sm text-[rgb(var(--muted))] line-clamp-1 mt-2">{quote.observacoes}</p>
                 )}
                 {!observacoesOpen && <p className="text-xs text-primary mt-1">Ver tudo</p>}
               </button>
               {observacoesOpen && (
                 <CardContent className="pt-0">
-                  <p className="text-gray-700 whitespace-pre-wrap">{quote.observacoes}</p>
+                  <p className="text-[rgb(var(--fg))] whitespace-pre-wrap">{quote.observacoes}</p>
                 </CardContent>
               )}
             </Card>
@@ -495,7 +495,7 @@ export function QuoteDetail() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Subtotal</span>
+                <span className="text-[rgb(var(--muted))]">Subtotal</span>
                 <span className="font-medium">{formatCurrency(quote.subtotal)}</span>
               </div>
 
@@ -532,12 +532,12 @@ export function QuoteDetail() {
               <CardTitle>Status</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
                 {getStatusIcon(quote.status)}
                 <div>
-                  <p className="font-medium text-gray-900">{getStatusLabel(quote.status)}</p>
-                  <p className="text-sm text-gray-500">Válido até {formatDate(quote.data_validade)}</p>
-                  <p className="text-sm text-gray-500">Enviado em: {formatDate(quote.data_emissao)}</p>
+                  <p className="font-medium text-[rgb(var(--fg))]">{getStatusLabel(quote.status)}</p>
+                  <p className="text-sm text-[rgb(var(--muted))]">Válido até {formatDate(quote.data_validade)}</p>
+                  <p className="text-sm text-[rgb(var(--muted))]">Enviado em: {formatDate(quote.data_emissao)}</p>
                 </div>
               </div>
 
@@ -552,7 +552,7 @@ export function QuoteDetail() {
 
       {/* Rodapé sticky mobile: WhatsApp + PDF (acima da bottom nav) */}
       <div className="fixed bottom-20 left-0 right-0 px-4 pb-2 sm:hidden z-30">
-        <div className="max-w-lg mx-auto p-3 rounded-2xl bg-white/80 backdrop-blur-sm shadow-lg border border-white/20 grid grid-cols-[1fr_auto] gap-2 items-stretch">
+        <div className="max-w-lg mx-auto p-3 rounded-2xl bg-[rgb(var(--card))]/90 backdrop-blur-sm shadow-lg border border-[rgb(var(--border))] grid grid-cols-[1fr_auto] gap-2 items-stretch">
           <Button
             onClick={handleWhatsApp}
             className="h-12 text-base font-semibold bg-green-600 hover:bg-green-700 text-white"
@@ -565,7 +565,7 @@ export function QuoteDetail() {
             variant="outline"
             onClick={handleDownloadPDF}
             disabled={pdfLoading}
-            className="h-12 px-4 text-sm text-gray-700 border-gray-300"
+            className="h-12 px-4 text-sm text-[rgb(var(--fg))] border-[rgb(var(--border))]"
           >
             {pdfLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
             Baixar PDF

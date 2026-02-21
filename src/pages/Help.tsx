@@ -202,9 +202,9 @@ function FaqAccordionItem({
         type="button"
         onClick={onToggle}
         aria-expanded={isOpen}
-        className="w-full flex items-center justify-between gap-3 py-4 text-left hover:bg-slate-50/50 transition-colors px-1 -mx-1 rounded-lg"
+        className="w-full flex items-center justify-between gap-3 py-4 text-left hover:bg-white/10 transition-colors px-1 -mx-1 rounded-lg"
       >
-        <span className="font-medium text-gray-900">{question}</span>
+        <span className="font-medium text-[rgb(var(--fg))]">{question}</span>
         <ChevronDown
           className={`h-5 w-5 text-slate-400 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
         />
@@ -279,7 +279,7 @@ export function Help() {
             <Card key={category.id} className={pageCardClasses}>
               <CardContent className="p-0">
                 <div className="px-4 pt-4 pb-2">
-                  <h2 className="text-lg font-semibold text-gray-900">{category.title}</h2>
+                  <h2 className="text-lg font-semibold text-[rgb(var(--fg))]">{category.title}</h2>
                 </div>
                 <div className="px-4 pb-4">
                   {category.items.map((item, idx) => {
@@ -305,7 +305,7 @@ export function Help() {
         <CardContent className="py-8 px-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Precisa de ajuda ou quer sugerir melhorias?</h3>
+              <h3 className="text-lg font-semibold text-[rgb(var(--fg))]">Precisa de ajuda ou quer sugerir melhorias?</h3>
               <p className="text-sm text-slate-600 mt-1">
                 Se tiver dúvidas, dificuldades ou ideias para melhorar o CotaPro, fale com a gente. Seu feedback ajuda a evoluir o sistema para vendedores como você.
               </p>

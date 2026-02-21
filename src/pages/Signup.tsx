@@ -147,17 +147,17 @@ export function Signup() {
               className="lg:hidden w-64 h-auto object-contain mx-auto mb-3"
             />
             {/* Título mobile */}
-            <h1 className="lg:hidden text-2xl font-extrabold text-gray-900 tracking-tight">
+            <h1 className="lg:hidden text-2xl font-extrabold text-[rgb(var(--fg))] tracking-tight">
               Criar conta
             </h1>
             {/* Título desktop */}
-            <p className="hidden lg:block text-xs sm:text-sm font-semibold uppercase tracking-wide text-gray-700">
+            <p className="hidden lg:block text-xs sm:text-sm font-semibold uppercase tracking-wide text-[rgb(var(--fg))]">
               CRIAR CONTA NO
             </p>
             <h1 className="hidden lg:block text-3xl sm:text-4xl font-extrabold tracking-tight">
-              <span className="text-gray-900">Cota</span><span className="text-primary">Pro</span>
+              <span className="text-[rgb(var(--fg))]">Cota</span><span className="text-primary">Pro</span>
             </h1>
-            <CardDescription className="text-base text-gray-500 font-normal mt-1 lg:mt-2">
+            <CardDescription className="text-base text-[rgb(var(--muted))] font-normal mt-1 lg:mt-2">
               Comece a criar orçamentos profissionais agora
             </CardDescription>
           </div>
@@ -170,7 +170,7 @@ export function Signup() {
           )}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+              <Label htmlFor="email" className="text-sm font-medium text-[rgb(var(--fg))]">
                 Email
               </Label>
               <Input
@@ -189,7 +189,7 @@ export function Signup() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+              <Label htmlFor="password" className="text-sm font-medium text-[rgb(var(--fg))]">
                 Senha
               </Label>
               <Input
@@ -208,7 +208,7 @@ export function Signup() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="company_name" className="text-sm font-medium text-gray-700">
+              <Label htmlFor="company_name" className="text-sm font-medium text-[rgb(var(--fg))]">
                 Nome da empresa
               </Label>
               <Input
@@ -251,11 +251,11 @@ export function Signup() {
               <div className="w-full border-t border-gray-100"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-500">Já tem conta?</span>
+              <span className="px-4 bg-[rgb(var(--card))] text-[rgb(var(--muted))]">Já tem conta?</span>
             </div>
           </div>
 
-          <p className="text-center text-sm text-gray-500 pt-1">
+          <p className="text-center text-sm text-[rgb(var(--muted))] pt-1">
             <Link
               to="/login"
               className="text-primary hover:text-primary-hover font-semibold hover:underline transition-colors"
@@ -268,9 +268,9 @@ export function Signup() {
 
       {/* Benefícios Mobile */}
       <div className="lg:hidden mt-6 space-y-1 text-center px-4">
-        <p className="text-sm text-gray-500 font-medium leading-tight">Propostas prontas antes do cliente pedir.</p>
-        <p className="text-sm text-gray-500 font-medium leading-tight">Pagamento sem complicação.</p>
-        <p className="text-sm text-gray-500 font-medium leading-tight">Mais fechamentos comprovados.</p>
+        <p className="text-sm text-[rgb(var(--muted))] font-medium leading-tight">Propostas prontas antes do cliente pedir.</p>
+        <p className="text-sm text-[rgb(var(--muted))] font-medium leading-tight">Pagamento sem complicação.</p>
+        <p className="text-sm text-[rgb(var(--muted))] font-medium leading-tight">Mais fechamentos comprovados.</p>
       </div>
     </AuthLayout>
   );

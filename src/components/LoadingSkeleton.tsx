@@ -6,7 +6,7 @@ export function LoadingSkeleton() {
       <div className="flex items-center justify-center py-12">
         <div className="text-center space-y-3">
           <Loader2 className="h-8 w-8 text-primary animate-spin mx-auto" />
-          <p className="text-sm text-gray-500">Carregando dados...</p>
+          <p className="text-sm text-[rgb(var(--muted))]">Carregando dados...</p>
         </div>
       </div>
     </div>

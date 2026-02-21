@@ -288,7 +288,7 @@ export function PublicQuote() {
   }, [id]);
 
   return (
-    <div className="page-wrapper">
+    <div className="page-wrapper force-light">
       <style>{`
         .page-wrapper {
           display: flex;

@@ -143,7 +143,7 @@ export function isExpired(date: string): boolean {
 
 export function getStatusColor(status: string): string {
   const colors: Record<string, string> = {
-    rascunho: 'bg-gray-100 text-gray-700',
+    rascunho: 'bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-[rgb(var(--fg))]',
     enviado: 'bg-blue-100 text-blue-700',
     aprovado: 'bg-primary-100 text-primary-700',
     recusado: 'bg-red-100 text-red-700',

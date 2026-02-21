@@ -166,7 +166,7 @@ export function ItemFormModal({
             />
           </div>
           <div className="flex justify-between text-sm font-medium py-2">
-            <span className="text-gray-500">Subtotal</span>
+            <span className="text-[rgb(var(--muted))]">Subtotal</span>
             <span>{formatCurrency(subtotal)}</span>
           </div>
           <DialogFooter>

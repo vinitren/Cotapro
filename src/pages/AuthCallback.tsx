@@ -72,10 +72,10 @@ export function AuthCallback() {
   }, [navigate, setSessionFromUser]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-gray-50 to-primary-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-[rgb(var(--bg))] p-4">
       <div className="flex flex-col items-center gap-4">
         <Loader2 className="h-10 w-10 text-primary animate-spin" />
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-[rgb(var(--muted))]">
           {status === 'loading' ? 'Entrando...' : 'Redirecionando...'}
         </p>
       </div>

@@ -33,17 +33,17 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
   return (
     <div className="fixed inset-0 z-50 lg:hidden">
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="fixed inset-y-0 left-0 w-72 bg-white shadow-xl">
-        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
+      <div className="fixed inset-y-0 left-0 w-72 bg-[rgb(var(--card))] shadow-xl">
+        <div className="flex items-center justify-between h-16 px-4 border-b border-[rgb(var(--border))]">
           <div className="flex items-center">
             <Receipt className="h-8 w-8 text-primary" />
-            <span className="ml-2 text-xl font-bold text-gray-900">CotaPro</span>
+            <span className="ml-2 text-xl font-bold text-[rgb(var(--fg))]">CotaPro</span>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-gray-100"
+            className="p-2 rounded-lg hover:bg-white/10"
           >
-            <X className="h-5 w-5 text-gray-600" />
+            <X className="h-5 w-5 text-[rgb(var(--muted))]" />
           </button>
         </div>
 
@@ -58,7 +58,7 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
                   'flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                   isActive
                     ? 'bg-primary-50 text-primary-700'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    : 'text-[rgb(var(--muted))] hover:bg-white/10 hover:text-[rgb(var(--fg))]'
                 )
               }
             >

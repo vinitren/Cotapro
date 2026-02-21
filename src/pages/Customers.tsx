@@ -146,8 +146,8 @@ export function Customers() {
     <div className="p-4 lg:p-6 space-y-6 pb-36 lg:pb-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Clientes</h1>
-          <p className="text-gray-500">Gerencie seus clientes</p>
+          <h1 className="text-2xl font-bold text-[rgb(var(--fg))]">Clientes</h1>
+          <p className="text-[rgb(var(--muted))]">Gerencie seus clientes</p>
         </div>
         <Button onClick={() => setIsFormOpen(true)} className="hidden sm:flex">
           <Plus className="h-4 w-4 mr-2" />
@@ -157,7 +157,7 @@ export function Customers() {
 
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[rgb(var(--muted))]" />
           <Input
             placeholder={isListOpen ? 'Buscar por nome, CPF/CNPJ, telefone ou email...' : 'Abra a lista para pesquisar'}
             value={search}
@@ -216,7 +216,7 @@ export function Customers() {
             <div className="flex flex-wrap gap-2">
               <Badge
                 variant="secondary"
-                className="cursor-pointer hover:bg-gray-300"
+                className="cursor-pointer hover:bg-white/20"
                 onClick={() => setTipoFilter('all')}
               >
                 Tipo: {tipoFilter === 'pessoa_fisica' ? 'Pessoa Física' : 'Pessoa Jurídica'} ×
@@ -227,10 +227,10 @@ export function Customers() {
           {filteredCustomers.length === 0 ? (
             <Card className={pageCardClasses}>
           <CardContent className="flex flex-col items-center justify-center py-10 px-6">
-            <div className="h-14 w-14 bg-slate-100 rounded-full flex items-center justify-center mb-3">
-              <Users className="h-7 w-7 text-slate-400" />
+            <div className="h-14 w-14 bg-[rgb(var(--border))]/40 rounded-full flex items-center justify-center mb-3">
+              <Users className="h-7 w-7 text-[rgb(var(--muted))]" />
             </div>
-            <h3 className="text-base font-bold text-gray-900 mb-1">
+            <h3 className="text-base font-bold text-[rgb(var(--fg))] mb-1">
               {search || tipoFilter !== 'all' ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
             </h3>
             <p className="text-sm text-muted-foreground text-center mb-4">
@@ -253,16 +253,16 @@ export function Customers() {
             return (
               <Card
                 key={customer.id}
-                className="rounded-xl border border-slate-200/70 bg-white shadow-sm hover:shadow-md transition-shadow"
+                className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] shadow-sm hover:shadow-md transition-shadow"
               >
                 <CardContent className="px-3 py-2.5">
                   <div className="flex items-center justify-between gap-2 min-w-0">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 truncate">
+                        <p className="text-sm font-semibold text-[rgb(var(--fg))] truncate">
                           {customer?.nome ?? ''}
                         </p>
-                        <span className="flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-slate-100 text-slate-700">
+                        <span className="flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-[rgb(var(--border))]/40 text-[rgb(var(--fg))]">
                           {customer.tipo === 'pessoa_fisica' ? 'PF' : 'PJ'}
                         </span>
                       </div>
@@ -275,7 +275,7 @@ export function Customers() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 flex-shrink-0 text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+                          className="h-7 w-7 flex-shrink-0 text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] hover:bg-white/10"
                           aria-label="Mais opções"
                         >
                           <MoreVertical className="h-3.5 w-3.5" />
@@ -336,7 +336,7 @@ export function Customers() {
 
       {/* Botões fixos no rodapé - apenas mobile */}
       <div
-        className="fixed bottom-16 left-0 right-0 z-30 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] p-4 lg:hidden"
+        className="fixed bottom-16 left-0 right-0 z-30 bg-[rgb(var(--card))] border-t border-[rgb(var(--border))] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] p-4 lg:hidden"
         style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
       >
         <div className="flex items-center gap-3 max-w-[640px] mx-auto">

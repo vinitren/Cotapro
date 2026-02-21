@@ -17,7 +17,7 @@ export function BottomNav() {
   if (pathname === '/quotes/new') return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 lg:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[rgb(var(--card))] border-t border-[rgb(var(--border))] lg:hidden">
       <div className="flex items-center justify-around h-16 px-2">
         {navItems.map((item) => (
           <NavLink
@@ -26,7 +26,7 @@ export function BottomNav() {
             className={({ isActive }) =>
               cn(
                 'flex flex-col items-center justify-center flex-1 h-full px-2 text-[11px] font-medium transition-colors',
-                isActive ? 'text-primary' : 'text-gray-500'
+                isActive ? 'text-primary' : 'text-[rgb(var(--muted))]'
               )
             }
           >
