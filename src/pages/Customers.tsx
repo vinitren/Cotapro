@@ -110,11 +110,25 @@ export function Customers() {
         });
         setDeleteConfirm(null);
       } catch (error) {
-        toast({
-          title: 'Erro',
-          description: error instanceof Error ? error.message : 'Erro ao excluir cliente. Tente novamente.',
-          variant: 'destructive',
-        });
+        const msg = error instanceof Error ? error.message : '';
+        const isForeignKeyError =
+          msg.includes('foreign key') ||
+          msg.includes('violates') ||
+          msg.includes('23503') ||
+          /violates foreign key constraint/i.test(msg);
+        if (isForeignKeyError) {
+          toast({
+            title: 'Não é possível excluir este cliente',
+            description: 'Este cliente possui orçamentos ativos/vinculados. Exclua os orçamentos antes de remover o cliente.',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Erro',
+            description: msg || 'Erro ao excluir cliente. Tente novamente.',
+            variant: 'destructive',
+          });
+        }
       }
     }
   };
