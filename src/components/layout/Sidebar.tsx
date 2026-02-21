@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Link } from 'react-router-dom';
-import { LayoutDashboard, FileText, Users, Package, Settings, Receipt } from 'lucide-react';
+import { LayoutDashboard, FileText, Users, Package, Settings, Receipt, HelpCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 const LOGO_COMPLETA_SRC = '/brand/cotapro-logo-cropped.png';
@@ -11,6 +11,7 @@ const navItems = [
   { to: '/customers', icon: Users, label: 'Clientes' },
   { to: '/catalog', icon: Package, label: 'Catálogo' },
   { to: '/settings', icon: Settings, label: 'Configurações' },
+  { to: '/ajuda', icon: HelpCircle, label: 'Ajuda' },
 ];
 
 export function Sidebar() {

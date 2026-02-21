@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileText, Users, Package, Settings } from 'lucide-react';
+import { LayoutDashboard, FileText, Users, Package, Settings, HelpCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 const navItems = [
@@ -8,6 +8,7 @@ const navItems = [
   { to: '/customers', icon: Users, label: 'Clientes' },
   { to: '/catalog', icon: Package, label: 'Catálogo' },
   { to: '/settings', icon: Settings, label: 'Config.' },
+  { to: '/ajuda', icon: HelpCircle, label: 'Ajuda' },
 ];
 
 export function BottomNav() {

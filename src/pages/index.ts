@@ -8,3 +8,4 @@ export { QuoteDetail } from './QuoteDetail';
 export { PublicQuote } from './PublicQuote';
 export { Catalog } from './Catalog';
 export { Settings } from './Settings';
+export { Help } from './Help';

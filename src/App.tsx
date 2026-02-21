@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/layout';
-import { Login, Signup, Dashboard, Customers, Quotes, QuoteCreate, QuoteDetail, PublicQuote, Catalog, Settings } from './pages';
+import { Login, Signup, Dashboard, Customers, Quotes, QuoteCreate, QuoteDetail, PublicQuote, Catalog, Settings, Help } from './pages';
 import { Toaster } from './components/ui/toaster';
 import { LoadingScreen } from './components/LoadingScreen';
 import { useStore } from './store';
@@ -118,6 +118,7 @@ function App() {
           <Route path="/quotes/:id" element={<QuoteDetail />} />
           <Route path="/catalog" element={<Catalog />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/ajuda" element={<Help />} />
         </Route>
       </Routes>
       <Toaster />
