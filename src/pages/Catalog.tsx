@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Package, Trash2, Pencil, MoreVertical, List } from 'lucide-react';
+import { Plus, Search, Package, Trash2, Pencil, MoreVertical, List, ClipboardPaste } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -24,8 +24,10 @@ import {
   createItemCatalog,
   updateItemCatalog,
   deleteItemCatalog,
+  enablePasteCatalogImport,
   type ItemCatalogDB,
 } from '../lib/supabase';
+import { PasteCatalogModal } from '../components/catalog/PasteCatalogModal';
 import { toast } from '../hooks/useToast';
 
 const UNIDADES = ['UN', 'M', 'M2', 'KG', 'HORA', 'SERVICO'];
@@ -51,6 +53,7 @@ export function Catalog() {
   const [formUnitPrice, setFormUnitPrice] = useState('');
   const [formUnitType, setFormUnitType] = useState('UN');
   const [isSaving, setIsSaving] = useState(false);
+  const [pasteModalOpen, setPasteModalOpen] = useState(false);
 
   const loadItems = async () => {
     if (!userId) return;
@@ -213,6 +216,17 @@ export function Catalog() {
           <List className="h-4 w-4 mr-2" />
           {isListOpen ? 'Ocultar catálogo' : 'Ver catálogo'}
         </Button>
+        {enablePasteCatalogImport && userId && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full sm:w-auto text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
+            onClick={() => setPasteModalOpen(true)}
+          >
+            <ClipboardPaste className="h-4 w-4 mr-2" />
+            Colar lista
+          </Button>
+        )}
       </div>
 
       {isListOpen && (
@@ -382,6 +396,15 @@ export function Catalog() {
           </Button>
         </div>
       </div>
+
+      {enablePasteCatalogImport && userId && (
+        <PasteCatalogModal
+          open={pasteModalOpen}
+          onOpenChange={setPasteModalOpen}
+          userId={userId}
+          onSuccess={loadItems}
+        />
+      )}
 
       <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
         <DialogContent>

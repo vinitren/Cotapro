@@ -589,6 +589,10 @@ export async function deleteQuote(userId: string, quoteId: string): Promise<void
 /** Feature flag: auto-salvar itens criados manualmente no orçamento no catálogo. TRUE para teste/diagnóstico. */
 export const enableAutoSaveCatalogFromQuote = true; // TODO: reverter para env após teste: import.meta.env.VITE_ENABLE_AUTO_SAVE_CATALOG_FROM_QUOTE !== 'false'
 
+/** Feature flag: importar produtos por colagem no catálogo. */
+export const enablePasteCatalogImport =
+  import.meta.env.VITE_ENABLE_PASTE_CATALOG_IMPORT !== 'false';
+
 export interface ItemCatalogDB {
   id: string;
   user_id: string;
@@ -648,6 +652,65 @@ export async function createItemCatalog(
   }
 
   return item as ItemCatalogDB;
+}
+
+export interface PasteCatalogInsertResult {
+  imported: number;
+  duplicates: number;
+  invalidLines: number;
+}
+
+/**
+ * Insere itens no catálogo a partir de colagem, evitando duplicados (name + unit_price).
+ */
+export async function bulkInsertCatalogFromPaste(
+  userId: string,
+  items: Array<{ name: string; unit_price: number }>,
+  invalidLines: number
+): Promise<PasteCatalogInsertResult> {
+  const result: PasteCatalogInsertResult = { imported: 0, duplicates: 0, invalidLines };
+
+  if (!userId || !items?.length) return result;
+
+  const catalog = await getItemsCatalog(userId);
+  const priceRounded = (p: number) => Math.round(p * 100) / 100;
+  const exists = (name: string, price: number) =>
+    catalog.some(
+      (i) =>
+        (i.name ?? '').trim().toLowerCase() === name.trim().toLowerCase() &&
+        priceRounded(Number(i.unit_price)) === priceRounded(price)
+    );
+
+  for (const item of items) {
+    if (!item.name?.trim() || item.unit_price < 0) continue;
+    if (exists(item.name, item.unit_price)) {
+      result.duplicates++;
+      continue;
+    }
+
+    const { error } = await supabase.from('items_catalog').insert({
+      user_id: userId,
+      name: item.name.trim(),
+      description: null,
+      unit_price: item.unit_price,
+      unit_type: 'UN',
+      created_from_quote: false,
+    });
+
+    if (!error) {
+      result.imported++;
+      catalog.push({
+        id: '',
+        user_id: userId,
+        name: item.name.trim(),
+        description: null,
+        unit_price: item.unit_price,
+        unit_type: 'UN',
+      } as ItemCatalogDB);
+    }
+  }
+
+  return result;
 }
 
 export async function updateItemCatalog(
