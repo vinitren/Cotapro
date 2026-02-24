@@ -15,6 +15,7 @@ import { useStore } from '../store';
 import { formatCurrency } from '../lib/utils';
 import { getFollowUpCandidates, formatTimeSince, buildFollowUpMessage } from '../lib/dashboard-followup';
 import { getBarChartData, getDonutChartData, getEmRiscoValue } from '../lib/dashboard-aggregations';
+import { getMonthKey, getCurrentMonthKey } from '../lib/dashboard-date';
 import { ResumoMensal, FunilMensal } from '../components/dashboard/DashboardCharts';
 import { enableFollowUpSuggestions } from '../lib/supabase';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
@@ -24,38 +25,39 @@ const DASHBOARD_MONTH_KEY = 'dashboard-selected-month';
 
 const MONTH_NAMES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
-function getMonthOptions(): { value: string; label: string }[] {
-  const now = new Date();
-  const options: { value: string; label: string }[] = [];
-  for (let i = 0; i < 12; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const y = d.getFullYear();
-    const m = d.getMonth();
-    const value = `${y}-${String(m + 1).padStart(2, '0')}`;
-    const label = `${MONTH_NAMES[m]}/${y}`;
-    options.push({ value, label });
+/**
+ * Retorna meses disponíveis com dados (quotes), ordenados do mais recente ao mais antigo.
+ * Inclui o mês atual mesmo sem dados.
+ * Usa getMonthKey (America/Sao_Paulo) para consistência.
+ */
+function getAvailableMonths<T extends { data_emissao?: string; data_criacao?: string }>(
+  quotes: T[]
+): { key: string; label: string }[] {
+  const seen = new Set<string>();
+  for (const q of quotes) {
+    const dateStr = q.data_emissao ?? q.data_criacao ?? '';
+    const key = getMonthKey(dateStr);
+    if (key) seen.add(key);
   }
-  return options;
+  const currentKey = getCurrentMonthKey();
+  if (!seen.has(currentKey)) seen.add(currentKey);
+
+  return [...seen]
+    .sort((a, b) => b.localeCompare(a))
+    .map((key) => {
+      const [y, m] = key.split('-').map(Number);
+      return { key, label: `${MONTH_NAMES[m - 1]}/${y}` };
+    });
 }
 
-function getDefaultMonth(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-}
-
-/** Filtra orçamentos pelo mês selecionado (YYYY-MM). Usa data_emissao ou data_criacao. Fuso local. */
+/** Filtra orçamentos pelo mês selecionado (YYYY-MM). Usa getMonthKey (America/Sao_Paulo). */
 function filterQuotesByMonth<T extends { data_emissao?: string; data_criacao?: string }>(
   quotes: T[],
   selectedMonth: string
 ): T[] {
-  const [yearStr, monthStr] = selectedMonth.split('-');
-  const targetYear = parseInt(yearStr, 10);
-  const targetMonth = parseInt(monthStr, 10) - 1; // 0-indexed
   return quotes.filter((q) => {
-    const dateStr = q.data_emissao ?? q.data_criacao ?? '';
-    if (!dateStr) return false;
-    const date = new Date(dateStr);
-    return date.getFullYear() === targetYear && date.getMonth() === targetMonth;
+    const key = getMonthKey(q.data_emissao ?? q.data_criacao ?? '');
+    return key === selectedMonth;
   });
 }
 
@@ -70,8 +72,18 @@ export function Dashboard() {
     } catch {
       /* ignore */
     }
-    return getDefaultMonth();
+    return getCurrentMonthKey();
   });
+
+  const availableMonths = getAvailableMonths(quotes);
+  const availableKeys = availableMonths.map((m) => m.key);
+
+  useEffect(() => {
+    if (availableKeys.length === 0) return;
+    if (!availableKeys.includes(selectedMonth)) {
+      setSelectedMonth(availableKeys[0]);
+    }
+  }, [availableKeys.join(','), selectedMonth]);
 
   useEffect(() => {
     try {
@@ -134,7 +146,7 @@ export function Dashboard() {
     return <LoadingSkeleton />;
   }
 
-  const monthOptions = getMonthOptions();
+  const monthOptions = availableMonths;
   const barChartData = getBarChartData(quotesInMonth);
   const donutChartData = getDonutChartData(quotesInMonth);
   const emRiscoValue = getEmRiscoValue(quotesInMonth);
@@ -151,7 +163,7 @@ export function Dashboard() {
             </SelectTrigger>
             <SelectContent>
               {monthOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
+                <SelectItem key={opt.key} value={opt.key}>
                   {opt.label}
                 </SelectItem>
               ))}
