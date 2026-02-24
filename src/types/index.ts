@@ -47,6 +47,8 @@ export interface Quote {
   total: number;
   observacoes: string;
   data_criacao: string;
+  /** Data da última atualização (para follow-up: sent_at > updated_at > created_at) */
+  updated_at?: string;
 }
 
 export interface Company {

@@ -398,6 +398,7 @@ export const useStore = create<AppState>()(
               total: Number(q.total_value) || 0,
               observacoes,
               data_criacao: dataCriacao,
+              updated_at: (q as any).updated_at ?? undefined,
             };
           });
           set({ quotes });

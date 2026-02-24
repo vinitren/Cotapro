@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, Search, FileText, Trash2, Eye, Download, Filter, Loader2, Pencil, MoreVertical, List } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -29,9 +29,17 @@ import { generateQuotePDF } from '../lib/pdf-generator';
 
 export function Quotes() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { quotes, deleteQuote, checkExpiredQuotes, userId, loadQuotes } = useStore();
+  const statusFromUrl = searchParams.get('status') as QuoteStatus | null;
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<QuoteStatus | 'all'>('all');
+
+  useEffect(() => {
+    if (statusFromUrl && ['rascunho', 'enviado', 'aprovado', 'recusado', 'expirado'].includes(statusFromUrl)) {
+      setStatusFilter(statusFromUrl);
+    }
+  }, [statusFromUrl]);
   const [dateFilter, setDateFilter] = useState<'all' | 'daily' | 'weekly' | 'monthly'>('all');
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   const [filterNicho, setFilterNicho] = useState<'status' | 'date'>('status');

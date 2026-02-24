@@ -593,6 +593,10 @@ export const enableAutoSaveCatalogFromQuote = true; // TODO: reverter para env a
 export const enablePasteCatalogImport =
   import.meta.env.VITE_ENABLE_PASTE_CATALOG_IMPORT !== 'false';
 
+/** Feature flag: sugestões de follow-up no Dashboard. */
+export const enableFollowUpSuggestions =
+  import.meta.env.VITE_ENABLE_FOLLOW_UP_SUGGESTIONS !== 'false';
+
 export interface ItemCatalogDB {
   id: string;
   user_id: string;

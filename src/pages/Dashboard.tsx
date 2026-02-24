@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { FileText, DollarSign, TrendingUp, CheckCircle, Banknote, User, AlertCircle } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { useNavigate, Link } from 'react-router-dom';
+import { FileText, DollarSign, TrendingUp, CheckCircle, Banknote, MessageCircle, ArrowRight } from 'lucide-react';
+import { Button } from '../components/ui/button';
 import { PageHeader } from '../components/layout/PageHeader';
-import { Badge } from '../components/ui/badge';
 import { MetricCard } from '../components/dashboard/MetricCard';
 import {
   Select,
@@ -12,7 +12,11 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { useStore } from '../store';
-import { formatCurrency, getStatusLabel, isExpired } from '../lib/utils';
+import { formatCurrency } from '../lib/utils';
+import { getFollowUpCandidates, formatTimeSince, buildFollowUpMessage } from '../lib/dashboard-followup';
+import { getBarChartData, getDonutChartData, getEmRiscoValue } from '../lib/dashboard-aggregations';
+import { ResumoMensal, FunilMensal } from '../components/dashboard/DashboardCharts';
+import { enableFollowUpSuggestions } from '../lib/supabase';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { toast } from '../hooks/useToast';
 
@@ -56,6 +60,7 @@ function filterQuotesByMonth<T extends { data_emissao?: string; data_criacao?: s
 }
 
 export function Dashboard() {
+  const navigate = useNavigate();
   const { quotes, checkExpiredQuotes, loadQuotes } = useStore();
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState<string>(() => {
@@ -108,55 +113,31 @@ export function Dashboard() {
   const sentQuotes = quotesInMonth.filter((q) => q.status === 'enviado' || q.status === 'aprovado' || q.status === 'recusado');
   const approvalRate = sentQuotes.length > 0 ? (approvedQuotes.length / sentQuotes.length) * 100 : 0;
 
-  const statusCounts = {
-    rascunho: quotesInMonth.filter((q) => q.status === 'rascunho').length,
-    enviado: quotesInMonth.filter((q) => q.status === 'enviado').length,
-    aprovado: quotesInMonth.filter((q) => q.status === 'aprovado').length,
-    recusado: quotesInMonth.filter((q) => q.status === 'recusado').length,
-    expirado: quotesInMonth.filter((q) => q.status === 'expirado').length,
+  const followUp = enableFollowUpSuggestions ? getFollowUpCandidates(quotes) : null;
+  const [followUpFilter, setFollowUpFilter] = useState<'24h' | '72h'>('24h');
+  const followUpList = followUp
+    ? (followUpFilter === '72h' ? followUp.candidates72h : followUp.candidates24h).slice(0, 5)
+    : [];
+
+  const handleFollowUpWhatsApp = (quote: (typeof followUpList)[0]) => {
+    const telefone = quote.quote.cliente?.telefone?.replace(/\D/g, '') ?? '';
+    if (telefone.length >= 10) {
+      const num = telefone.startsWith('55') ? telefone : `55${telefone}`;
+      const msg = buildFollowUpMessage(quote.quote.cliente?.nome ?? '');
+      window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, '_blank');
+    } else {
+      navigate(`/quotes/${quote.quote.id}`);
+    }
   };
-
-  const [topLimit, setTopLimit] = useState(5);
-  const [topClientesFilter, setTopClientesFilter] = useState<'diario' | 'semanal' | 'mensal'>('mensal');
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 1024px)');
-    const update = () => setTopLimit(mq.matches ? 5 : 3);
-    update();
-    mq.addEventListener('change', update);
-    return () => mq.removeEventListener('change', update);
-  }, []);
-
-  const topClientesFechadoMap = new Map<string, { nome: string; total: number }>();
-  for (const q of approvedQuotes) {
-    const id = q.cliente_id ?? q.cliente?.nome ?? '';
-    const nome = q.cliente?.nome ?? 'Cliente';
-    const current = topClientesFechadoMap.get(id) ?? { nome, total: 0 };
-    topClientesFechadoMap.set(id, { nome: current.nome, total: current.total + q.total });
-  }
-  const topClientesFechado = [...topClientesFechadoMap.entries()]
-    .map(([id, data]) => ({ id, nome: data.nome, total: data.total }))
-    .sort((a, b) => b.total - a.total)
-    .slice(0, topLimit);
-
-  const maioresEmAberto = quotesInMonth
-    .filter((q) => q.status === 'enviado' && !isExpired(q.data_validade ?? ''))
-    .sort((a, b) => b.total - a.total)
-    .slice(0, topLimit);
 
   if (isLoading) {
     return <LoadingSkeleton />;
   }
 
   const monthOptions = getMonthOptions();
-
-  const getRankStyle = (idx: number) => {
-    const base = 'rounded-xl transition-colors border';
-    const hover = 'hover:bg-[rgb(var(--card))]/80 dark:hover:bg-[rgb(var(--card))]/70';
-    if (idx === 0) return `${base} bg-emerald-50/70 dark:bg-[rgb(var(--card))]/50 border-emerald-200/50 dark:border-emerald-600/40 ${hover}`;
-    if (idx === 1) return `${base} bg-emerald-50/50 dark:bg-[rgb(var(--card))]/50 border-emerald-200/40 dark:border-emerald-600/30 ${hover}`;
-    if (idx === 2) return `${base} bg-emerald-50/40 dark:bg-[rgb(var(--card))]/50 border-emerald-200/30 dark:border-emerald-600/20 ${hover}`;
-    return `${base} bg-[rgb(var(--card))]/50 border-[rgb(var(--border))]/40 ${hover}`;
-  };
+  const barChartData = getBarChartData(quotesInMonth);
+  const donutChartData = getDonutChartData(quotesInMonth);
+  const emRiscoValue = getEmRiscoValue(quotesInMonth);
 
   return (
     <div className="p-4 lg:p-6 space-y-6 lg:space-y-8">
@@ -218,152 +199,93 @@ export function Dashboard() {
         />
       </div>
 
-      {/* Grid: Desktop = Status (60%) | Top Clientes + Maiores valores (40%). Mobile = empilhado */}
-      <div className="rounded-2xl bg-[rgb(var(--card))]/50 border border-[rgb(var(--border))]/40 p-4 lg:p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
-          {/* Orçamentos por Status — maior no desktop */}
-          <Card className="lg:col-span-7 rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--card))]/80 dark:bg-[rgb(var(--card))]/90 backdrop-blur-sm shadow-[0_4px_24px_-4px_rgba(0,0,0,0.08)]">
-            <CardHeader className="p-5 pb-4 border-b border-[rgb(var(--border))]/60">
-              <CardTitle className="text-base font-bold text-[rgb(var(--fg))]">Orçamentos por Status</CardTitle>
-            </CardHeader>
-            <CardContent className="p-5 pt-4 space-y-5">
-              {Object.entries(statusCounts).map(([status, count]) => (
-                <div key={status} className="flex items-center gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-medium text-[rgb(var(--muted))]">
-                        {getStatusLabel(status)}
-                      </span>
-                      <span className="text-xs font-semibold text-[rgb(var(--fg))] tabular-nums">{count}</span>
-                    </div>
-                    <div className="h-2.5 bg-[rgb(var(--border))]/60 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all shadow-sm ${
-                          status === 'rascunho'
-                            ? 'bg-gradient-to-r from-gray-400 to-gray-500'
-                            : status === 'enviado'
-                            ? 'bg-gradient-to-r from-blue-400 to-blue-600'
-                            : status === 'aprovado'
-                            ? 'bg-gradient-to-r from-primary-400 to-primary-600'
-                            : status === 'recusado'
-                            ? 'bg-gradient-to-r from-red-400 to-red-600'
-                            : 'bg-gradient-to-r from-amber-400 to-amber-600'
-                        }`}
-                        style={{
-                          width: `${quotesInMonth.length > 0 ? (count / quotesInMonth.length) * 100 : 0}%`,
-                        }}
-                      />
-                    </div>
+      {/* Prioridades de hoje - Follow-up sugerido */}
+      {enableFollowUpSuggestions && followUp && (followUp.count24h > 0 || followUp.count72h > 0) && (
+        <div className="rounded-2xl bg-[rgb(var(--card))]/50 border border-[rgb(var(--border))]/40 p-4 lg:p-6">
+          <h2 className="text-base font-bold text-[rgb(var(--fg))] mb-4">Prioridades de hoje</h2>
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <button
+              type="button"
+              onClick={() => setFollowUpFilter('24h')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors ${
+                followUpFilter === '24h'
+                  ? 'bg-[rgb(var(--card))] dark:bg-[rgb(var(--card))]/80 border-[rgb(var(--border))] text-[rgb(var(--fg))] shadow-sm'
+                  : 'bg-[rgb(var(--card))]/60 dark:bg-[rgb(var(--card))]/40 border-[rgb(var(--border))]/40 text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]'
+              }`}
+            >
+              <span className="text-xs font-medium">Enviados há +24h</span>
+              <span className="text-sm font-bold tabular-nums">{followUp.count24h}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFollowUpFilter('72h')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors ${
+                followUpFilter === '72h'
+                  ? 'bg-[rgb(var(--card))] dark:bg-[rgb(var(--card))]/80 border-[rgb(var(--border))] text-[rgb(var(--fg))] shadow-sm'
+                  : 'bg-[rgb(var(--card))]/60 dark:bg-[rgb(var(--card))]/40 border-[rgb(var(--border))]/40 text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]'
+              }`}
+            >
+              <span className="text-xs font-medium">Enviados há +72h</span>
+              <span className="text-sm font-bold tabular-nums">{followUp.count72h}</span>
+            </button>
+            <Link
+              to="/quotes?status=enviado"
+              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[rgb(var(--border))]/40 bg-[rgb(var(--card))]/50 dark:bg-[rgb(var(--card))]/40 text-[rgb(var(--fg))] hover:bg-[rgb(var(--card))]/70 dark:hover:bg-[rgb(var(--card))]/60 transition-colors text-xs font-medium"
+            >
+              Ver todos
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          {followUpList.length > 0 ? (
+            <div className="space-y-1.5">
+              {followUpList.map((c) => (
+                <div
+                  key={c.quote.id}
+                  className="flex items-center justify-between gap-3 py-2.5 px-3 rounded-xl bg-[rgb(var(--card))]/50 dark:bg-[rgb(var(--card))]/40 border border-[rgb(var(--border))]/40 hover:bg-[rgb(var(--card))]/70 dark:hover:bg-[rgb(var(--card))]/60 transition-colors"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-[rgb(var(--fg))] truncate">
+                      {c.quote.cliente?.nome ?? 'Cliente'}
+                    </p>
+                    <p className="text-xs text-[rgb(var(--muted))] mt-0.5">
+                      {formatCurrency(c.quote.total)} · {formatTimeSince(c.hoursSinceSent)}
+                    </p>
                   </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-shrink-0 gap-1.5 h-8 text-xs"
+                    onClick={() => handleFollowUpWhatsApp(c)}
+                  >
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    Enviar WhatsApp
+                  </Button>
                 </div>
               ))}
-            </CardContent>
-          </Card>
-
-          {/* Coluna direita: Top Clientes + Maiores valores empilhados */}
-          <div className="lg:col-span-5 flex flex-col gap-4 lg:gap-6">
-            <Card className="rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--card))]/80 dark:bg-[rgb(var(--card))]/90 backdrop-blur-sm shadow-[0_4px_24px_-4px_rgba(0,0,0,0.08)]">
-              <CardHeader className="p-5 pb-4 border-b border-[rgb(var(--border))]/60">
-                <div className="flex items-center justify-between gap-2 min-h-0">
-                  <CardTitle className="text-base font-bold text-[rgb(var(--fg))]">Top Clientes</CardTitle>
-                  <div className="flex-shrink-0">
-                    <div className="hidden sm:flex rounded-lg bg-[rgb(var(--border))]/50 p-0.5">
-                      {(['diario', 'semanal', 'mensal'] as const).map((v) => (
-                        <button
-                          key={v}
-                          type="button"
-                          onClick={() => setTopClientesFilter(v)}
-                          className={`px-2 py-1 text-[10px] font-medium rounded-md transition-colors ${
-                            topClientesFilter === v
-                              ? 'bg-[rgb(var(--card))] text-[rgb(var(--fg))] shadow-sm'
-                              : 'text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]'
-                          }`}
-                        >
-                          {v === 'diario' ? 'Diário' : v === 'semanal' ? 'Semanal' : 'Mensal'}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="sm:hidden">
-                      <Select value={topClientesFilter} onValueChange={(v) => setTopClientesFilter(v as typeof topClientesFilter)}>
-                        <SelectTrigger className="h-7 w-[88px] text-[10px] px-2 py-1 border-[rgb(var(--border))]/60">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="diario">Diário</SelectItem>
-                          <SelectItem value="semanal">Semanal</SelectItem>
-                          <SelectItem value="mensal">Mensal</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-5 pt-4">
-                {topClientesFechado.length === 0 ? (
-                  <p className="text-xs text-[rgb(var(--muted))] py-4">Sem vendas fechadas neste mês.</p>
-                ) : (
-                  <div className="space-y-1.5">
-                    {topClientesFechado.map((item, idx) => (
-                      <div
-                        key={item.id}
-                        className={`flex items-center justify-between gap-2 py-2 px-3 ${getRankStyle(idx)}`}
-                      >
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <div className="h-8 w-8 flex-shrink-0 rounded-full bg-gradient-to-br from-emerald-500 to-blue-500 flex items-center justify-center">
-                            <User className="h-4 w-4 text-white" />
-                          </div>
-                          <p className="text-xs font-medium text-[rgb(var(--fg))] truncate">{item.nome}</p>
-                        </div>
-                        <span className="text-xs font-semibold text-[rgb(var(--fg))] tabular-nums flex-shrink-0">
-                          {formatCurrency(item.total)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="rounded-2xl border border-[rgb(var(--border))] bg-[rgb(var(--card))]/80 dark:bg-[rgb(var(--card))]/90 backdrop-blur-sm shadow-[0_4px_24px_-4px_rgba(0,0,0,0.08)]">
-              <CardHeader className="p-5 pb-4 border-b border-[rgb(var(--border))]/60">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <CardTitle className="text-base font-bold text-[rgb(var(--fg))]">Maiores valores em aberto</CardTitle>
-                  <Badge variant="secondary" className="rounded-full px-2.5 py-0.5 text-[10px] font-medium bg-primary-100/80 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 border-0">Follow-up</Badge>
-                </div>
-                <div className="mt-1.5 space-y-0.5">
-                  <p className="text-xs font-medium text-[rgb(var(--muted))]">Envie uma mensagem em orçamentos.</p>
-                  <p className="text-[10px] text-[rgb(var(--muted))] opacity-80">Em breve: recupere automaticamente com o Assistente Inteligente CotaPro.</p>
-                </div>
-              </CardHeader>
-              <CardContent className="p-5 pt-4">
-                {maioresEmAberto.length === 0 ? (
-                  <p className="text-xs text-[rgb(var(--muted))] py-4">Nenhum valor em aberto neste mês.</p>
-                ) : (
-                  <div className="space-y-1.5">
-                    {maioresEmAberto.map((q, idx) => (
-                      <div
-                        key={q.id}
-                        className={`flex items-center justify-between gap-2 py-2 px-3 ${getRankStyle(idx)}`}
-                      >
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <div className="h-8 w-8 flex-shrink-0 rounded-full bg-gradient-to-br from-emerald-500 to-blue-500 flex items-center justify-center">
-                            <AlertCircle className="h-4 w-4 text-white" />
-                          </div>
-                          <p className="text-xs font-medium text-[rgb(var(--fg))] truncate">
-                            {q.cliente?.nome ?? 'Cliente'}
-                          </p>
-                        </div>
-                        <span className="text-xs font-semibold text-[rgb(var(--fg))] tabular-nums flex-shrink-0">
-                          {formatCurrency(q.total)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+            </div>
+          ) : (
+            <p className="text-sm text-[rgb(var(--muted))] py-2">
+              {followUpFilter === '72h'
+                ? 'Nenhum orçamento enviado há mais de 72h.'
+                : 'Nenhum orçamento enviado há mais de 24h.'}
+            </p>
+          )}
         </div>
+      )}
+
+      {/* Resumo mensal + Funil do mês — grid 2 colunas desktop, 1 coluna mobile */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+        <ResumoMensal
+          barData={barChartData}
+          totalOrcamentos={totalQuotesThisMonth}
+          taxaAprovacao={approvalRate}
+        />
+        <FunilMensal
+          donutData={donutChartData}
+          emAberto={openValue}
+          aprovado={closedValue}
+          emRisco={emRiscoValue}
+        />
       </div>
     </div>
   );
