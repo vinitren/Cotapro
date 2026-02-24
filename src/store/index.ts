@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Customer, Quote, Company, Settings, QuoteStatus } from '../types';
 import { generateId, isExpired, addDays } from '../lib/utils';
-import { supabase, getCustomers, createCustomer, updateCustomer as updateCustomerDB, deleteCustomer as deleteCustomerDB, getQuotes, createQuote as createQuoteDB, updateQuote as updateQuoteDB, deleteQuote as deleteQuoteDB, buildQuoteUpdatePayload } from '../lib/supabase';
+import { supabase, getCustomers, createCustomer, updateCustomer as updateCustomerDB, deleteCustomer as deleteCustomerDB, getQuotes, createQuote as createQuoteDB, updateQuote as updateQuoteDB, deleteQuote as deleteQuoteDB, buildQuoteUpdatePayload, syncQuoteItemsToCatalog } from '../lib/supabase';
 import type { Profile } from '../lib/supabase';
 
 const defaultCompany: Company = {
@@ -612,6 +612,7 @@ export const useStore = create<AppState>()(
           };
 
           set((state) => ({ quotes: [quote, ...state.quotes] }));
+          void syncQuoteItemsToCatalog(userId, normalizedItems);
           return quote;
         } catch (error) {
           console.error('Erro ao salvar orçamento no Supabase:', error);
@@ -644,8 +645,13 @@ export const useStore = create<AppState>()(
             desconto_valor: quoteData.desconto_valor,
           };
           const updatePayload = buildQuoteUpdatePayload(formValues);
+          let updatedQuote: { items?: unknown[] } | undefined;
           if (Object.keys(updatePayload).length > 0) {
-            await updateQuoteDB(userId, id, updatePayload);
+            updatedQuote = await updateQuoteDB(userId, id, updatePayload);
+          }
+          if (quoteData.itens?.length) {
+            const itemsToSync = Array.isArray(updatedQuote?.items) ? updatedQuote.items : quoteData.itens;
+            void syncQuoteItemsToCatalog(userId, itemsToSync);
           }
         } catch (error) {
           console.error('Erro ao atualizar orçamento no Supabase:', error);

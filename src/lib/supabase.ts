@@ -586,6 +586,9 @@ export async function deleteQuote(userId: string, quoteId: string): Promise<void
 // FUNÇÕES PARA CATÁLOGO DE ITENS (ITEMS_CATALOG)
 // ============================================
 
+/** Feature flag: auto-salvar itens criados manualmente no orçamento no catálogo. TRUE para teste/diagnóstico. */
+export const enableAutoSaveCatalogFromQuote = true; // TODO: reverter para env após teste: import.meta.env.VITE_ENABLE_AUTO_SAVE_CATALOG_FROM_QUOTE !== 'false'
+
 export interface ItemCatalogDB {
   id: string;
   user_id: string;
@@ -595,6 +598,8 @@ export interface ItemCatalogDB {
   unit_type: string;
   created_at?: string;
   updated_at?: string;
+  created_from_quote?: boolean;
+  created_from_quote_at?: string | null;
 }
 
 export async function getItemsCatalog(userId: string): Promise<ItemCatalogDB[]> {
@@ -698,5 +703,152 @@ export async function deleteItemCatalog(userId: string, itemId: string): Promise
       throw new Error('Erro de permissão. Verifique as políticas RLS no Supabase.');
     }
     throw new Error(`Erro ao deletar item: ${error.message || 'Erro desconhecido'}`);
+  }
+}
+
+const ALLOWED_UNIT_TYPES = ['UN', 'M', 'M2', 'KG', 'HORA', 'SERVICO'] as const;
+
+/** Normaliza nome para comparação de duplicados: trim + lowercase. */
+function normalizeName(name: string): string {
+  return (name ?? '').toString().trim().toLowerCase();
+}
+
+function parseQuoteItemToCatalog(descricao: string, valorUnitario: number, unidade: string): {
+  name: string;
+  description: string | null;
+  unit_price: number;
+  unit_type: string;
+} {
+  const raw = (descricao ?? '').toString().trim();
+  const parts = raw.split(' - ');
+  const name = (parts[0] ?? '').trim() || raw;
+  const description = parts.length > 1 ? parts.slice(1).join(' - ').trim() || null : null;
+  const unit_type = ALLOWED_UNIT_TYPES.includes(unidade as (typeof ALLOWED_UNIT_TYPES)[number])
+    ? unidade
+    : 'UN';
+  return { name, description, unit_price: Number(valorUnitario) || 0, unit_type };
+}
+
+function catalogItemMatches(
+  catalog: ItemCatalogDB[],
+  name: string,
+  unitPrice: number,
+  unitType: string
+): boolean {
+  const nameNorm = normalizeName(name);
+  const priceRounded = Math.round(unitPrice * 100) / 100;
+  return catalog.some(
+    (i) =>
+      normalizeName(i.name ?? '') === nameNorm &&
+      Math.round(Number(i.unit_price) * 100) / 100 === priceRounded &&
+      (i.unit_type ?? 'UN') === unitType
+  );
+}
+
+export type QuoteItemForCatalog = {
+  descricao?: string;
+  description?: string;
+  valor_unitario?: number;
+  unit_price?: number;
+  unidade?: string;
+  unit?: string;
+};
+
+/** Extrai campos do item (suporta nomes do frontend e do DB). */
+function normalizeQuoteItemForCatalog(item: QuoteItemForCatalog): {
+  descricao: string;
+  valor_unitario: number;
+  unidade: string;
+} | null {
+  const descricao = (item.descricao ?? item.description ?? '').toString().trim();
+  const valor_unitario = Number(item.valor_unitario ?? item.unit_price ?? 0);
+  const unidade = (item.unidade ?? item.unit ?? 'UN').toString().trim() || 'UN';
+  if (!descricao || valor_unitario <= 0) return null;
+  return { descricao, valor_unitario, unidade };
+}
+
+/**
+ * Sincroniza itens do orçamento (quote_items) para o catálogo (items_catalog).
+ * Insere apenas itens que não existem (nome + valor + unidade).
+ * Marca inseridos com created_from_quote=true e created_from_quote_at=now().
+ * Idempotente: rodar duas vezes não duplica.
+ * Erros são tratados silenciosamente (não quebra o salvamento do orçamento).
+ */
+export async function syncQuoteItemsToCatalog(
+  userId: string,
+  quoteItems: QuoteItemForCatalog[]
+): Promise<void> {
+  console.log('[syncQuoteItemsToCatalog] Iniciando. enableAutoSave=', enableAutoSaveCatalogFromQuote, 'userId=', userId, 'qty=', quoteItems?.length);
+
+  if (!enableAutoSaveCatalogFromQuote || !userId || !quoteItems?.length) {
+    console.log('[syncQuoteItemsToCatalog] Abortando: flag off, sem userId ou sem itens.');
+    return;
+  }
+
+  try {
+    const catalog = await getItemsCatalog(userId);
+    console.log('[syncQuoteItemsToCatalog] Catálogo atual:', catalog.length, 'itens');
+
+    const now = new Date().toISOString();
+
+    for (let i = 0; i < quoteItems.length; i++) {
+      const item = quoteItems[i];
+      console.log('[syncQuoteItemsToCatalog] Verificando item', i + 1, '/', quoteItems.length, item);
+
+      const normalized = normalizeQuoteItemForCatalog(item);
+      if (!normalized) {
+        console.log('[syncQuoteItemsToCatalog] Item ignorado (sem descricao ou valor <= 0)');
+        continue;
+      }
+
+      const { name, description, unit_price, unit_type } = parseQuoteItemToCatalog(
+        normalized.descricao,
+        normalized.valor_unitario,
+        normalized.unidade
+      );
+      if (!name.trim()) {
+        console.log('[syncQuoteItemsToCatalog] Item ignorado (nome vazio após parse)');
+        continue;
+      }
+
+      const isDuplicate = catalogItemMatches(catalog, name, unit_price, unit_type);
+      console.log('[syncQuoteItemsToCatalog] Busca duplicado: nome=', name, 'valor=', unit_price, 'unidade=', unit_type, '-> já existe?', isDuplicate);
+
+      if (isDuplicate) continue;
+
+      const payload = {
+        user_id: userId,
+        name,
+        description,
+        unit_price,
+        unit_type,
+        created_from_quote: true,
+        created_from_quote_at: now,
+      };
+      console.log('[syncQuoteItemsToCatalog] Inserindo no items_catalog:', payload);
+
+      const { data: newItem, error } = await supabase
+        .from('items_catalog')
+        .insert(payload)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[syncQuoteItemsToCatalog] Erro Supabase no INSERT:', error.message, 'details:', error.details, 'code:', error.code);
+        if (error.code === '42501' || /permission|RLS|policy/i.test(error.message ?? '')) {
+          console.error('[syncQuoteItemsToCatalog] ⚠️ Provável RLS bloqueando INSERT em items_catalog. Verifique políticas de INSERT.');
+        }
+        continue;
+      }
+
+      if (newItem) {
+        catalog.push(newItem as ItemCatalogDB);
+        console.log('[syncQuoteItemsToCatalog] Item inserido com sucesso:', newItem);
+      }
+    }
+
+    console.log('[syncQuoteItemsToCatalog] Concluído.');
+  } catch (err) {
+    console.error('[syncQuoteItemsToCatalog] Erro geral (não quebra o fluxo):', err);
   }
 }
