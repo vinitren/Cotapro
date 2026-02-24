@@ -197,20 +197,20 @@ function FaqAccordionItem({
   onToggle: () => void;
 }) {
   return (
-    <div className="border-b border-slate-100 last:border-b-0">
+    <div className="border-b border-slate-100 dark:border-[rgb(var(--border))]/60 last:border-b-0">
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={isOpen}
-        className="w-full flex items-center justify-between gap-3 py-4 text-left hover:bg-white/10 transition-colors px-1 -mx-1 rounded-lg"
+        className="w-full flex items-center justify-between gap-3 py-4 text-left hover:bg-white/10 dark:hover:bg-white/5 transition-colors px-1 -mx-1 rounded-lg"
       >
         <span className="font-medium text-[rgb(var(--fg))]">{question}</span>
         <ChevronDown
-          className={`h-5 w-5 text-slate-400 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          className={`h-5 w-5 text-slate-400 dark:text-slate-300 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
         />
       </button>
       {isOpen && (
-        <div className="pb-4 pt-0 text-sm text-slate-600 leading-relaxed">
+        <div className="pb-4 pt-0 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
           {answer}
         </div>
       )}
@@ -267,9 +267,9 @@ export function Help() {
         {filteredCategories.length === 0 ? (
           <Card className={pageCardClasses}>
             <CardContent className="py-12 px-6 text-center">
-              <HelpCircle className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-              <p className="text-slate-600 font-medium">Nenhum resultado encontrado</p>
-              <p className="text-sm text-slate-500 mt-1">
+              <HelpCircle className="h-12 w-12 text-slate-300 dark:text-slate-500 mx-auto mb-3" />
+              <p className="text-slate-600 dark:text-slate-300 font-medium">Nenhum resultado encontrado</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                 Tente outros termos de busca
               </p>
             </CardContent>
@@ -306,7 +306,7 @@ export function Help() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h3 className="text-lg font-semibold text-[rgb(var(--fg))]">Precisa de ajuda ou quer sugerir melhorias?</h3>
-              <p className="text-sm text-slate-600 mt-1">
+              <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
                 Se tiver dúvidas, dificuldades ou ideias para melhorar o CotaPro, fale com a gente. Seu feedback ajuda a evoluir o sistema para vendedores como você.
               </p>
             </div>

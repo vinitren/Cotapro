@@ -118,12 +118,19 @@ export function Login() {
       <Card className="w-full max-w-md mx-auto border border-gray-100 shadow-xl shadow-gray-200/50 rounded-2xl">
             <CardHeader className="text-center pb-8 pt-2 lg:pt-8 px-8">
               <div className="flex flex-col items-center gap-0 lg:gap-1">
-                {/* Logo completa - somente mobile */}
-                <img
-                  src="/brand/Cota%20pro%20logo%20preta%20completa%20png.png"
-                  alt="CotaPro"
-                  className="lg:hidden w-64 h-auto object-contain mx-auto mb-3"
-                />
+                {/* Logo completa - somente mobile/tablet: preta no modo claro, branca no modo escuro. Desktop = só painel esquerdo. */}
+                <div className="lg:hidden">
+                  <img
+                    src="/brand/Cota%20pro%20logo%20preta%20completa%20png.png"
+                    alt="CotaPro"
+                    className="dark:hidden w-64 h-auto object-contain mx-auto mb-3"
+                  />
+                  <img
+                    src="/brand/Cota%20pro%20logo%20branca%20completa%20png.png"
+                    alt="CotaPro"
+                    className="hidden dark:block w-64 h-auto object-contain mx-auto mb-3"
+                  />
+                </div>
                 {/* Título mobile: Bem-vindo de volta */}
                 <h1 className="lg:hidden text-2xl font-extrabold text-[rgb(var(--fg))] tracking-tight">
                   Bem-vindo de volta

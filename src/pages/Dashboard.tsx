@@ -150,10 +150,12 @@ export function Dashboard() {
   const monthOptions = getMonthOptions();
 
   const getRankStyle = (idx: number) => {
-    if (idx === 0) return 'bg-emerald-50/70 border border-emerald-200/50 rounded-xl hover:bg-emerald-50/90 transition-colors';
-    if (idx === 1) return 'bg-emerald-50/50 border border-emerald-200/40 rounded-xl hover:bg-emerald-50/80 transition-colors';
-    if (idx === 2) return 'bg-emerald-50/40 border border-emerald-200/30 rounded-xl hover:bg-emerald-50/70 transition-colors';
-    return 'bg-[rgb(var(--card))]/50 border border-[rgb(var(--border))]/40 rounded-xl hover:bg-[rgb(var(--card))]/70 transition-colors';
+    const base = 'rounded-xl transition-colors border';
+    const hover = 'hover:bg-[rgb(var(--card))]/80 dark:hover:bg-[rgb(var(--card))]/70';
+    if (idx === 0) return `${base} bg-emerald-50/70 dark:bg-[rgb(var(--card))]/50 border-emerald-200/50 dark:border-emerald-600/40 ${hover}`;
+    if (idx === 1) return `${base} bg-emerald-50/50 dark:bg-[rgb(var(--card))]/50 border-emerald-200/40 dark:border-emerald-600/30 ${hover}`;
+    if (idx === 2) return `${base} bg-emerald-50/40 dark:bg-[rgb(var(--card))]/50 border-emerald-200/30 dark:border-emerald-600/20 ${hover}`;
+    return `${base} bg-[rgb(var(--card))]/50 border-[rgb(var(--border))]/40 ${hover}`;
   };
 
   return (
@@ -205,8 +207,6 @@ export function Dashboard() {
           value={formatCurrency(openValue)}
           variant="blue"
           order="order-4 lg:order-2"
-          cardClassName="py-3 sm:py-4 px-4"
-          valueClassName="text-3xl sm:text-2xl leading-none mt-1 sm:mt-2"
         />
         <MetricCard
           icon={CheckCircle}
@@ -300,7 +300,7 @@ export function Dashboard() {
               </CardHeader>
               <CardContent className="p-5 pt-4">
                 {topClientesFechado.length === 0 ? (
-                  <p className="text-xs text-slate-500 py-4">Sem vendas fechadas neste mês.</p>
+                  <p className="text-xs text-[rgb(var(--muted))] py-4">Sem vendas fechadas neste mês.</p>
                 ) : (
                   <div className="space-y-1.5">
                     {topClientesFechado.map((item, idx) => (
@@ -312,9 +312,9 @@ export function Dashboard() {
                           <div className="h-8 w-8 flex-shrink-0 rounded-full bg-gradient-to-br from-emerald-500 to-blue-500 flex items-center justify-center">
                             <User className="h-4 w-4 text-white" />
                           </div>
-                          <p className="text-xs font-medium text-slate-800 truncate">{item.nome}</p>
+                          <p className="text-xs font-medium text-[rgb(var(--fg))] truncate">{item.nome}</p>
                         </div>
-                        <span className="text-xs font-semibold text-slate-800 tabular-nums flex-shrink-0">
+                        <span className="text-xs font-semibold text-[rgb(var(--fg))] tabular-nums flex-shrink-0">
                           {formatCurrency(item.total)}
                         </span>
                       </div>
@@ -328,16 +328,16 @@ export function Dashboard() {
               <CardHeader className="p-5 pb-4 border-b border-[rgb(var(--border))]/60">
                 <div className="flex items-center gap-2 flex-wrap">
                   <CardTitle className="text-base font-bold text-[rgb(var(--fg))]">Maiores valores em aberto</CardTitle>
-                  <Badge variant="secondary" className="rounded-full px-2.5 py-0.5 text-[10px] font-medium bg-primary-100/80 text-primary-700 border-0">Follow-up</Badge>
+                  <Badge variant="secondary" className="rounded-full px-2.5 py-0.5 text-[10px] font-medium bg-primary-100/80 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 border-0">Follow-up</Badge>
                 </div>
                 <div className="mt-1.5 space-y-0.5">
-                  <p className="text-xs font-medium text-slate-600">Envie uma mensagem em orçamentos.</p>
-                  <p className="text-[10px] text-slate-500">Em breve: recupere automaticamente com o Assistente Inteligente CotaPro.</p>
+                  <p className="text-xs font-medium text-[rgb(var(--muted))]">Envie uma mensagem em orçamentos.</p>
+                  <p className="text-[10px] text-[rgb(var(--muted))] opacity-80">Em breve: recupere automaticamente com o Assistente Inteligente CotaPro.</p>
                 </div>
               </CardHeader>
               <CardContent className="p-5 pt-4">
                 {maioresEmAberto.length === 0 ? (
-                  <p className="text-xs text-slate-500 py-4">Nenhum valor em aberto neste mês.</p>
+                  <p className="text-xs text-[rgb(var(--muted))] py-4">Nenhum valor em aberto neste mês.</p>
                 ) : (
                   <div className="space-y-1.5">
                     {maioresEmAberto.map((q, idx) => (
@@ -349,11 +349,11 @@ export function Dashboard() {
                           <div className="h-8 w-8 flex-shrink-0 rounded-full bg-gradient-to-br from-emerald-500 to-blue-500 flex items-center justify-center">
                             <AlertCircle className="h-4 w-4 text-white" />
                           </div>
-                          <p className="text-xs font-medium text-slate-800 truncate">
+                          <p className="text-xs font-medium text-[rgb(var(--fg))] truncate">
                             {q.cliente?.nome ?? 'Cliente'}
                           </p>
                         </div>
-                        <span className="text-xs font-semibold text-slate-800 tabular-nums flex-shrink-0">
+                        <span className="text-xs font-semibold text-[rgb(var(--fg))] tabular-nums flex-shrink-0">
                           {formatCurrency(q.total)}
                         </span>
                       </div>

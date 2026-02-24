@@ -93,7 +93,7 @@ export function MetricCard({
           </div>
           <p className="text-sm font-medium text-white/90 leading-tight min-w-0">{label}</p>
         </div>
-        <p className={cn('text-xl sm:text-2xl font-bold leading-tight mt-2 text-white tracking-tight drop-shadow-sm', valueClassName)}>
+        <p className={cn('text-xl sm:text-2xl lg:text-3xl font-bold leading-tight whitespace-nowrap mt-2 text-white tracking-tight drop-shadow-sm min-w-0 overflow-hidden', valueClassName)}>
           {value}
         </p>
       </div>
