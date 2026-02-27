@@ -18,11 +18,17 @@ async function updateProfileByUserId(
   userId: string,
   data: Record<string, unknown>
 ) {
-  const { error } = await supabase.from('profiles').update(data).eq('id', userId);
+  const { data: updated, error } = await supabase
+    .from('profiles')
+    .update(data)
+    .eq('id', userId)
+    .select('id,current_period_end')
+    .maybeSingle();
   if (error) {
-    console.error('[webhook] Erro ao atualizar profile por userId');
+    console.error('[webhook] Erro ao atualizar profile por userId', error);
     throw error;
   }
+  console.log('[webhook] updateProfileByUserId current_period_end=', (updated as any)?.current_period_end);
 }
 
 async function updateProfileByStripeSubscriptionId(
@@ -46,128 +52,145 @@ async function updateProfileByStripeSubscriptionId(
     return;
   }
 
-  const { error } = await supabase.from('profiles').update(data).eq('id', profiles[0].id);
+  const { data: updated, error } = await supabase
+    .from('profiles')
+    .update(data)
+    .eq('id', profiles[0].id)
+    .select('id,current_period_end')
+    .maybeSingle();
   if (error) {
-    console.error('[webhook] Erro ao atualizar profile');
+    console.error('[webhook] Erro ao atualizar profile', error);
     throw error;
   }
+  console.log('[webhook] updateProfileByStripeSubscriptionId current_period_end=', (updated as any)?.current_period_end);
 }
 
-export default {
-  async fetch(request: Request) {
-    if (request.method !== 'POST') {
-      return new Response(null, { status: 405 });
+export default async function handler(req: any, res: any) {
+  if (req.method !== 'POST') {
+    res.status(405).send('ok');
+    return;
+  }
+
+  if (!webhookSecret || !stripeSecretKey) {
+    console.error('[webhook] Missing STRIPE_WEBHOOK_SECRET or STRIPE_SECRET_KEY');
+    res.status(400).send('ok');
+    return;
+  }
+
+  const signature = req.headers['stripe-signature'];
+  if (!signature) {
+    console.error('[webhook] Missing stripe-signature header');
+    res.status(400).send('ok');
+    return;
+  }
+
+  let rawBody: string;
+  try {
+    if (typeof req.body === 'string') {
+      rawBody = req.body;
+    } else if (Buffer.isBuffer(req.body)) {
+      rawBody = req.body.toString('utf-8');
+    } else {
+      rawBody = String(req.body ?? '');
     }
+  } catch (err) {
+    console.error('[webhook] Erro ao ler raw body');
+    res.status(400).send('ok');
+    return;
+  }
 
-    if (!webhookSecret || !stripeSecretKey) {
-      console.error('[webhook] Missing STRIPE_WEBHOOK_SECRET or STRIPE_SECRET_KEY');
-      return new Response(null, { status: 400 });
-    }
+  const stripe = new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' });
+  let event: Stripe.Event;
+  try {
+    event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+  } catch (err) {
+    console.error('[webhook] Assinatura inválida');
+    res.status(400).send('ok');
+    return;
+  }
 
-    const signature = request.headers.get('stripe-signature');
-    if (!signature) {
-      console.error('[webhook] Missing stripe-signature header');
-      return new Response(null, { status: 400 });
-    }
+  let statusFinal = 'ok';
 
-    let rawBody: string;
-    try {
-      rawBody = await request.text();
-    } catch (err) {
-      console.error('[webhook] Erro ao ler raw body');
-      return new Response(null, { status: 400 });
-    }
+  try {
+    const supabase = getSupabaseAdmin();
 
-    const stripe = new Stripe(stripeSecretKey);
-    let event: Stripe.Event;
-    try {
-      event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
-    } catch (err) {
-      console.error('[webhook] Assinatura inválida');
-      return new Response(null, { status: 400 });
-    }
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const userId = session.metadata?.userId;
+        const customer = session.customer;
+        const subscriptionId =
+          typeof session.subscription === 'string'
+            ? session.subscription
+            : session.subscription?.id;
 
-    let statusFinal = 'ok';
-
-    try {
-      const supabase = getSupabaseAdmin();
-
-      switch (event.type) {
-        case 'checkout.session.completed': {
-          const session = event.data.object as Stripe.Checkout.Session;
-          const userId = session.metadata?.userId;
-          const customer = session.customer;
-          const subscriptionId =
-            typeof session.subscription === 'string'
-              ? session.subscription
-              : session.subscription?.id;
-
-          if (!userId || !subscriptionId) {
-            console.warn('[webhook] checkout.session.completed sem userId ou subscription');
-            statusFinal = 'skipped';
-            break;
-          }
-
-          const sub = await stripe.subscriptions.retrieve(subscriptionId);
-          const customerId = typeof customer === 'string' ? customer : customer?.id ?? null;
-          const periodEnd = sub.current_period_end
-            ? new Date(sub.current_period_end * 1000).toISOString()
-            : null;
-          console.log('[stripe] checkout.completed', { subId: sub.id, hasPeriodEnd: !!sub.current_period_end, periodEnd });
-
-          await updateProfileByUserId(supabase, userId, {
-            plan_status: 'active',
-            stripe_customer_id: customerId,
-            stripe_subscription_id: subscriptionId,
-            stripe_subscription_status: sub.status,
-            current_period_end: periodEnd,
-            cancel_at_period_end: sub.cancel_at_period_end ?? false,
-          });
-          statusFinal = 'profile atualizado';
+        if (!userId || !subscriptionId) {
+          console.warn('[webhook] checkout.session.completed sem userId ou subscription');
+          statusFinal = 'skipped';
           break;
         }
 
-        case 'customer.subscription.created':
-        case 'customer.subscription.updated': {
-          const subscription = event.data.object as Stripe.Subscription;
-          const periodEnd = subscription.current_period_end
-            ? new Date(subscription.current_period_end * 1000).toISOString()
-            : null;
-          console.log('[stripe] sub.updated', { subId: subscription.id, hasPeriodEnd: !!subscription.current_period_end, periodEnd });
-
-          const planStatus = ['active', 'trialing'].includes(subscription.status) ? 'active' : 'expired';
-          await updateProfileByStripeSubscriptionId(supabase, subscription.id, {
-            stripe_subscription_status: subscription.status,
-            current_period_end: periodEnd,
-            cancel_at_period_end: subscription.cancel_at_period_end ?? false,
-            plan_status: planStatus,
-          });
-          statusFinal = 'profile atualizado';
-          break;
+        const sub = await stripe.subscriptions.retrieve(subscriptionId);
+        const customerId = typeof customer === 'string' ? customer : customer?.id ?? null;
+        const patch: Record<string, unknown> = {
+          plan_status: 'active',
+          stripe_customer_id: customerId,
+          stripe_subscription_id: subscriptionId,
+          stripe_subscription_status: sub.status,
+          cancel_at_period_end: sub.cancel_at_period_end ?? false,
+        };
+        if (typeof sub.current_period_end === 'number') {
+          patch.current_period_end = new Date(sub.current_period_end * 1000).toISOString();
         }
+        console.log('[stripe] checkout.completed', { subId: sub.id, hasPeriodEnd: !!sub.current_period_end, periodEnd: patch.current_period_end });
 
-        case 'customer.subscription.deleted': {
-          const subscription = event.data.object as Stripe.Subscription;
-          await updateProfileByStripeSubscriptionId(supabase, subscription.id, {
-            plan_status: 'expired',
-            stripe_subscription_status: 'canceled',
-            cancel_at_period_end: false,
-          });
-          statusFinal = 'profile atualizado';
-          break;
-        }
-
-        default:
-          statusFinal = 'ignored';
-          break;
+        await updateProfileByUserId(supabase, userId, patch);
+        statusFinal = 'profile atualizado';
+        break;
       }
 
-      console.log('[webhook] type=%s status=%s', event.type, statusFinal);
-    } catch (err) {
-      console.error('[webhook] Erro type=%s', event.type);
-      statusFinal = 'erro';
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object as Stripe.Subscription;
+        const planStatus = ['active', 'trialing'].includes(subscription.status) ? 'active' : 'expired';
+        const patch: Record<string, unknown> = {
+          stripe_subscription_status: subscription.status,
+          cancel_at_period_end: subscription.cancel_at_period_end ?? false,
+          plan_status: planStatus,
+        };
+        if (typeof subscription.current_period_end === 'number') {
+          patch.current_period_end = new Date(
+            subscription.current_period_end * 1000
+          ).toISOString();
+        }
+        console.log('[stripe] sub.updated', { subId: subscription.id, hasPeriodEnd: !!subscription.current_period_end, periodEnd: patch.current_period_end });
+
+        await updateProfileByStripeSubscriptionId(supabase, subscription.id, patch);
+        statusFinal = 'profile atualizado';
+        break;
+      }
+
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription;
+        await updateProfileByStripeSubscriptionId(supabase, subscription.id, {
+          plan_status: 'expired',
+          stripe_subscription_status: 'canceled',
+          cancel_at_period_end: false,
+        });
+        statusFinal = 'profile atualizado';
+        break;
+      }
+
+      default:
+        statusFinal = 'ignored';
+        break;
     }
 
-    return new Response(null, { status: 200 });
-  },
-};
+    console.log('[webhook] type=%s status=%s', event.type, statusFinal);
+  } catch (err) {
+    console.error('[webhook] Erro type=%s', event.type, err);
+    statusFinal = 'erro';
+  }
+
+  res.status(statusFinal === 'erro' ? 500 : 200).send('ok');
+}
