@@ -53,19 +53,13 @@ async function updateProfileByStripeSubscriptionId(
   }
 }
 
-/** Converte Unix timestamp (segundos) para ISO string (timestamptz). */
-function toTimestamptz(unixSeconds: number | string | undefined | null): string | null {
-  if (unixSeconds == null) return null;
-  const n = typeof unixSeconds === 'string' ? parseInt(unixSeconds, 10) : unixSeconds;
-  if (typeof n !== 'number' || isNaN(n)) return null;
-  return new Date(n * 1000).toISOString();
-}
-
 function subscriptionToProfileData(sub: Stripe.Subscription): Record<string, unknown> {
   const planStatus = ['active', 'trialing'].includes(sub.status) ? 'active' : 'expired';
-  const currentPeriodEnd = toTimestamptz(sub.current_period_end);
+  const raw = sub.current_period_end;
+  const n = raw != null ? (typeof raw === 'number' ? raw : parseInt(String(raw), 10)) : NaN;
+  const currentPeriodEnd = !isNaN(n) ? new Date(n * 1000).toISOString() : null;
   if (!currentPeriodEnd) {
-    console.warn('[webhook] NO_CURRENT_PERIOD_END');
+    console.warn('[webhook] MISSING_CURRENT_PERIOD_END');
   }
   const data: Record<string, unknown> = {
     stripe_subscription_status: sub.status,
@@ -135,22 +129,21 @@ export default {
 
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
           const customerId = typeof customer === 'string' ? customer : customer?.id ?? null;
-          const currentPeriodEnd = toTimestamptz(subscription.current_period_end);
+          const raw = subscription.current_period_end;
+          const n = raw != null ? (typeof raw === 'number' ? raw : parseInt(String(raw), 10)) : NaN;
+          const currentPeriodEnd = !isNaN(n) ? new Date(n * 1000).toISOString() : null;
           if (!currentPeriodEnd) {
-            console.warn('[webhook] NO_CURRENT_PERIOD_END');
+            console.warn('[webhook] MISSING_CURRENT_PERIOD_END');
           }
 
-          const updateData: Record<string, unknown> = {
+          await updateProfileByUserId(supabase, userId, {
             plan_status: 'active',
             stripe_customer_id: customerId,
             stripe_subscription_id: subscriptionId,
             stripe_subscription_status: subscription.status,
+            current_period_end: currentPeriodEnd ?? undefined,
             cancel_at_period_end: subscription.cancel_at_period_end ?? false,
-          };
-          if (currentPeriodEnd) {
-            updateData.current_period_end = currentPeriodEnd;
-          }
-          await updateProfileByUserId(supabase, userId, updateData);
+          });
           statusFinal = 'profile atualizado';
           break;
         }
