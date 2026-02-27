@@ -53,17 +53,29 @@ async function updateProfileByStripeSubscriptionId(
   }
 }
 
-function subscriptionToProfileData(sub: Stripe.Subscription) {
+/** Converte Unix timestamp (segundos) para ISO string (timestamptz). */
+function toTimestamptz(unixSeconds: number | string | undefined | null): string | null {
+  if (unixSeconds == null) return null;
+  const n = typeof unixSeconds === 'string' ? parseInt(unixSeconds, 10) : unixSeconds;
+  if (typeof n !== 'number' || isNaN(n)) return null;
+  return new Date(n * 1000).toISOString();
+}
+
+function subscriptionToProfileData(sub: Stripe.Subscription): Record<string, unknown> {
   const planStatus = ['active', 'trialing'].includes(sub.status) ? 'active' : 'expired';
-  const currentPeriodEnd = sub.current_period_end
-    ? new Date(sub.current_period_end * 1000).toISOString()
-    : null;
-  return {
+  const currentPeriodEnd = toTimestamptz(sub.current_period_end);
+  if (!currentPeriodEnd) {
+    console.warn('[webhook] NO_CURRENT_PERIOD_END');
+  }
+  const data: Record<string, unknown> = {
     stripe_subscription_status: sub.status,
-    current_period_end: currentPeriodEnd,
     cancel_at_period_end: sub.cancel_at_period_end ?? false,
     plan_status: planStatus,
   };
+  if (currentPeriodEnd) {
+    data.current_period_end = currentPeriodEnd;
+  }
+  return data;
 }
 
 export default {
@@ -123,17 +135,22 @@ export default {
 
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
           const customerId = typeof customer === 'string' ? customer : customer?.id ?? null;
+          const currentPeriodEnd = toTimestamptz(subscription.current_period_end);
+          if (!currentPeriodEnd) {
+            console.warn('[webhook] NO_CURRENT_PERIOD_END');
+          }
 
-          await updateProfileByUserId(supabase, userId, {
+          const updateData: Record<string, unknown> = {
             plan_status: 'active',
             stripe_customer_id: customerId,
             stripe_subscription_id: subscriptionId,
             stripe_subscription_status: subscription.status,
-            current_period_end: subscription.current_period_end
-              ? new Date(subscription.current_period_end * 1000).toISOString()
-              : null,
             cancel_at_period_end: subscription.cancel_at_period_end ?? false,
-          });
+          };
+          if (currentPeriodEnd) {
+            updateData.current_period_end = currentPeriodEnd;
+          }
+          await updateProfileByUserId(supabase, userId, updateData);
           statusFinal = 'profile atualizado';
           break;
         }
