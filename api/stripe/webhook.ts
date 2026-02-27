@@ -53,25 +53,6 @@ async function updateProfileByStripeSubscriptionId(
   }
 }
 
-function subscriptionToProfileData(sub: Stripe.Subscription): Record<string, unknown> {
-  const planStatus = ['active', 'trialing'].includes(sub.status) ? 'active' : 'expired';
-  const raw = sub.current_period_end;
-  const n = raw != null ? (typeof raw === 'number' ? raw : parseInt(String(raw), 10)) : NaN;
-  const currentPeriodEnd = !isNaN(n) ? new Date(n * 1000).toISOString() : null;
-  if (!currentPeriodEnd) {
-    console.warn('[webhook] MISSING_CURRENT_PERIOD_END');
-  }
-  const data: Record<string, unknown> = {
-    stripe_subscription_status: sub.status,
-    cancel_at_period_end: sub.cancel_at_period_end ?? false,
-    plan_status: planStatus,
-  };
-  if (currentPeriodEnd) {
-    data.current_period_end = currentPeriodEnd;
-  }
-  return data;
-}
-
 export default {
   async fetch(request: Request) {
     if (request.method !== 'POST') {
@@ -127,22 +108,20 @@ export default {
             break;
           }
 
-          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+          const sub = await stripe.subscriptions.retrieve(subscriptionId);
           const customerId = typeof customer === 'string' ? customer : customer?.id ?? null;
-          const raw = subscription.current_period_end;
-          const n = raw != null ? (typeof raw === 'number' ? raw : parseInt(String(raw), 10)) : NaN;
-          const currentPeriodEnd = !isNaN(n) ? new Date(n * 1000).toISOString() : null;
-          if (!currentPeriodEnd) {
-            console.warn('[webhook] MISSING_CURRENT_PERIOD_END');
-          }
+          const periodEnd = sub.current_period_end
+            ? new Date(sub.current_period_end * 1000).toISOString()
+            : null;
+          console.log('[stripe] checkout.completed', { subId: sub.id, hasPeriodEnd: !!sub.current_period_end, periodEnd });
 
           await updateProfileByUserId(supabase, userId, {
             plan_status: 'active',
             stripe_customer_id: customerId,
             stripe_subscription_id: subscriptionId,
-            stripe_subscription_status: subscription.status,
-            current_period_end: currentPeriodEnd ?? undefined,
-            cancel_at_period_end: subscription.cancel_at_period_end ?? false,
+            stripe_subscription_status: sub.status,
+            current_period_end: periodEnd,
+            cancel_at_period_end: sub.cancel_at_period_end ?? false,
           });
           statusFinal = 'profile atualizado';
           break;
@@ -151,8 +130,18 @@ export default {
         case 'customer.subscription.created':
         case 'customer.subscription.updated': {
           const subscription = event.data.object as Stripe.Subscription;
-          const data = subscriptionToProfileData(subscription);
-          await updateProfileByStripeSubscriptionId(supabase, subscription.id, data);
+          const periodEnd = subscription.current_period_end
+            ? new Date(subscription.current_period_end * 1000).toISOString()
+            : null;
+          console.log('[stripe] sub.updated', { subId: subscription.id, hasPeriodEnd: !!subscription.current_period_end, periodEnd });
+
+          const planStatus = ['active', 'trialing'].includes(subscription.status) ? 'active' : 'expired';
+          await updateProfileByStripeSubscriptionId(supabase, subscription.id, {
+            stripe_subscription_status: subscription.status,
+            current_period_end: periodEnd,
+            cancel_at_period_end: subscription.cancel_at_period_end ?? false,
+            plan_status: planStatus,
+          });
           statusFinal = 'profile atualizado';
           break;
         }
