@@ -143,6 +143,7 @@ export default async function handler(req: any, res: any) {
           patch.current_period_end = new Date(sub.current_period_end * 1000).toISOString();
         }
         console.log('[stripe] checkout.completed', { subId: sub.id, hasPeriodEnd: !!sub.current_period_end, periodEnd: patch.current_period_end });
+        console.log('[webhook] BEFORE update event.type=%s patch.current_period_end=%s', event.type, patch.current_period_end);
 
         await updateProfileByUserId(supabase, userId, patch);
         statusFinal = 'profile atualizado';
@@ -164,6 +165,7 @@ export default async function handler(req: any, res: any) {
           ).toISOString();
         }
         console.log('[stripe] sub.updated', { subId: subscription.id, hasPeriodEnd: !!subscription.current_period_end, periodEnd: patch.current_period_end });
+        console.log('[webhook] BEFORE update event.type=%s patch.current_period_end=%s', event.type, patch.current_period_end);
 
         await updateProfileByStripeSubscriptionId(supabase, subscription.id, patch);
         statusFinal = 'profile atualizado';
@@ -172,11 +174,13 @@ export default async function handler(req: any, res: any) {
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
-        await updateProfileByStripeSubscriptionId(supabase, subscription.id, {
+        const patchDeleted = {
           plan_status: 'expired',
           stripe_subscription_status: 'canceled',
           cancel_at_period_end: false,
-        });
+        };
+        console.log('[webhook] BEFORE update event.type=%s patch.current_period_end=%s', event.type, (patchDeleted as any).current_period_end);
+        await updateProfileByStripeSubscriptionId(supabase, subscription.id, patchDeleted);
         statusFinal = 'profile atualizado';
         break;
       }

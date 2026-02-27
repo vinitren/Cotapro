@@ -405,12 +405,11 @@ export function Settings() {
           return;
         }
 
-        // persiste no profile (garante valores não-nulos)
+        // persiste no profile: SOMENTE campos de preferências (patch parcial, não destrutivo)
         const { error } = await supabase
           .from('profiles')
           .update({
             default_notes: data.observacoes_padrao ?? '',
-            // envia string vazia quando não houver valor, conforme regras
             default_validity_days: data.validade_padrao === undefined || data.validade_padrao === null
               ? ''
               : data.validade_padrao,

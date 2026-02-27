@@ -220,9 +220,18 @@ export async function upsertProfile(data: {
     // silencioso
   }
 
+  // Nunca enviar campos do Stripe: preservar valores definidos apenas pelo webhook
+  const pd = profileData as Record<string, unknown>;
+  delete pd.current_period_end;
+  delete pd.plan_status;
+  delete pd.stripe_customer_id;
+  delete pd.stripe_subscription_id;
+  delete pd.stripe_subscription_status;
+  delete pd.cancel_at_period_end;
+
   const { data: profile, error } = await supabase
     .from('profiles')
-    .upsert(profileData, { onConflict: 'id' })
+    .upsert(pd, { onConflict: 'id' })
     .select()
     .single();
     
