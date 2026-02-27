@@ -14,9 +14,9 @@ function getSupabaseAdmin() {
 }
 
 async function updateProfileByUserId(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   userId: string,
-  data: Record<string, unknown>
+  data: Record<string, any>
 ) {
   const { data: updated, error } = await supabase
     .from('profiles')
@@ -32,9 +32,9 @@ async function updateProfileByUserId(
 }
 
 async function updateProfileByStripeSubscriptionId(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   stripeSubscriptionId: string,
-  data: Record<string, unknown>
+  data: Record<string, any>
 ) {
   const { data: profiles, error: fetchError } = await supabase
     .from('profiles')
@@ -99,7 +99,7 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
-  const stripe = new Stripe(stripeSecretKey, { apiVersion: '2023-10-16' });
+  const stripe = new Stripe(stripeSecretKey, { apiVersion: '2026-02-25.clover' });
   let event: Stripe.Event;
   try {
     event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
@@ -130,9 +130,9 @@ export default async function handler(req: any, res: any) {
           break;
         }
 
-        const sub = await stripe.subscriptions.retrieve(subscriptionId);
+        const sub = (await stripe.subscriptions.retrieve(subscriptionId)) as Stripe.Subscription & { current_period_end?: number };
         const customerId = typeof customer === 'string' ? customer : customer?.id ?? null;
-        const patch: Record<string, unknown> = {
+        const patch: Record<string, any> = {
           plan_status: 'active',
           stripe_customer_id: customerId,
           stripe_subscription_id: subscriptionId,
@@ -151,9 +151,9 @@ export default async function handler(req: any, res: any) {
 
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
-        const subscription = event.data.object as Stripe.Subscription;
+        const subscription = event.data.object as Stripe.Subscription & { current_period_end?: number };
         const planStatus = ['active', 'trialing'].includes(subscription.status) ? 'active' : 'expired';
-        const patch: Record<string, unknown> = {
+        const patch: Record<string, any> = {
           stripe_subscription_status: subscription.status,
           cancel_at_period_end: subscription.cancel_at_period_end ?? false,
           plan_status: planStatus,
