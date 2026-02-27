@@ -70,6 +70,9 @@ export interface Profile {
   trial_started_at?: string | null;
   trial_ends_at?: string | null;
   plan_status?: string | null;
+  current_period_end?: string | null;
+  cancel_at_period_end?: boolean | null;
+  stripe_subscription_status?: string | null;
 }
 
 export { canCreateQuote } from './subscription';
@@ -112,6 +115,9 @@ export async function getProfile(userId: string) {
     trial_started_at: profileRaw.trial_started_at ?? null,
     trial_ends_at: profileRaw.trial_ends_at ?? null,
     plan_status: profileRaw.plan_status ?? null,
+    current_period_end: profileRaw.current_period_end ?? null,
+    cancel_at_period_end: profileRaw.cancel_at_period_end ?? null,
+    stripe_subscription_status: profileRaw.stripe_subscription_status ?? null,
   };
 
   // Se address estiver como JSON/text em company_address, tente desserializar
