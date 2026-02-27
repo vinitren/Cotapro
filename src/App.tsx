@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+
+function ConfiguracoesContaRedirect() {
+  const { search } = useLocation();
+  return <Navigate to={`/settings${search}`} replace />;
+}
 import { Layout } from './components/layout';
 import { Login, Signup, AuthCallback, Dashboard, Customers, Quotes, QuoteCreate, QuoteDetail, PublicQuote, Catalog, Settings, Help } from './pages';
 import { Toaster } from './components/ui/toaster';
@@ -119,6 +124,7 @@ function App() {
           <Route path="/quotes/:id" element={<QuoteDetail />} />
           <Route path="/catalog" element={<Catalog />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/configuracoes/conta" element={<ConfiguracoesContaRedirect />} />
           <Route path="/ajuda" element={<Help />} />
         </Route>
       </Routes>

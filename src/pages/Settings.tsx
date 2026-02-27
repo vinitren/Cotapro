@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Building2, Save, Upload, Trash2, ImageIcon, CreditCard, ChevronDown, MapPin, Settings2, User, LogOut, Loader2 } from 'lucide-react';
@@ -116,6 +116,7 @@ function AccordionCard({
 
 export function Settings() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { company, settings, setCompany, setSettings, logout, userId } = useStore();
   const { handleCheckout, loading: stripeLoading } = useStripeCheckout();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -127,6 +128,91 @@ export function Settings() {
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
   const [profilePlanStatus, setProfilePlanStatus] = useState<string | null>(null);
   const [profileTrialEndsAt, setProfileTrialEndsAt] = useState<string | null>(null);
+  const [stripeReturnStatus, setStripeReturnStatus] = useState<'polling' | 'timeout' | null>(null);
+
+  const refetchProfile = async (): Promise<{ plan_status?: string | null } | null> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const uid = session?.user?.id;
+    if (!uid) return null;
+    try {
+      const profile = await getProfile(uid);
+      if (profile) {
+        setPixType(profile.pix_type ?? '');
+        setPixKey(profile.pix_key ?? '');
+        setPixName(profile.pix_name ?? '');
+        setPixCity(profile.pix_city ?? '');
+        setProfilePlanStatus(profile.plan_status ?? null);
+        setProfileTrialEndsAt(profile.trial_ends_at ?? null);
+        return profile;
+      }
+    } catch (err) {
+      console.error('Erro ao carregar profile:', err);
+    }
+    return null;
+  };
+
+  // Tratar retorno do Stripe (status=sucesso ou status=cancelado)
+  useEffect(() => {
+    const status = searchParams.get('status');
+    if (!status) return;
+
+    if (status === 'cancelado') {
+      toast({ title: 'Pagamento cancelado', description: 'Você cancelou o pagamento.', variant: 'default' });
+      setSearchParams((p) => {
+        const next = new URLSearchParams(p);
+        next.delete('status');
+        return next;
+      }, { replace: true });
+      return;
+    }
+
+    if (status === 'sucesso') {
+      setActiveTab('conta');
+      toast({
+        title: 'Pagamento confirmado!',
+        description: 'Ativando seu plano…',
+        variant: 'success',
+      });
+      setStripeReturnStatus('polling');
+
+      const POLL_INTERVAL = 1000;
+      const MAX_WAIT = 15000;
+      const start = Date.now();
+      let intervalId: ReturnType<typeof setInterval> | null = null;
+
+      const poll = async () => {
+        const profile = await refetchProfile();
+        const elapsed = Date.now() - start;
+        if (profile?.plan_status === 'active') {
+          if (intervalId) clearInterval(intervalId);
+          setStripeReturnStatus(null);
+          setSearchParams((p) => {
+            const next = new URLSearchParams(p);
+            next.delete('status');
+            return next;
+          }, { replace: true });
+          toast({ title: 'Plano ativado!', description: 'Sua assinatura está ativa.', variant: 'success' });
+          return;
+        }
+        if (elapsed >= MAX_WAIT) {
+          if (intervalId) clearInterval(intervalId);
+          setStripeReturnStatus('timeout');
+          setSearchParams((p) => {
+            const next = new URLSearchParams(p);
+            next.delete('status');
+            return next;
+          }, { replace: true });
+        }
+      };
+
+      intervalId = setInterval(poll, POLL_INTERVAL);
+      poll();
+
+      return () => {
+        if (intervalId) clearInterval(intervalId);
+      };
+    }
+  }, [searchParams.get('status')]);
 
   // Carregar profile ao abrir a página (inclui dados Pix e plano)
   useEffect(() => {
@@ -521,8 +607,30 @@ export function Settings() {
     );
   };
 
+  const handleAtualizarStatus = async () => {
+    const profile = await refetchProfile();
+    if (profile?.plan_status === 'active') {
+      setStripeReturnStatus(null);
+      toast({ title: 'Plano ativado!', description: 'Sua assinatura está ativa.', variant: 'success' });
+    }
+  };
+
   return (
     <div className="p-4 lg:p-6 space-y-6 lg:space-y-8 pb-36 lg:pb-6 min-h-screen bg-[rgb(var(--bg))]">
+      {(stripeReturnStatus === 'polling' || stripeReturnStatus === 'timeout') && (
+        <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <p className="text-sm text-[rgb(var(--fg))]">
+            {stripeReturnStatus === 'polling'
+              ? 'Ativando seu plano…'
+              : 'Plano está sendo ativado. Recarregue a página ou clique em "Atualizar status".'}
+          </p>
+          {stripeReturnStatus === 'timeout' && (
+            <Button type="button" variant="outline" size="sm" onClick={handleAtualizarStatus}>
+              Atualizar status
+            </Button>
+          )}
+        </div>
+      )}
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-[rgb(var(--fg))]">Configurações</h1>
         <p className="text-sm text-muted-foreground mt-1">Gerencie as informações da sua empresa</p>
