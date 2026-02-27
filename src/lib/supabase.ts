@@ -67,7 +67,12 @@ export interface Profile {
   pix_name?: string | null;
   pix_city?: string | null;
   updated_at?: string;
+  trial_started_at?: string | null;
+  trial_ends_at?: string | null;
+  plan_status?: string | null;
 }
+
+export { canCreateQuote } from './subscription';
 
 export async function getProfile(userId: string) {
   const { data, error } = await supabase
@@ -104,6 +109,9 @@ export async function getProfile(userId: string) {
     pix_name: profileRaw.pix_name ?? null,
     pix_city: profileRaw.pix_city ?? null,
     updated_at: profileRaw.updated_at ?? profileRaw.created_at ?? null,
+    trial_started_at: profileRaw.trial_started_at ?? null,
+    trial_ends_at: profileRaw.trial_ends_at ?? null,
+    plan_status: profileRaw.plan_status ?? null,
   };
 
   // Se address estiver como JSON/text em company_address, tente desserializar

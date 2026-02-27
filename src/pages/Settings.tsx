@@ -2,7 +2,8 @@ import { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Building2, Save, Upload, Trash2, ImageIcon, CreditCard, ChevronDown, MapPin, Settings2, User, LogOut } from 'lucide-react';
+import { Building2, Save, Upload, Trash2, ImageIcon, CreditCard, ChevronDown, MapPin, Settings2, User, LogOut, Loader2 } from 'lucide-react';
+import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -21,6 +22,7 @@ import { companySchema, settingsSchema } from '../lib/validations';
 import { maskPhone, maskCnpj, maskCep } from '../lib/utils';
 import { generatePixPayload } from '../lib/pix';
 import { toast } from '../hooks/useToast';
+import { useStripeCheckout } from '../hooks/useStripeCheckout';
 import QRCode from 'qrcode';
 import type { Address } from '../types';
 
@@ -51,6 +53,16 @@ const PIX_MAX_LENGTH = 200;
 const EMPRESA_SECTIONS = ['logo', 'dados', 'endereco', 'pix'] as const;
 const PREFERENCIAS_SECTIONS = ['preferencias'] as const;
 const CONTA_SECTIONS = ['conta'] as const;
+
+/** Calcula dias restantes até trial_ends_at. Retorna null se data inválida. */
+function getDaysRemaining(trialEndsAt: string | null): number | null {
+  if (!trialEndsAt) return null;
+  const end = new Date(trialEndsAt);
+  const now = new Date();
+  const diffMs = end.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  return diffDays > 0 ? diffDays : 0;
+}
 
 /** Accordion card: mobile e desktop. Usuário abre/fecha manualmente. */
 function AccordionCard({
@@ -104,7 +116,8 @@ function AccordionCard({
 
 export function Settings() {
   const navigate = useNavigate();
-  const { company, settings, setCompany, setSettings, logout } = useStore();
+  const { company, settings, setCompany, setSettings, logout, userId } = useStore();
+  const { handleCheckout, loading: stripeLoading } = useStripeCheckout();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [pixType, setPixType] = useState<string>('');
@@ -112,8 +125,10 @@ export function Settings() {
   const [pixName, setPixName] = useState('');
   const [pixCity, setPixCity] = useState('');
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
+  const [profilePlanStatus, setProfilePlanStatus] = useState<string | null>(null);
+  const [profileTrialEndsAt, setProfileTrialEndsAt] = useState<string | null>(null);
 
-  // Carregar profile ao abrir a página (inclui dados Pix)
+  // Carregar profile ao abrir a página (inclui dados Pix e plano)
   useEffect(() => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -126,6 +141,8 @@ export function Settings() {
           setPixKey(profile.pix_key ?? '');
           setPixName(profile.pix_name ?? '');
           setPixCity(profile.pix_city ?? '');
+          setProfilePlanStatus(profile.plan_status ?? null);
+          setProfileTrialEndsAt(profile.trial_ends_at ?? null);
         }
       } catch (err) {
         console.error('Erro ao carregar profile:', err);
@@ -935,9 +952,73 @@ export function Settings() {
                   className="bg-gray-50 dark:bg-white/5 text-[rgb(var(--fg))] cursor-not-allowed"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Label className="text-sm text-[rgb(var(--muted))]">Plano atual</Label>
-                <p className="text-sm text-[rgb(var(--muted))] py-2">Free</p>
+                <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))]/50 p-4 space-y-3">
+                  {profilePlanStatus === 'active' && (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-[rgb(var(--fg))]">Plano ativo</span>
+                        <Badge variant="approved" className="text-xs">Ativo</Badge>
+                      </div>
+                      <p className="text-sm text-[rgb(var(--muted))]">Sua assinatura está ativa.</p>
+                    </>
+                  )}
+                  {profilePlanStatus === 'trialing' && (
+                    (() => {
+                      const daysRemaining = getDaysRemaining(profileTrialEndsAt);
+                      const isExpired = daysRemaining !== null && daysRemaining <= 0;
+                      if (isExpired) {
+                        return (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-[rgb(var(--fg))]">Teste expirado</span>
+                              <Badge variant="destructive" className="text-xs">Expirado</Badge>
+                            </div>
+                            <p className="text-sm text-[rgb(var(--muted))]">Seu período gratuito terminou.</p>
+                            <Button
+                              type="button"
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                              onClick={() => userId && userEmail && handleCheckout(userId, userEmail)}
+                              disabled={stripeLoading || !userId || !userEmail}
+                            >
+                              {stripeLoading ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  Carregando...
+                                </>
+                              ) : (
+                                'Ativar plano'
+                              )}
+                            </Button>
+                          </>
+                        );
+                      }
+                      return (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-[rgb(var(--fg))]">Teste gratuito</span>
+                            <Badge variant="sent" className="text-xs">Em teste</Badge>
+                          </div>
+                          <p className="text-sm text-[rgb(var(--muted))]">
+                            {daysRemaining !== null
+                              ? `Seu período gratuito termina em ${daysRemaining} ${daysRemaining === 1 ? 'dia' : 'dias'}.`
+                              : 'Seu período gratuito está ativo.'}
+                          </p>
+                        </>
+                      );
+                    })()
+                  )}
+                  {(!profilePlanStatus || (profilePlanStatus !== 'active' && profilePlanStatus !== 'trialing')) && (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-[rgb(var(--fg))]">Plano atual</span>
+                        <Badge variant="secondary" className="text-xs">Free</Badge>
+                      </div>
+                      <p className="text-sm text-[rgb(var(--muted))]">Sem plano ativo.</p>
+                    </>
+                  )}
+                </div>
               </div>
               <Button
                 type="button"

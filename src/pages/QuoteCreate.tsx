@@ -21,7 +21,9 @@ import { toast } from '../hooks/useToast';
 import { ClientSelectModal } from '../components/quotes/ClientSelectModal';
 import { ItemFormModal } from '../components/quotes/ItemFormModal';
 import { QuoteConfigModal } from '../components/quotes/QuoteConfigModal';
-import { getItemsCatalog, type ItemCatalogDB } from '../lib/supabase';
+import { ExpiredPlanModal } from '../components/ExpiredPlanModal';
+import { getItemsCatalog, getProfile, canCreateQuote, type ItemCatalogDB } from '../lib/supabase';
+import { useStripeCheckout } from '../hooks/useStripeCheckout';
 
 const placeholderCliente: Customer = {
   id: '',
@@ -42,6 +44,7 @@ export function QuoteCreate() {
   const editMode = Boolean(editId);
 
   const { customers, settings, addQuote, updateQuote, getQuote, loadQuotes, userId } = useStore();
+  const { handleCheckout, loading: stripeLoading } = useStripeCheckout();
 
   const [clienteId, setClienteId] = useState('');
   const [validadeDias, setValidadeDias] = useState(settings.validade_padrao.toString());
@@ -55,6 +58,8 @@ export function QuoteCreate() {
   const [clientModalOpen, setClientModalOpen] = useState(false);
   const [itemModalOpen, setItemModalOpen] = useState(false);
   const [configModalOpen, setConfigModalOpen] = useState(false);
+  const [expiredPlanModalOpen, setExpiredPlanModalOpen] = useState(false);
+  const [expiredPlanProfile, setExpiredPlanProfile] = useState<{ id: string; email: string | null } | null>(null);
   const [editingItem, setEditingItem] = useState<QuoteItem | null>(null);
   const [catalogItems, setCatalogItems] = useState<ItemCatalogDB[]>([]);
   const [isLoadingEdit, setIsLoadingEdit] = useState(false);
@@ -164,6 +169,22 @@ export function QuoteCreate() {
 
         navigate(`/quotes/${editId}`);
       } else {
+        if (!userId) {
+          toast({
+            title: 'Faça login',
+            description: 'É necessário estar logado para criar orçamentos.',
+            variant: 'destructive',
+          });
+          setIsSaving(false);
+          return;
+        }
+        const profile = await getProfile(userId).catch(() => null);
+        if (!canCreateQuote(profile)) {
+          setExpiredPlanProfile(profile ? { id: profile.id, email: profile.email } : null);
+          setExpiredPlanModalOpen(true);
+          setIsSaving(false);
+          return;
+        }
         const quote = await addQuote({
           cliente_id: clienteId,
           cliente: selectedCustomer!,
@@ -583,6 +604,23 @@ export function QuoteCreate() {
         onDescontoValorChange={setDescontoValor}
         descontoCalculado={descontoCalculado}
         formatCurrency={formatCurrency}
+      />
+      <ExpiredPlanModal
+        open={expiredPlanModalOpen}
+        onClose={() => setExpiredPlanModalOpen(false)}
+        onAtivar={async () => {
+          let id = expiredPlanProfile?.id ?? userId;
+          let email = expiredPlanProfile?.email ?? null;
+          if ((!id || !email) && userId) {
+            const p = await getProfile(userId).catch(() => null);
+            id = p?.id ?? userId;
+            email = p?.email ?? null;
+          }
+          if (id && email) {
+            await handleCheckout(id, email);
+          }
+        }}
+        loading={stripeLoading}
       />
     </div>
   );
