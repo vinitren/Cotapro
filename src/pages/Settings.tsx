@@ -64,6 +64,16 @@ function getDaysRemaining(trialEndsAt: string | null): number | null {
   return diffDays > 0 ? diffDays : 0;
 }
 
+/** Formata data para DD/MM/AAAA */
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
 /** Accordion card: mobile e desktop. Usuário abre/fecha manualmente. */
 function AccordionCard({
   id,
@@ -128,6 +138,9 @@ export function Settings() {
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
   const [profilePlanStatus, setProfilePlanStatus] = useState<string | null>(null);
   const [profileTrialEndsAt, setProfileTrialEndsAt] = useState<string | null>(null);
+  const [profileCurrentPeriodEnd, setProfileCurrentPeriodEnd] = useState<string | null>(null);
+  const [profileCancelAtPeriodEnd, setProfileCancelAtPeriodEnd] = useState<boolean>(false);
+  const [profileStripeSubscriptionStatus, setProfileStripeSubscriptionStatus] = useState<string | null>(null);
   const [stripeReturnStatus, setStripeReturnStatus] = useState<'polling' | 'timeout' | null>(null);
 
   const refetchProfile = async (): Promise<{ plan_status?: string | null } | null> => {
@@ -143,6 +156,9 @@ export function Settings() {
         setPixCity(profile.pix_city ?? '');
         setProfilePlanStatus(profile.plan_status ?? null);
         setProfileTrialEndsAt(profile.trial_ends_at ?? null);
+        setProfileCurrentPeriodEnd(profile.current_period_end ?? null);
+        setProfileCancelAtPeriodEnd(profile.cancel_at_period_end ?? false);
+        setProfileStripeSubscriptionStatus(profile.stripe_subscription_status ?? null);
         return profile;
       }
     } catch (err) {
@@ -157,7 +173,7 @@ export function Settings() {
     if (!status) return;
 
     if (status === 'cancelado') {
-      toast({ title: 'Pagamento cancelado', description: 'Você cancelou o pagamento.', variant: 'default' });
+      toast({ title: 'Pagamento cancelado', variant: 'default' });
       setSearchParams((p) => {
         const next = new URLSearchParams(p);
         next.delete('status');
@@ -167,12 +183,7 @@ export function Settings() {
     }
 
     if (status === 'sucesso') {
-      setActiveTab('conta');
-      toast({
-        title: 'Pagamento confirmado!',
-        description: 'Ativando seu plano…',
-        variant: 'success',
-      });
+      toast({ title: 'Pagamento confirmado!', variant: 'success' });
       setStripeReturnStatus('polling');
 
       const POLL_INTERVAL = 1000;
@@ -229,6 +240,9 @@ export function Settings() {
           setPixCity(profile.pix_city ?? '');
           setProfilePlanStatus(profile.plan_status ?? null);
           setProfileTrialEndsAt(profile.trial_ends_at ?? null);
+          setProfileCurrentPeriodEnd(profile.current_period_end ?? null);
+          setProfileCancelAtPeriodEnd(profile.cancel_at_period_end ?? false);
+          setProfileStripeSubscriptionStatus(profile.stripe_subscription_status ?? null);
         }
       } catch (err) {
         console.error('Erro ao carregar profile:', err);
@@ -1063,69 +1077,66 @@ export function Settings() {
               <div className="space-y-3">
                 <Label className="text-sm text-[rgb(var(--muted))]">Plano atual</Label>
                 <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))]/50 p-4 space-y-3">
-                  {profilePlanStatus === 'active' && (
-                    <>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-[rgb(var(--fg))]">Plano ativo</span>
-                        <Badge variant="approved" className="text-xs">Ativo</Badge>
-                      </div>
-                      <p className="text-sm text-[rgb(var(--muted))]">Sua assinatura está ativa.</p>
-                    </>
-                  )}
-                  {profilePlanStatus === 'trialing' && (
-                    (() => {
-                      const daysRemaining = getDaysRemaining(profileTrialEndsAt);
-                      const isExpired = daysRemaining !== null && daysRemaining <= 0;
-                      if (isExpired) {
-                        return (
-                          <>
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-[rgb(var(--fg))]">Teste expirado</span>
-                              <Badge variant="destructive" className="text-xs">Expirado</Badge>
-                            </div>
-                            <p className="text-sm text-[rgb(var(--muted))]">Seu período gratuito terminou.</p>
-                            <Button
-                              type="button"
-                              className="bg-green-600 hover:bg-green-700 text-white"
-                              onClick={() => userId && userEmail && handleCheckout(userId, userEmail)}
-                              disabled={stripeLoading || !userId || !userEmail}
-                            >
-                              {stripeLoading ? (
-                                <>
-                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                  Carregando...
-                                </>
-                              ) : (
-                                'Ativar plano'
-                              )}
-                            </Button>
-                          </>
-                        );
-                      }
+                  {(() => {
+                    const stripeStatus = profileStripeSubscriptionStatus;
+                    const trialNotExpired = profileTrialEndsAt && new Date(profileTrialEndsAt) > new Date();
+                    const isTrialing = (stripeStatus === 'trialing' || (profilePlanStatus === 'trialing' && !stripeStatus)) && trialNotExpired;
+                    const isActive = stripeStatus === 'active' || (profilePlanStatus === 'active' && !isTrialing);
+                    const isExpired = !isActive && !isTrialing;
+
+                    if (isActive) {
                       return (
                         <>
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-[rgb(var(--fg))]">Teste gratuito</span>
-                            <Badge variant="sent" className="text-xs">Em teste</Badge>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge variant="approved" className="text-xs">Ativo</Badge>
+                            {profileCancelAtPeriodEnd && (
+                              <Badge variant="expired" className="text-xs">Cancelamento agendado</Badge>
+                            )}
                           </div>
+                          {profileCurrentPeriodEnd && (
+                            <p className="text-sm text-[rgb(var(--muted))]">
+                              Renova em: {formatDate(profileCurrentPeriodEnd)}
+                            </p>
+                          )}
+                        </>
+                      );
+                    }
+                    if (isTrialing) {
+                      const daysRemaining = getDaysRemaining(profileTrialEndsAt);
+                      return (
+                        <>
+                          <Badge variant="sent" className="text-xs">Teste</Badge>
                           <p className="text-sm text-[rgb(var(--muted))]">
-                            {daysRemaining !== null
-                              ? `Seu período gratuito termina em ${daysRemaining} ${daysRemaining === 1 ? 'dia' : 'dias'}.`
-                              : 'Seu período gratuito está ativo.'}
+                            Teste termina em: {formatDate(profileTrialEndsAt)}
+                            {daysRemaining !== null && (
+                              <> · {daysRemaining} {daysRemaining === 1 ? 'dia' : 'dias'} restante{daysRemaining !== 1 ? 's' : ''}</>
+                            )}
                           </p>
                         </>
                       );
-                    })()
-                  )}
-                  {(!profilePlanStatus || (profilePlanStatus !== 'active' && profilePlanStatus !== 'trialing')) && (
-                    <>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-[rgb(var(--fg))]">Plano atual</span>
-                        <Badge variant="secondary" className="text-xs">Free</Badge>
-                      </div>
-                      <p className="text-sm text-[rgb(var(--muted))]">Sem plano ativo.</p>
-                    </>
-                  )}
+                    }
+                    return (
+                      <>
+                        <Badge variant="destructive" className="text-xs">Expirado</Badge>
+                        <p className="text-sm text-[rgb(var(--muted))]">Seu plano expirou. Ative para continuar criando orçamentos.</p>
+                        <Button
+                          type="button"
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                          onClick={() => userId && userEmail && handleCheckout(userId, userEmail)}
+                          disabled={stripeLoading || !userId || !userEmail}
+                        >
+                          {stripeLoading ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Carregando...
+                            </>
+                          ) : (
+                            'Ativar plano'
+                          )}
+                        </Button>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
               <Button
