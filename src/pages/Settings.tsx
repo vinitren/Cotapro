@@ -142,6 +142,35 @@ export function Settings() {
   const [profileCancelAtPeriodEnd, setProfileCancelAtPeriodEnd] = useState<boolean>(false);
   const [profileStripeSubscriptionStatus, setProfileStripeSubscriptionStatus] = useState<string | null>(null);
   const [stripeReturnStatus, setStripeReturnStatus] = useState<'polling' | 'timeout' | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  const openBillingPortal = async () => {
+    setPortalLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        toast({ title: 'Sessão expirada', description: 'Faça login novamente.', variant: 'destructive' });
+        return;
+      }
+      const res = await fetch('/api/stripe/portal', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+      } else {
+        const msg = data?.error || 'Erro ao abrir portal';
+        toast({ title: msg, variant: 'destructive' });
+      }
+    } finally {
+      setPortalLoading(false);
+    }
+  };
 
   const refetchProfile = async (): Promise<{ plan_status?: string | null } | null> => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -1075,65 +1104,131 @@ export function Settings() {
               </div>
               <div className="space-y-3">
                 <Label className="text-sm text-[rgb(var(--muted))]">Plano atual</Label>
-                <div className="rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))]/50 p-4 space-y-3">
+                <div className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-5 shadow-sm space-y-4">
                   {(() => {
                     const stripeStatus = profileStripeSubscriptionStatus;
                     const trialNotExpired = profileTrialEndsAt && new Date(profileTrialEndsAt) > new Date();
                     const isTrialing = (stripeStatus === 'trialing' || (profilePlanStatus === 'trialing' && !stripeStatus)) && trialNotExpired;
                     const isActive = stripeStatus === 'active' || (profilePlanStatus === 'active' && !isTrialing);
+                    const isCancelamentoAgendado = isActive && profileCancelAtPeriodEnd;
                     const isExpired = !isActive && !isTrialing;
 
-                    if (isActive) {
-                      return (
-                        <>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Badge variant="approved" className="text-xs">Ativo</Badge>
-                            {profileCancelAtPeriodEnd && (
-                              <Badge variant="expired" className="text-xs">Cancelamento agendado</Badge>
-                            )}
-                          </div>
-                          {profileCurrentPeriodEnd && (
-                            <p className="text-sm text-[rgb(var(--muted))]">
-                              Renova em: {formatDate(profileCurrentPeriodEnd)}
-                            </p>
-                          )}
-                        </>
-                      );
-                    }
+                    let badge: string;
+                    let badgeVariant: 'approved' | 'sent' | 'expired' | 'destructive' | 'secondary';
+                    let title: string;
+                    let subtitle: string;
+                    let warning: string | null = null;
+                    let ctaPrimary: { label: string; onClick: () => void; green?: boolean; portalButton?: boolean };
+                    let ctaSecondary: { label: string; onClick: () => void; portalButton?: boolean } | null = null;
+
                     if (isTrialing) {
                       const daysRemaining = getDaysRemaining(profileTrialEndsAt);
-                      return (
-                        <>
-                          <Badge variant="sent" className="text-xs">Teste</Badge>
-                          <p className="text-sm text-[rgb(var(--muted))]">
-                            Teste termina em: {formatDate(profileTrialEndsAt)}
-                            {daysRemaining !== null && (
-                              <> · {daysRemaining} {daysRemaining === 1 ? 'dia' : 'dias'} restante{daysRemaining !== 1 ? 's' : ''}</>
-                            )}
-                          </p>
-                        </>
-                      );
+                      badge = 'Teste grátis';
+                      badgeVariant = 'sent';
+                      title = 'Teste grátis ativo';
+                      subtitle = profileTrialEndsAt
+                        ? `Termina em ${formatDate(profileTrialEndsAt)}${daysRemaining !== null ? ` • ${daysRemaining} ${daysRemaining === 1 ? 'dia' : 'dias'} restante${daysRemaining !== 1 ? 's' : ''}` : ''}`
+                        : 'Teste grátis ativo';
+                      warning = daysRemaining !== null && daysRemaining <= 2 ? 'Seu teste está acabando' : null;
+                      ctaPrimary = {
+                        label: 'Ativar plano',
+                        green: true,
+                        onClick: () => {
+                          console.log('ativar_plano_click');
+                          toast({ title: 'Em breve: ativação do plano', variant: 'default' });
+                        },
+                      };
+                    } else if (isCancelamentoAgendado) {
+                      badge = 'Cancelamento agendado';
+                      badgeVariant = 'expired';
+                      title = 'Plano ativo até a data final';
+                      subtitle = profileCurrentPeriodEnd ? `Acesso até ${formatDate(profileCurrentPeriodEnd)}` : 'Acesso até a data final';
+                      ctaPrimary = {
+                        label: 'Reativar plano',
+                        onClick: () => {
+                          console.log('reativar_plano_click');
+                          toast({ title: 'Em breve: reativação de assinatura', variant: 'default' });
+                        },
+                      };
+                      ctaSecondary = {
+                        label: 'Gerenciar plano',
+                        onClick: openBillingPortal,
+                        portalButton: true,
+                      };
+                    } else if (isActive) {
+                      badge = 'Ativo';
+                      badgeVariant = 'approved';
+                      title = 'Plano ativo';
+                      subtitle = profileCurrentPeriodEnd ? `Renova em ${formatDate(profileCurrentPeriodEnd)}` : 'Plano ativo';
+                      ctaPrimary = {
+                        label: 'Gerenciar plano',
+                        onClick: openBillingPortal,
+                        portalButton: true,
+                      };
+                    } else {
+                      badge = 'Expirado';
+                      badgeVariant = 'destructive';
+                      title = 'Plano expirado';
+                      subtitle = 'Ative para continuar usando';
+                      ctaPrimary = {
+                        label: 'Ativar plano',
+                        green: true,
+                        onClick: () => {
+                          console.log('ativar_plano_click');
+                          toast({ title: 'Em breve: renovação do plano', variant: 'default' });
+                        },
+                      };
                     }
+
                     return (
-                      <>
-                        <Badge variant="destructive" className="text-xs">Expirado</Badge>
-                        <p className="text-sm text-[rgb(var(--muted))]">Seu plano expirou. Ative para continuar criando orçamentos.</p>
-                        <Button
-                          type="button"
-                          className="bg-green-600 hover:bg-green-700 text-white"
-                          onClick={() => userId && userEmail && handleCheckout(userId, userEmail)}
-                          disabled={stripeLoading || !userId || !userEmail}
-                        >
-                          {stripeLoading ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Carregando...
-                            </>
-                          ) : (
-                            'Ativar plano'
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div className="space-y-1 min-w-0">
+                          <Badge variant={badgeVariant} className="text-xs rounded-full w-fit">
+                            {badge}
+                          </Badge>
+                          <h3 className="font-semibold text-[rgb(var(--fg))]">{title}</h3>
+                          <p className="text-sm text-[rgb(var(--muted))]">{subtitle}</p>
+                          {warning && (
+                            <p className="text-xs text-amber-600 dark:text-amber-400">{warning}</p>
                           )}
-                        </Button>
-                      </>
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-2 sm:shrink-0">
+                          <Button
+                            type="button"
+                            variant={ctaPrimary.green ? 'default' : 'default'}
+                            className={ctaPrimary.green ? 'bg-green-600 hover:bg-green-700 text-white w-auto' : 'w-auto'}
+                            onClick={ctaPrimary.onClick}
+                            disabled={ctaPrimary.portalButton && portalLoading}
+                          >
+                            {ctaPrimary.portalButton && portalLoading ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Abrindo...
+                              </>
+                            ) : (
+                              ctaPrimary.label
+                            )}
+                          </Button>
+                          {ctaSecondary && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="w-auto"
+                              onClick={ctaSecondary.onClick}
+                              disabled={ctaSecondary.portalButton && portalLoading}
+                            >
+                              {ctaSecondary.portalButton && portalLoading ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  Abrindo...
+                                </>
+                              ) : (
+                                ctaSecondary.label
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                     );
                   })()}
                 </div>
