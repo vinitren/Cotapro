@@ -61,9 +61,12 @@ export async function POST(request: Request) {
   try {
     const stripe = new Stripe(stripeSecretKey, { apiVersion: '2026-02-25.clover' });
 
+    const portalConfigId = process.env.STRIPE_PORTAL_CONFIGURATION_ID || 'bpc_1T5tf3PVQsM9VEy5Z7l82UKn';
+
     const session = await stripe.billingPortal.sessions.create({
       customer: stripeCustomerId,
       return_url: returnUrl,
+      configuration: portalConfigId,
     });
 
     return jsonResponse({ url: session.url }, 200);
