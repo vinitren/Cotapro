@@ -141,6 +141,7 @@ export function Settings() {
   const [profileCurrentPeriodEnd, setProfileCurrentPeriodEnd] = useState<string | null>(null);
   const [profileCancelAtPeriodEnd, setProfileCancelAtPeriodEnd] = useState<boolean>(false);
   const [profileStripeSubscriptionStatus, setProfileStripeSubscriptionStatus] = useState<string | null>(null);
+  const [profileStripeCustomerId, setProfileStripeCustomerId] = useState<string | null>(null);
   const [stripeReturnStatus, setStripeReturnStatus] = useState<'polling' | 'timeout' | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
 
@@ -188,6 +189,7 @@ export function Settings() {
         setProfileCurrentPeriodEnd(profile.current_period_end ?? null);
         setProfileCancelAtPeriodEnd(profile.cancel_at_period_end ?? false);
         setProfileStripeSubscriptionStatus(profile.stripe_subscription_status ?? null);
+        setProfileStripeCustomerId(profile.stripe_customer_id ?? null);
         return profile;
       }
     } catch (err) {
@@ -272,6 +274,7 @@ export function Settings() {
           setProfileCurrentPeriodEnd(profile.current_period_end ?? null);
           setProfileCancelAtPeriodEnd(profile.cancel_at_period_end ?? false);
           setProfileStripeSubscriptionStatus(profile.stripe_subscription_status ?? null);
+          setProfileStripeCustomerId(profile.stripe_customer_id ?? null);
         }
       } catch (err) {
         console.error('Erro ao carregar profile:', err);
@@ -1106,78 +1109,66 @@ export function Settings() {
                 <Label className="text-sm text-[rgb(var(--muted))]">Plano atual</Label>
                 <div className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] p-5 shadow-sm space-y-4">
                   {(() => {
-                    const stripeStatus = profileStripeSubscriptionStatus;
-                    const trialNotExpired = profileTrialEndsAt && new Date(profileTrialEndsAt) > new Date();
-                    const isTrialing = (stripeStatus === 'trialing' || (profilePlanStatus === 'trialing' && !stripeStatus)) && trialNotExpired;
-                    const isActive = stripeStatus === 'active' || (profilePlanStatus === 'active' && !isTrialing);
-                    const isCancelamentoAgendado = isActive && profileCancelAtPeriodEnd;
-                    const isExpired = !isActive && !isTrialing;
+                    const profile = {
+                      plan_status: profilePlanStatus,
+                      stripe_subscription_status: profileStripeSubscriptionStatus,
+                      stripe_customer_id: profileStripeCustomerId,
+                      cancel_at_period_end: profileCancelAtPeriodEnd,
+                      current_period_end: profileCurrentPeriodEnd,
+                      trial_ends_at: profileTrialEndsAt,
+                    };
+
+                    const isStripeActive = ['active', 'trialing'].includes(profile.stripe_subscription_status || '');
+                    const hasStripeCustomer = !!profile.stripe_customer_id;
+                    const isCancelScheduled = isStripeActive && profile.cancel_at_period_end === true;
+                    const isTrial = profile.plan_status === 'trial';
+                    const isExpired = profile.plan_status === 'expired' || !profile.plan_status;
 
                     let badge: string;
                     let badgeVariant: 'approved' | 'sent' | 'expired' | 'destructive' | 'secondary';
                     let title: string;
                     let subtitle: string;
                     let warning: string | null = null;
-                    let ctaPrimary: { label: string; onClick: () => void; green?: boolean; portalButton?: boolean };
+                    let ctaPrimary: { label: string; onClick: () => void; green?: boolean; portalButton?: boolean; checkoutButton?: boolean };
                     let ctaSecondary: { label: string; onClick: () => void; portalButton?: boolean } | null = null;
 
-                    if (isTrialing) {
-                      const daysRemaining = getDaysRemaining(profileTrialEndsAt);
+                    const handleAtivarPlano = () => {
+                      if (userId && userEmail) {
+                        handleCheckout(userId, userEmail);
+                      } else {
+                        toast({ title: 'Em breve: ativação do plano', variant: 'default' });
+                      }
+                    };
+
+                    if (isTrial) {
+                      const daysRemaining = getDaysRemaining(profile.trial_ends_at);
                       badge = 'Teste grátis';
                       badgeVariant = 'sent';
                       title = 'Teste grátis ativo';
-                      subtitle = profileTrialEndsAt
-                        ? `Termina em ${formatDate(profileTrialEndsAt)}${daysRemaining !== null ? ` • ${daysRemaining} ${daysRemaining === 1 ? 'dia' : 'dias'} restante${daysRemaining !== 1 ? 's' : ''}` : ''}`
+                      subtitle = profile.trial_ends_at
+                        ? `Termina em ${formatDate(profile.trial_ends_at)}${daysRemaining !== null ? ` • ${daysRemaining} ${daysRemaining === 1 ? 'dia' : 'dias'} restante${daysRemaining !== 1 ? 's' : ''}` : ''}`
                         : 'Teste grátis ativo';
                       warning = daysRemaining !== null && daysRemaining <= 2 ? 'Seu teste está acabando' : null;
-                      ctaPrimary = {
-                        label: 'Ativar plano',
-                        green: true,
-                        onClick: () => {
-                          console.log('ativar_plano_click');
-                          toast({ title: 'Em breve: ativação do plano', variant: 'default' });
-                        },
-                      };
-                    } else if (isCancelamentoAgendado) {
+                      ctaPrimary = { label: 'Ativar plano', green: true, onClick: handleAtivarPlano, checkoutButton: true };
+                    } else if (isCancelScheduled) {
                       badge = 'Cancelamento agendado';
                       badgeVariant = 'expired';
                       title = 'Plano ativo até a data final';
-                      subtitle = profileCurrentPeriodEnd ? `Acesso até ${formatDate(profileCurrentPeriodEnd)}` : 'Acesso até a data final';
-                      ctaPrimary = {
-                        label: 'Reativar plano',
-                        onClick: () => {
-                          console.log('reativar_plano_click');
-                          toast({ title: 'Em breve: reativação de assinatura', variant: 'default' });
-                        },
-                      };
-                      ctaSecondary = {
-                        label: 'Gerenciar plano',
-                        onClick: openBillingPortal,
-                        portalButton: true,
-                      };
-                    } else if (isActive) {
+                      subtitle = profile.current_period_end ? `Acesso até ${formatDate(profile.current_period_end)}` : 'Acesso até a data final';
+                      ctaPrimary = { label: 'Reativar plano', onClick: openBillingPortal, portalButton: true };
+                      ctaSecondary = { label: 'Gerenciar plano', onClick: openBillingPortal, portalButton: true };
+                    } else if (isStripeActive && hasStripeCustomer) {
                       badge = 'Ativo';
                       badgeVariant = 'approved';
                       title = 'Plano ativo';
-                      subtitle = profileCurrentPeriodEnd ? `Renova em ${formatDate(profileCurrentPeriodEnd)}` : 'Plano ativo';
-                      ctaPrimary = {
-                        label: 'Gerenciar plano',
-                        onClick: openBillingPortal,
-                        portalButton: true,
-                      };
+                      subtitle = profile.current_period_end ? `Renova em ${formatDate(profile.current_period_end)}` : 'Plano ativo';
+                      ctaPrimary = { label: 'Gerenciar plano', onClick: openBillingPortal, portalButton: true };
                     } else {
                       badge = 'Expirado';
                       badgeVariant = 'destructive';
                       title = 'Plano expirado';
                       subtitle = 'Ative para continuar usando';
-                      ctaPrimary = {
-                        label: 'Ativar plano',
-                        green: true,
-                        onClick: () => {
-                          console.log('ativar_plano_click');
-                          toast({ title: 'Em breve: renovação do plano', variant: 'default' });
-                        },
-                      };
+                      ctaPrimary = { label: 'Ativar plano', green: true, onClick: handleAtivarPlano, checkoutButton: true };
                     }
 
                     return (
@@ -1198,12 +1189,17 @@ export function Settings() {
                             variant={ctaPrimary.green ? 'default' : 'default'}
                             className={ctaPrimary.green ? 'bg-green-600 hover:bg-green-700 text-white w-auto' : 'w-auto'}
                             onClick={ctaPrimary.onClick}
-                            disabled={ctaPrimary.portalButton && portalLoading}
+                            disabled={(ctaPrimary.portalButton && portalLoading) || (ctaPrimary.checkoutButton && stripeLoading)}
                           >
                             {ctaPrimary.portalButton && portalLoading ? (
                               <>
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                 Abrindo...
+                              </>
+                            ) : ctaPrimary.checkoutButton && stripeLoading ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Carregando...
                               </>
                             ) : (
                               ctaPrimary.label

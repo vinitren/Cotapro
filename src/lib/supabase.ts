@@ -73,6 +73,7 @@ export interface Profile {
   current_period_end?: string | null;
   cancel_at_period_end?: boolean | null;
   stripe_subscription_status?: string | null;
+  stripe_customer_id?: string | null;
 }
 
 export { canCreateQuote } from './subscription';
@@ -118,6 +119,7 @@ export async function getProfile(userId: string) {
     current_period_end: profileRaw.current_period_end ?? null,
     cancel_at_period_end: profileRaw.cancel_at_period_end ?? null,
     stripe_subscription_status: profileRaw.stripe_subscription_status ?? null,
+    stripe_customer_id: profileRaw.stripe_customer_id ?? null,
   };
 
   // Se address estiver como JSON/text em company_address, tente desserializar
