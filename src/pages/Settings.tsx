@@ -1132,12 +1132,20 @@ export function Settings() {
                     let ctaPrimary: { label: string; onClick: () => void; green?: boolean; portalButton?: boolean; checkoutButton?: boolean };
                     let ctaSecondary: { label: string; onClick: () => void; portalButton?: boolean } | null = null;
 
-                    const handleAtivarPlano = () => {
-                      if (userId && userEmail) {
-                        handleCheckout(userId, userEmail);
-                      } else {
-                        toast({ title: 'Em breve: ativação do plano', variant: 'default' });
+                    const handleAtivarPlano = async () => {
+                      let id = userId || '';
+                      let email = userEmail || '';
+                      if (!id || !email) {
+                        const { data: { session } } = await supabase.auth.getSession();
+                        const user = session?.user;
+                        id = id || user?.id || '';
+                        email = email || user?.email || '';
                       }
+                      if (!id || !email) {
+                        toast({ title: 'Não foi possível identificar sua conta. Faça login novamente.', variant: 'destructive' });
+                        return;
+                      }
+                      await handleCheckout(id, email);
                     };
 
                     if (isTrial) {
