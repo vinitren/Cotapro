@@ -1121,8 +1121,7 @@ export function Settings() {
                     const isStripeActive = ['active', 'trialing'].includes(profile.stripe_subscription_status || '');
                     const hasStripeCustomer = !!profile.stripe_customer_id;
                     const isCancelScheduled = isStripeActive && profile.cancel_at_period_end === true;
-                    const isTrial = profile.plan_status === 'trial';
-                    const isExpired = profile.plan_status === 'expired' || !profile.plan_status;
+                    const isTrialLocal = profile.plan_status === 'trial' || (!!profile.trial_ends_at && new Date(profile.trial_ends_at) > new Date());
 
                     let badge: string;
                     let badgeVariant: 'approved' | 'sent' | 'expired' | 'destructive' | 'secondary';
@@ -1148,7 +1147,22 @@ export function Settings() {
                       await handleCheckout(id, email);
                     };
 
-                    if (isTrial) {
+                    if (isCancelScheduled) {
+                      badge = 'Cancelamento agendado';
+                      badgeVariant = 'expired';
+                      title = 'Plano ativo até a data final';
+                      subtitle = profile.current_period_end ? `Acesso até ${formatDate(profile.current_period_end)}` : 'Acesso até a data final';
+                      ctaPrimary = { label: 'Reativar plano', onClick: openBillingPortal, portalButton: true };
+                      ctaSecondary = { label: 'Gerenciar plano', onClick: openBillingPortal, portalButton: true };
+                    } else if (isStripeActive) {
+                      badge = 'Ativo';
+                      badgeVariant = 'approved';
+                      title = 'Plano ativo';
+                      subtitle = profile.current_period_end ? `Renova em ${formatDate(profile.current_period_end)}` : 'Plano ativo';
+                      ctaPrimary = hasStripeCustomer
+                        ? { label: 'Gerenciar plano', onClick: openBillingPortal, portalButton: true }
+                        : { label: 'Ativar plano', green: true, onClick: handleAtivarPlano, checkoutButton: true };
+                    } else if (isTrialLocal) {
                       const daysRemaining = getDaysRemaining(profile.trial_ends_at);
                       badge = 'Teste grátis';
                       badgeVariant = 'sent';
@@ -1158,19 +1172,6 @@ export function Settings() {
                         : 'Teste grátis ativo';
                       warning = daysRemaining !== null && daysRemaining <= 2 ? 'Seu teste está acabando' : null;
                       ctaPrimary = { label: 'Ativar plano', green: true, onClick: handleAtivarPlano, checkoutButton: true };
-                    } else if (isCancelScheduled) {
-                      badge = 'Cancelamento agendado';
-                      badgeVariant = 'expired';
-                      title = 'Plano ativo até a data final';
-                      subtitle = profile.current_period_end ? `Acesso até ${formatDate(profile.current_period_end)}` : 'Acesso até a data final';
-                      ctaPrimary = { label: 'Reativar plano', onClick: openBillingPortal, portalButton: true };
-                      ctaSecondary = { label: 'Gerenciar plano', onClick: openBillingPortal, portalButton: true };
-                    } else if (isStripeActive && hasStripeCustomer) {
-                      badge = 'Ativo';
-                      badgeVariant = 'approved';
-                      title = 'Plano ativo';
-                      subtitle = profile.current_period_end ? `Renova em ${formatDate(profile.current_period_end)}` : 'Plano ativo';
-                      ctaPrimary = { label: 'Gerenciar plano', onClick: openBillingPortal, portalButton: true };
                     } else {
                       badge = 'Expirado';
                       badgeVariant = 'destructive';
