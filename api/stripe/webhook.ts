@@ -49,7 +49,7 @@ async function updateProfileByStripeSubscriptionId(
 ) {
   const { data: profiles, error: fetchError } = await supabase
     .from('profiles')
-    .select('id')
+    .select('id, stripe_subscription_id, stripe_customer_id')
     .eq('stripe_subscription_id', stripeSubscriptionId)
     .limit(1);
 
@@ -59,7 +59,7 @@ async function updateProfileByStripeSubscriptionId(
   }
 
   if (!profiles?.length) {
-    console.warn('[webhook] Nenhum profile para stripe_subscription_id');
+    console.warn('[webhook] Nenhum profile para subscription', stripeSubscriptionId);
     return;
   }
 
@@ -160,6 +160,7 @@ export default async function handler(req: any, res: any) {
         const subscription = event.data.object as Stripe.Subscription & { current_period_end?: number };
         const planStatus = ['active', 'trialing'].includes(subscription.status) ? 'active' : 'expired';
         const patch: Record<string, any> = {
+          stripe_subscription_id: subscription.id,
           stripe_subscription_status: subscription.status,
           cancel_at_period_end: subscription.cancel_at_period_end ?? false,
           plan_status: planStatus,
