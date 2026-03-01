@@ -178,15 +178,20 @@ export default async function handler(req: any, res: any) {
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
         const fullSub = await stripe.subscriptions.retrieve(subscription.id);
+        const sub = subscription;
         const cpe =
           (fullSub as any).current_period_end ??
           (fullSub as any).items?.data?.[0]?.current_period_end ??
           (fullSub as any).items?.data?.[0]?.current_period_end;
-        console.log('[webhook] period_end', { sub: fullSub.id, status: fullSub.status, cancel: fullSub.cancel_at_period_end, cpe });
+        const cancelAt = (sub as any).cancel_at ?? (fullSub as any).cancel_at ?? null;
+        const scheduledCancel =
+          !!(sub as any).cancel_at_period_end ||
+          (cancelAt != null && cpe != null && Number(cancelAt) === Number(cpe));
+        console.log('[webhook] cancel flags', { subId: fullSub.id, cancel_at_period_end: (sub as any).cancel_at_period_end, cancelAt, cpe, scheduledCancel });
         const patch: Record<string, any> = {
           stripe_subscription_id: fullSub.id,
           stripe_subscription_status: fullSub.status,
-          cancel_at_period_end: !!fullSub.cancel_at_period_end,
+          cancel_at_period_end: scheduledCancel,
           plan_status: ['active', 'trialing'].includes(fullSub.status) ? 'active' : 'expired',
         };
         if (cpe != null) {
