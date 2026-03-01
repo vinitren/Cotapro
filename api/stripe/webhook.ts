@@ -1,6 +1,17 @@
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
+export const config = { api: { bodyParser: false } };
+
+async function readRawBody(req: any): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    req.on('data', (chunk: Buffer) => chunks.push(chunk));
+    req.on('end', () => resolve(Buffer.concat(chunks)));
+    req.on('error', reject);
+  });
+}
+
 const supabaseUrl = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').trim();
 const supabaseServiceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 const webhookSecret = (process.env.STRIPE_WEBHOOK_SECRET || '').trim();
@@ -72,29 +83,23 @@ export default async function handler(req: any, res: any) {
   }
 
   if (!webhookSecret || !stripeSecretKey) {
-    console.error('[webhook] Missing STRIPE_WEBHOOK_SECRET or STRIPE_SECRET_KEY');
+    console.error('[webhook] 400 motivo=missing_secret event.type=N/A header_stripe_signature=', !!req.headers['stripe-signature'], 'webhookSecret_prefix=', webhookSecret ? webhookSecret.slice(0, 6) : '(vazio)', 'rawBody_len=N/A');
     res.status(400).send('ok');
     return;
   }
 
   const signature = req.headers['stripe-signature'];
   if (!signature) {
-    console.error('[webhook] Missing stripe-signature header');
+    console.error('[webhook] 400 motivo=missing_signature event.type=N/A header_stripe_signature=false webhookSecret_prefix=', webhookSecret.slice(0, 6), 'rawBody_len=N/A');
     res.status(400).send('ok');
     return;
   }
 
   let rawBody: string;
   try {
-    if (typeof req.body === 'string') {
-      rawBody = req.body;
-    } else if (Buffer.isBuffer(req.body)) {
-      rawBody = req.body.toString('utf-8');
-    } else {
-      rawBody = String(req.body ?? '');
-    }
+    rawBody = (await readRawBody(req)).toString('utf8');
   } catch (err) {
-    console.error('[webhook] Erro ao ler raw body');
+    console.error('[webhook] 400 motivo=raw_body_read_fail event.type=N/A header_stripe_signature=', !!req.headers['stripe-signature'], 'webhookSecret_prefix=', webhookSecret ? webhookSecret.slice(0, 6) : '(vazio)', 'rawBody_len=N/A');
     res.status(400).send('ok');
     return;
   }
@@ -104,7 +109,7 @@ export default async function handler(req: any, res: any) {
   try {
     event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
   } catch (err) {
-    console.error('[webhook] Assinatura inválida');
+    console.error('[webhook] 400 motivo=invalid_signature event.type=N/A header_stripe_signature=true webhookSecret_prefix=', webhookSecret.slice(0, 6), 'rawBody_len=', rawBody?.length ?? 'N/A', 'err.message=', err instanceof Error ? err.message : String(err));
     res.status(400).send('ok');
     return;
   }
