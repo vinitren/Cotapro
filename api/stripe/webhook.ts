@@ -45,9 +45,11 @@ async function updateProfileByUserId(
 async function updateProfileByStripeSubscriptionId(
   supabase: any,
   stripeSubscriptionId: string,
-  data: Record<string, any>
+  data: Record<string, any>,
+  stripeCustomerIdForFallback?: string
 ) {
-  const { data: profiles, error: fetchError } = await supabase
+  let profiles: { id: string }[] | null = null;
+  const { data: bySub, error: fetchError } = await supabase
     .from('profiles')
     .select('id, stripe_subscription_id, stripe_customer_id')
     .eq('stripe_subscription_id', stripeSubscriptionId)
@@ -56,6 +58,23 @@ async function updateProfileByStripeSubscriptionId(
   if (fetchError) {
     console.error('[webhook] Erro ao buscar profile por stripe_subscription_id');
     throw fetchError;
+  }
+  profiles = bySub;
+
+  if (!profiles?.length && stripeCustomerIdForFallback) {
+    const { data: byCustomer, error: errCustomer } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('stripe_customer_id', stripeCustomerIdForFallback)
+      .limit(1);
+    if (!errCustomer && byCustomer?.length) {
+      if (byCustomer.length > 1) {
+        console.warn('[webhook] Fallback: múltiplos profiles para stripe_customer_id, não atualizando', { subId: stripeSubscriptionId, customerId: stripeCustomerIdForFallback });
+      } else {
+        profiles = byCustomer;
+        console.log('[webhook] Fallback: profile encontrado por stripe_customer_id', { subId: stripeSubscriptionId, customerId: stripeCustomerIdForFallback });
+      }
+    }
   }
 
   if (!profiles?.length) {
@@ -67,13 +86,13 @@ async function updateProfileByStripeSubscriptionId(
     .from('profiles')
     .update(data)
     .eq('id', profiles[0].id)
-    .select('id,current_period_end')
+    .select('id, current_period_end, cancel_at_period_end, stripe_subscription_status')
     .maybeSingle();
   if (error) {
     console.error('[webhook] Erro ao atualizar profile', error);
     throw error;
   }
-  console.log('[webhook] updateProfileByStripeSubscriptionId current_period_end=', (updated as any)?.current_period_end);
+  console.log('[webhook] PROFILE_ATUALIZADO', { id: (updated as any)?.id, cancel_at_period_end: (updated as any)?.cancel_at_period_end, stripe_subscription_status: (updated as any)?.stripe_subscription_status, current_period_end: (updated as any)?.current_period_end });
 }
 
 export default async function handler(req: any, res: any) {
@@ -173,7 +192,8 @@ export default async function handler(req: any, res: any) {
         if (cpe != null) {
           patch.current_period_end = new Date(Number(cpe) * 1000).toISOString();
         }
-        await updateProfileByStripeSubscriptionId(supabase, fullSub.id, patch);
+        const customerId = typeof fullSub.customer === 'string' ? fullSub.customer : fullSub.customer?.id;
+        await updateProfileByStripeSubscriptionId(supabase, fullSub.id, patch, customerId);
         statusFinal = 'profile atualizado';
         break;
       }
@@ -185,8 +205,8 @@ export default async function handler(req: any, res: any) {
           stripe_subscription_status: 'canceled',
           cancel_at_period_end: false,
         };
-        console.log('[webhook] BEFORE update event.type=%s patch.current_period_end=%s', event.type, (patchDeleted as any).current_period_end);
-        await updateProfileByStripeSubscriptionId(supabase, subscription.id, patchDeleted);
+        const customerId = typeof subscription.customer === 'string' ? subscription.customer : subscription.customer?.id;
+        await updateProfileByStripeSubscriptionId(supabase, subscription.id, patchDeleted, customerId);
         statusFinal = 'profile atualizado';
         break;
       }
