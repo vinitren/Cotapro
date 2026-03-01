@@ -158,17 +158,20 @@ export default async function handler(req: any, res: any) {
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
-        const fullSub = (await stripe.subscriptions.retrieve(subscription.id)) as Stripe.Subscription & { current_period_end?: number };
-        console.log('[webhook] sub.retrieve', { id: fullSub.id, status: fullSub.status, cpe: fullSub.current_period_end, cancel: fullSub.cancel_at_period_end });
-        const planStatus = ['active', 'trialing'].includes(fullSub.status) ? 'active' : 'expired';
+        const fullSub = await stripe.subscriptions.retrieve(subscription.id);
+        const cpe =
+          (fullSub as any).current_period_end ??
+          (fullSub as any).items?.data?.[0]?.current_period_end ??
+          (fullSub as any).items?.data?.[0]?.current_period_end;
+        console.log('[webhook] period_end', { sub: fullSub.id, status: fullSub.status, cancel: fullSub.cancel_at_period_end, cpe });
         const patch: Record<string, any> = {
           stripe_subscription_id: fullSub.id,
           stripe_subscription_status: fullSub.status,
-          cancel_at_period_end: fullSub.cancel_at_period_end ?? false,
-          plan_status: planStatus,
+          cancel_at_period_end: !!fullSub.cancel_at_period_end,
+          plan_status: ['active', 'trialing'].includes(fullSub.status) ? 'active' : 'expired',
         };
-        if (typeof fullSub.current_period_end === 'number') {
-          patch.current_period_end = new Date(fullSub.current_period_end * 1000).toISOString();
+        if (cpe != null) {
+          patch.current_period_end = new Date(Number(cpe) * 1000).toISOString();
         }
         await updateProfileByStripeSubscriptionId(supabase, fullSub.id, patch);
         statusFinal = 'profile atualizado';
