@@ -157,23 +157,20 @@ export default async function handler(req: any, res: any) {
 
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
-        const subscription = event.data.object as Stripe.Subscription & { current_period_end?: number };
-        const planStatus = ['active', 'trialing'].includes(subscription.status) ? 'active' : 'expired';
+        const subscription = event.data.object as Stripe.Subscription;
+        const fullSub = (await stripe.subscriptions.retrieve(subscription.id)) as Stripe.Subscription & { current_period_end?: number };
+        console.log('[webhook] sub.retrieve', { id: fullSub.id, status: fullSub.status, cpe: fullSub.current_period_end, cancel: fullSub.cancel_at_period_end });
+        const planStatus = ['active', 'trialing'].includes(fullSub.status) ? 'active' : 'expired';
         const patch: Record<string, any> = {
-          stripe_subscription_id: subscription.id,
-          stripe_subscription_status: subscription.status,
-          cancel_at_period_end: subscription.cancel_at_period_end ?? false,
+          stripe_subscription_id: fullSub.id,
+          stripe_subscription_status: fullSub.status,
+          cancel_at_period_end: fullSub.cancel_at_period_end ?? false,
           plan_status: planStatus,
         };
-        if (typeof subscription.current_period_end === 'number') {
-          patch.current_period_end = new Date(
-            subscription.current_period_end * 1000
-          ).toISOString();
+        if (typeof fullSub.current_period_end === 'number') {
+          patch.current_period_end = new Date(fullSub.current_period_end * 1000).toISOString();
         }
-        console.log('[stripe] sub.updated', { subId: subscription.id, hasPeriodEnd: !!subscription.current_period_end, periodEnd: patch.current_period_end });
-        console.log('[webhook] BEFORE update event.type=%s patch.current_period_end=%s', event.type, patch.current_period_end);
-
-        await updateProfileByStripeSubscriptionId(supabase, subscription.id, patch);
+        await updateProfileByStripeSubscriptionId(supabase, fullSub.id, patch);
         statusFinal = 'profile atualizado';
         break;
       }
