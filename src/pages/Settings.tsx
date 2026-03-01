@@ -282,19 +282,6 @@ export function Settings() {
     })();
   }, []);
 
-  // Refetch profile quando a aba volta ao foco (ex: retorno do Portal Stripe)
-  useEffect(() => {
-    const onRefetch = () => {
-      if (activeTab === 'conta' && userId) refetchProfile();
-    };
-    document.addEventListener('visibilitychange', onRefetch);
-    window.addEventListener('focus', onRefetch);
-    return () => {
-      document.removeEventListener('visibilitychange', onRefetch);
-      window.removeEventListener('focus', onRefetch);
-    };
-  }, [activeTab, userId]);
-
   // Gerar QR Code Pix quando pix_key, pix_name e pix_type estiverem preenchidos
   useEffect(() => {
     const keyOk = pixKey.trim().length > 0;
