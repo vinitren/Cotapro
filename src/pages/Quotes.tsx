@@ -26,6 +26,7 @@ import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import type { Quote, QuoteStatus } from '../types';
 import { toast } from '../hooks/useToast';
 import { generateQuotePDF } from '../lib/pdf-generator';
+import { format } from 'date-fns';
 
 export function Quotes() {
   const navigate = useNavigate();
@@ -325,13 +326,16 @@ export function Quotes() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
-          {filteredQuotes.map((quote) => (
+          {filteredQuotes.map((quote) => {
+            const dataRef = quote.data_emissao || quote.data_criacao;
+            const mesAno = dataRef ? format(new Date(dataRef), 'MM/yyyy') : '';
+            return (
             <Card key={quote.id} className={cn(pageCardClasses, 'hover:shadow-lg transition-shadow')}>
               <CardContent className="p-4 lg:p-5">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between gap-2 min-w-0">
                     <p className="text-base font-bold text-[rgb(var(--fg))] truncate tracking-tight">
-                      #{getQuoteDisplayNumber(quote)} — {quote.cliente?.nome ?? 'Cliente'}
+                      #{getQuoteDisplayNumber(quote)}{mesAno ? ` • ${mesAno}` : ''} — {quote.cliente?.nome ?? 'Cliente'}
                     </p>
                     <p className="text-base font-semibold text-primary flex-shrink-0 tabular-nums">
                       {formatCurrency(quote.total)}
@@ -399,7 +403,8 @@ export function Quotes() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+          );
+          })}
         </div>
           )}
         </>
