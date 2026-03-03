@@ -5,42 +5,42 @@ type MetricVariant = 'primary' | 'amber' | 'green' | 'blue' | 'emerald';
 
 const variantStyles: Record<
   MetricVariant,
-  {
-    gradient: string;
-    glow: string;
-    iconBg: string;
-    iconColor: string;
-  }
+  { bg: string; border: string; bar: string; iconBg: string; iconColor: string }
 > = {
   primary: {
-    gradient: 'from-primary-600 via-primary-500 to-primary-700',
-    glow: 'shadow-[0_0_24px_-4px_rgba(22,163,74,0.4)]',
-    iconBg: 'bg-white/20',
-    iconColor: 'text-white',
+    bg: 'bg-emerald-500/8',
+    border: 'border-emerald-500/25',
+    bar: 'bg-emerald-500',
+    iconBg: 'bg-emerald-500/20',
+    iconColor: 'text-emerald-400',
   },
   amber: {
-    gradient: 'from-amber-600 via-amber-500 to-amber-700',
-    glow: 'shadow-[0_0_24px_-4px_rgba(217,119,6,0.4)]',
-    iconBg: 'bg-white/20',
-    iconColor: 'text-white',
+    bg: 'bg-amber-500/8',
+    border: 'border-amber-500/25',
+    bar: 'bg-amber-500',
+    iconBg: 'bg-amber-500/20',
+    iconColor: 'text-amber-400',
   },
   green: {
-    gradient: 'from-green-600 via-green-500 to-green-700',
-    glow: 'shadow-[0_0_24px_-4px_rgba(22,163,74,0.4)]',
-    iconBg: 'bg-white/20',
-    iconColor: 'text-white',
+    bg: 'bg-emerald-500/8',
+    border: 'border-emerald-500/25',
+    bar: 'bg-emerald-500',
+    iconBg: 'bg-emerald-500/20',
+    iconColor: 'text-emerald-400',
   },
   blue: {
-    gradient: 'from-blue-600 via-blue-500 to-blue-700',
-    glow: 'shadow-[0_0_24px_-4px_rgba(59,130,246,0.4)]',
-    iconBg: 'bg-white/20',
-    iconColor: 'text-white',
+    bg: 'bg-blue-500/8',
+    border: 'border-blue-500/25',
+    bar: 'bg-blue-500',
+    iconBg: 'bg-blue-500/20',
+    iconColor: 'text-blue-400',
   },
   emerald: {
-    gradient: 'from-emerald-600 via-emerald-500 to-emerald-700',
-    glow: 'shadow-[0_0_24px_-4px_rgba(5,150,105,0.4)]',
-    iconBg: 'bg-white/20',
-    iconColor: 'text-white',
+    bg: 'bg-emerald-500/8',
+    border: 'border-emerald-500/25',
+    bar: 'bg-emerald-500',
+    iconBg: 'bg-emerald-500/20',
+    iconColor: 'text-emerald-400',
   },
 };
 
@@ -70,18 +70,18 @@ export function MetricCard({
   return (
     <div
       className={cn(
-        'group relative h-full flex flex-col overflow-hidden rounded-xl min-h-[92px]',
-        'border border-white/20',
-        'bg-gradient-to-br backdrop-blur-sm',
-        styles.gradient,
-        styles.glow,
+        'group relative h-full flex overflow-hidden rounded-xl min-h-[92px]',
+        'border',
+        styles.bg,
+        styles.border,
         'transition-all duration-300 ease-out',
-        'hover:-translate-y-0.5 hover:shadow-[0_0_32px_-4px_rgba(0,0,0,0.15)]',
         order,
         className
       )}
     >
-      <div className={cn('p-4 flex flex-col justify-start', cardClassName)}>
+      {/* Barra vertical colorida na lateral esquerda */}
+      <div className={cn('w-1 flex-shrink-0', styles.bar)} aria-hidden />
+      <div className={cn('p-4 flex flex-col justify-start flex-1 min-w-0', cardClassName)}>
         <div className="flex items-center gap-2">
           <div
             className={cn(
@@ -91,9 +91,9 @@ export function MetricCard({
           >
             <Icon className={cn('h-4 w-4', styles.iconColor)} />
           </div>
-          <p className="text-sm font-medium text-white/90 leading-tight min-w-0">{label}</p>
+          <p className="text-xs font-medium text-zinc-400 leading-tight min-w-0">{label}</p>
         </div>
-        <p className={cn('text-xl sm:text-2xl lg:text-3xl font-bold leading-tight whitespace-nowrap mt-2 text-white tracking-tight drop-shadow-sm min-w-0 overflow-hidden', valueClassName)}>
+        <p className={cn('text-xl sm:text-2xl lg:text-3xl font-bold leading-tight whitespace-nowrap mt-2 text-black dark:text-white tracking-tight min-w-0 overflow-hidden', valueClassName)}>
           {value}
         </p>
       </div>

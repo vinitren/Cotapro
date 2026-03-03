@@ -24,9 +24,10 @@ interface FollowUpModalProps {
   isOpen: boolean;
   onClose: () => void;
   quote: Quote;
+  onSent?: (quoteId: string) => void;
 }
 
-export function FollowUpModal({ isOpen, onClose, quote }: FollowUpModalProps) {
+export function FollowUpModal({ isOpen, onClose, quote, onSent }: FollowUpModalProps) {
   const [mensagem, setMensagem] = useState('');
 
   const cliente = quote?.cliente;
@@ -61,6 +62,7 @@ export function FollowUpModal({ isOpen, onClose, quote }: FollowUpModalProps) {
     const telefone = telefoneLimpo.startsWith('55') ? telefoneLimpo : `55${telefoneLimpo}`;
     const url = `https://wa.me/${telefone}?text=${encodeURIComponent(mensagem.trim())}`;
     window.open(url, '_blank');
+    onSent?.(quote.id);
   };
 
   return (

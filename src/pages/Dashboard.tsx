@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { FileText, DollarSign, TrendingUp, CheckCircle, Banknote, MessageCircle, ArrowRight } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { PageHeader } from '../components/layout/PageHeader';
@@ -12,13 +12,15 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import { useStore } from '../store';
+import type { Quote } from '../types';
 import { formatCurrency } from '../lib/utils';
-import { getFollowUpCandidates, formatTimeSince, buildFollowUpMessage } from '../lib/dashboard-followup';
+import { getFollowUpCandidates, formatTimeSince } from '../lib/dashboard-followup';
 import { getBarChartData, getDonutChartData, getEmRiscoValue } from '../lib/dashboard-aggregations';
 import { getMonthKey, getCurrentMonthKey } from '../lib/dashboard-date';
 import { ResumoMensal, FunilMensal } from '../components/dashboard/DashboardCharts';
 import { enableFollowUpSuggestions } from '../lib/supabase';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
+import { FollowUpModal } from '../components/FollowUpModal';
 import { toast } from '../hooks/useToast';
 
 const DASHBOARD_MONTH_KEY = 'dashboard-selected-month';
@@ -62,7 +64,6 @@ function filterQuotesByMonth<T extends { data_emissao?: string; data_criacao?: s
 }
 
 export function Dashboard() {
-  const navigate = useNavigate();
   const { quotes, checkExpiredQuotes, loadQuotes } = useStore();
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState<string>(() => {
@@ -126,20 +127,50 @@ export function Dashboard() {
   const approvalRate = sentQuotes.length > 0 ? (approvedQuotes.length / sentQuotes.length) * 100 : 0;
 
   const followUp = enableFollowUpSuggestions ? getFollowUpCandidates(quotes) : null;
-  const [followUpFilter, setFollowUpFilter] = useState<'24h' | '72h'>('24h');
-  const followUpList = followUp
-    ? (followUpFilter === '72h' ? followUp.candidates72h : followUp.candidates24h).slice(0, 5)
-    : [];
+  type PrioridadeCategoria = 'em-risco' | 'alto-valor' | 'vencendo' | 'todos';
+  const [followUpFilter, setFollowUpFilter] = useState<PrioridadeCategoria>('todos');
+  const [followUpModal, setFollowUpModal] = useState<Quote | null>(null);
+  const [sentFollowUpIds, setSentFollowUpIds] = useState<Set<string>>(() => new Set());
 
-  const handleFollowUpWhatsApp = (quote: (typeof followUpList)[0]) => {
-    const telefone = quote.quote.cliente?.telefone?.replace(/\D/g, '') ?? '';
-    if (telefone.length >= 10) {
-      const num = telefone.startsWith('55') ? telefone : `55${telefone}`;
-      const msg = buildFollowUpMessage(quote.quote.cliente?.nome ?? '');
-      window.open(`https://wa.me/${num}?text=${encodeURIComponent(msg)}`, '_blank');
-    } else {
-      navigate(`/quotes/${quote.quote.id}`);
-    }
+  const baseList = followUp?.candidatesBase ?? [];
+  const available = baseList.filter((c) => !sentFollowUpIds.has(c.quote.id));
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayPlus3 = new Date(today);
+  todayPlus3.setDate(todayPlus3.getDate() + 3);
+
+  const byPriority = (a: { quote: Quote; hoursSinceSent: number }, b: { quote: Quote; hoursSinceSent: number }) => {
+    if (b.quote.total !== a.quote.total) return b.quote.total - a.quote.total;
+    return b.hoursSinceSent - a.hoursSinceSent;
+  };
+
+  const emRisco = available.filter((c) => c.hoursSinceSent >= 48 && c.hoursSinceSent <= 120).sort(byPriority);
+  const altoValorCount = Math.max(1, Math.ceil(available.length * 0.3));
+  const altoValor = [...available]
+    .sort(byPriority)
+    .slice(0, altoValorCount);
+  const vencendo = available.filter((c) => {
+    const val = c.quote.data_validade ?? '';
+    if (!val) return false;
+    const validDate = new Date(val);
+    validDate.setHours(0, 0, 0, 0);
+    return validDate >= today && validDate <= todayPlus3;
+  }).sort(byPriority);
+  const todos = [...available].sort(byPriority);
+
+  const counts = { 'em-risco': emRisco.length, 'alto-valor': altoValor.length, 'vencendo': vencendo.length, 'todos': todos.length };
+
+  const rawByFilter: Record<PrioridadeCategoria, typeof available> = {
+    'em-risco': emRisco,
+    'alto-valor': altoValor,
+    'vencendo': vencendo,
+    'todos': todos,
+  };
+  const followUpList = rawByFilter[followUpFilter].slice(0, 5);
+
+  const openFollowUpModal = (quote: Quote) => {
+    setFollowUpModal(quote);
   };
 
   if (isLoading) {
@@ -212,34 +243,30 @@ export function Dashboard() {
       </div>
 
       {/* Prioridades de hoje - Follow-up sugerido */}
-      {enableFollowUpSuggestions && followUp && (followUp.count24h > 0 || followUp.count72h > 0) && (
+      {enableFollowUpSuggestions && followUp && baseList.length > 0 && (
         <div className="rounded-2xl bg-[rgb(var(--card))]/50 border border-[rgb(var(--border))]/40 p-4 lg:p-6">
           <h2 className="text-base font-bold text-[rgb(var(--fg))] mb-4">Prioridades de hoje</h2>
           <div className="flex flex-wrap items-center gap-2 mb-4">
-            <button
-              type="button"
-              onClick={() => setFollowUpFilter('24h')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors ${
-                followUpFilter === '24h'
-                  ? 'bg-[rgb(var(--card))] dark:bg-[rgb(var(--card))]/80 border-[rgb(var(--border))] text-[rgb(var(--fg))] shadow-sm'
-                  : 'bg-[rgb(var(--card))]/60 dark:bg-[rgb(var(--card))]/40 border-[rgb(var(--border))]/40 text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]'
-              }`}
-            >
-              <span className="text-xs font-medium">Enviados há +24h</span>
-              <span className="text-sm font-bold tabular-nums">{followUp.count24h}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setFollowUpFilter('72h')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors ${
-                followUpFilter === '72h'
-                  ? 'bg-[rgb(var(--card))] dark:bg-[rgb(var(--card))]/80 border-[rgb(var(--border))] text-[rgb(var(--fg))] shadow-sm'
-                  : 'bg-[rgb(var(--card))]/60 dark:bg-[rgb(var(--card))]/40 border-[rgb(var(--border))]/40 text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]'
-              }`}
-            >
-              <span className="text-xs font-medium">Enviados há +72h</span>
-              <span className="text-sm font-bold tabular-nums">{followUp.count72h}</span>
-            </button>
+            {[
+              { key: 'em-risco' as const, label: '🔥 Em risco', count: counts['em-risco'] },
+              { key: 'alto-valor' as const, label: '💰 Alto valor', count: counts['alto-valor'] },
+              { key: 'vencendo' as const, label: '⏳ Vencendo', count: counts['vencendo'] },
+              { key: 'todos' as const, label: '📋 Todos', count: counts['todos'] },
+            ].map(({ key, label, count }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setFollowUpFilter(key)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors ${
+                  followUpFilter === key
+                    ? 'bg-[rgb(var(--card))] dark:bg-[rgb(var(--card))]/80 border-[rgb(var(--border))] text-[rgb(var(--fg))] shadow-sm'
+                    : 'bg-[rgb(var(--card))]/60 dark:bg-[rgb(var(--card))]/40 border-[rgb(var(--border))]/40 text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]'
+                }`}
+              >
+                <span className="text-xs font-medium">{label}</span>
+                <span className="text-sm font-bold tabular-nums">{count}</span>
+              </button>
+            ))}
             <Link
               to="/quotes?status=enviado"
               className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[rgb(var(--border))]/40 bg-[rgb(var(--card))]/50 dark:bg-[rgb(var(--card))]/40 text-[rgb(var(--fg))] hover:bg-[rgb(var(--card))]/70 dark:hover:bg-[rgb(var(--card))]/60 transition-colors text-xs font-medium"
@@ -267,7 +294,7 @@ export function Dashboard() {
                     size="sm"
                     variant="outline"
                     className="flex-shrink-0 gap-1.5 h-8 text-xs"
-                    onClick={() => handleFollowUpWhatsApp(c)}
+                    onClick={() => openFollowUpModal(c.quote)}
                   >
                     <MessageCircle className="h-3.5 w-3.5" />
                     Enviar WhatsApp
@@ -277,12 +304,25 @@ export function Dashboard() {
             </div>
           ) : (
             <p className="text-sm text-[rgb(var(--muted))] py-2">
-              {followUpFilter === '72h'
-                ? 'Nenhum orçamento enviado há mais de 72h.'
-                : 'Nenhum orçamento enviado há mais de 24h.'}
+              {followUpFilter === 'em-risco' && 'Nenhum orçamento em risco no momento.'}
+              {followUpFilter === 'alto-valor' && 'Nenhum orçamento de alto valor pendente.'}
+              {followUpFilter === 'vencendo' && 'Nenhum orçamento vencendo em breve.'}
+              {followUpFilter === 'todos' && 'Nenhum orçamento pendente de follow-up.'}
             </p>
           )}
         </div>
+      )}
+
+      {followUpModal && (
+        <FollowUpModal
+          isOpen={!!followUpModal}
+          onClose={() => setFollowUpModal(null)}
+          quote={followUpModal}
+          onSent={(quoteId) => {
+            setSentFollowUpIds((prev) => new Set([...prev, quoteId]));
+            setFollowUpModal(null);
+          }}
+        />
       )}
 
       {/* Resumo mensal + Funil do mês — grid 2 colunas desktop, 1 coluna mobile */}

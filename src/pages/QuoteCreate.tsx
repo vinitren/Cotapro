@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Trash2, ArrowLeft, Save, User, Settings2, ChevronRight, Loader2 } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Save, User, Settings2, ChevronRight, Loader2, Info } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -381,6 +381,14 @@ export function QuoteCreate() {
               Adicionar
             </Button>
           </div>
+          {itens.length > 16 && (
+            <div className="flex items-start gap-3 p-4 rounded-lg border border-green-500/30 bg-green-500/10">
+              <Info className="h-4 w-4 shrink-0 mt-0.5 text-green-600 dark:text-green-400" />
+              <p className="text-sm text-green-700 dark:text-green-400">
+                O PDF pode não exibir todos os itens quando o orçamento é muito extenso. Para melhor visualização, use o link compartilhável do WhatsApp.
+              </p>
+            </div>
+          )}
           <Card>
             <CardContent className="p-0">
               {itens.length === 0 ? (

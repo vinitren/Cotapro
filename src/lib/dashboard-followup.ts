@@ -14,6 +14,8 @@ export interface FollowUpStats {
   candidates24h: FollowUpCandidate[];
   /** Apenas itens com ageHours >= 72 */
   candidates72h: FollowUpCandidate[];
+  /** Lista base de todos os candidatos (enviado, não expirado, >=24h) — para categorias estratégicas */
+  candidatesBase: FollowUpCandidate[];
 }
 
 /**
@@ -63,6 +65,7 @@ export function getFollowUpCandidates(quotes: Quote[]): FollowUpStats {
     count72h: candidates72h.length,
     candidates24h,
     candidates72h,
+    candidatesBase: candidates24h,
   };
 }
 

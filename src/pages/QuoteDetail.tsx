@@ -224,7 +224,12 @@ export function QuoteDetail() {
       </Card>
 
       {/* sm: PDF solto no topo | md+: removido (vai para o card Resumo) */}
-      <div className="hidden sm:flex md:hidden justify-end mb-6">
+      <div className="hidden sm:flex md:hidden justify-end items-center gap-3 mb-6">
+        {items.length > 16 && (
+          <p className="text-xs text-green-700 dark:text-green-400 max-w-[200px]">
+            O PDF pode não exibir todos os itens quando o orçamento é muito extenso. Para melhor visualização, use o link compartilhável do WhatsApp.
+          </p>
+        )}
         <Button variant="outline" onClick={handleDownloadPDF} disabled={pdfLoading}>
           {pdfLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
           {pdfLoading ? 'Gerando...' : 'PDF'}
@@ -396,24 +401,31 @@ export function QuoteDetail() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2">
               <CardTitle>Resumo</CardTitle>
-              <div className="hidden md:flex gap-2">
-                <Button
-                  size="sm"
-                  onClick={handleWhatsApp}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  <Send className="h-4 w-4 mr-2" />
-                  WhatsApp
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDownloadPDF}
-                  disabled={pdfLoading}
-                >
-                  {pdfLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-                  {pdfLoading ? 'Gerando...' : 'PDF'}
-                </Button>
+              <div className="hidden md:flex flex-col items-end gap-1.5">
+                {items.length > 16 && (
+                  <p className="text-xs text-green-700 dark:text-green-400">
+                    O PDF pode não exibir todos os itens quando o orçamento é muito extenso. Para melhor visualização, use o link compartilhável do WhatsApp.
+                  </p>
+                )}
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={handleWhatsApp}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    WhatsApp
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownloadPDF}
+                    disabled={pdfLoading}
+                  >
+                    {pdfLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                    {pdfLoading ? 'Gerando...' : 'PDF'}
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -475,24 +487,31 @@ export function QuoteDetail() {
 
       {/* Rodapé sticky mobile: WhatsApp + PDF (acima da bottom nav) */}
       <div className="fixed bottom-20 left-0 right-0 px-4 pb-2 sm:hidden z-30">
-        <div className="max-w-lg mx-auto p-3 rounded-2xl bg-[rgb(var(--card))]/90 backdrop-blur-sm shadow-lg border border-[rgb(var(--border))] grid grid-cols-[1fr_auto] gap-2 items-stretch">
-          <Button
-            onClick={handleWhatsApp}
-            className="h-12 text-base font-semibold bg-green-600 hover:bg-green-700 text-white"
-            title="Enviar orçamento com link"
-          >
-            <Send className="h-5 w-5 mr-2" />
-            WhatsApp
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handleDownloadPDF}
-            disabled={pdfLoading}
-            className="h-12 px-4 text-sm text-[rgb(var(--fg))] border-[rgb(var(--border))]"
-          >
-            {pdfLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
-            Baixar PDF
-          </Button>
+        <div className="max-w-lg mx-auto p-3 rounded-2xl bg-[rgb(var(--card))]/90 backdrop-blur-sm shadow-lg border border-[rgb(var(--border))] flex flex-col gap-2">
+          {items.length > 16 && (
+            <p className="text-xs text-green-700 dark:text-green-400 px-1">
+              O PDF pode não exibir todos os itens quando o orçamento é muito extenso. Para melhor visualização, use o link compartilhável do WhatsApp.
+            </p>
+          )}
+          <div className="grid grid-cols-[1fr_auto] gap-2 items-stretch">
+            <Button
+              onClick={handleWhatsApp}
+              className="h-12 text-base font-semibold bg-green-600 hover:bg-green-700 text-white"
+              title="Enviar orçamento com link"
+            >
+              <Send className="h-5 w-5 mr-2" />
+              WhatsApp
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleDownloadPDF}
+              disabled={pdfLoading}
+              className="h-12 px-4 text-sm text-[rgb(var(--fg))] border-[rgb(var(--border))]"
+            >
+              {pdfLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+              Baixar PDF
+            </Button>
+          </div>
         </div>
       </div>
 
