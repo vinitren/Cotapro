@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Search, FileText, Trash2, Eye, Download, Filter, Loader2, Pencil, MoreVertical, List } from 'lucide-react';
+import { Plus, Search, FileText, Trash2, Eye, Download, Filter, Loader2, Pencil, MoreVertical, List, MessageCircle } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -27,6 +27,7 @@ import type { Quote, QuoteStatus } from '../types';
 import { toast } from '../hooks/useToast';
 import { generateQuotePDF } from '../lib/pdf-generator';
 import { format } from 'date-fns';
+import { FollowUpModal } from '../components/FollowUpModal';
 
 export function Quotes() {
   const navigate = useNavigate();
@@ -45,6 +46,7 @@ export function Quotes() {
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   const [filterNicho, setFilterNicho] = useState<'status' | 'date'>('status');
   const [deleteConfirm, setDeleteConfirm] = useState<Quote | null>(null);
+  const [followUpModal, setFollowUpModal] = useState<Quote | null>(null);
   const [pdfDownloadingId, setPdfDownloadingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isListOpen, setIsListOpen] = useState<boolean>(() => {
@@ -130,6 +132,10 @@ export function Quotes() {
         });
       }
     }
+  };
+
+  const openFollowUpModal = (quote: Quote) => {
+    setFollowUpModal(quote);
   };
 
   const handleDownloadPDF = async (quote: Quote) => {
@@ -351,6 +357,16 @@ export function Quotes() {
                     {' • '}
                     Val: {formatDate(quote.data_validade)}
                   </p>
+                  {quote.last_follow_up_at && (
+                    <p className="text-xs text-[rgb(var(--muted))]">
+                      Último follow-up: {(() => {
+                        const d = new Date(quote.last_follow_up_at);
+                        const now = new Date();
+                        const dias = Math.floor((now.getTime() - d.getTime()) / (24 * 60 * 60 * 1000));
+                        return dias === 0 ? 'hoje' : dias === 1 ? '1 dia atrás' : `${dias} dias atrás`;
+                      })()}
+                    </p>
+                  )}
 
                   <div className="flex gap-2">
                     <Link to={`/quotes/${quote.id}`} className="flex-1">
@@ -359,6 +375,15 @@ export function Quotes() {
                         Ver
                       </Button>
                     </Link>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 sm:h-9 px-2 sm:px-3"
+                      onClick={() => openFollowUpModal(quote)}
+                    >
+                      <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
+                      Follow-up
+                    </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -444,6 +469,14 @@ export function Quotes() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {followUpModal && (
+        <FollowUpModal
+          isOpen={!!followUpModal}
+          onClose={() => setFollowUpModal(null)}
+          quote={followUpModal}
+        />
+      )}
     </div>
   );
 }

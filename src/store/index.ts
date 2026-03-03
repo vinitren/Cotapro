@@ -399,6 +399,7 @@ export const useStore = create<AppState>()(
               observacoes,
               data_criacao: dataCriacao,
               updated_at: (q as any).updated_at ?? undefined,
+              last_follow_up_at: (q as any).last_follow_up_at ?? undefined,
             };
           });
           set({ quotes });

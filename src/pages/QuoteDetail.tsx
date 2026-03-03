@@ -36,7 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select';
-import { Textarea } from '../components/ui/textarea';
+import { FollowUpModal } from '../components/FollowUpModal';
 import { Input } from '../components/ui/input';
 import { useStore } from '../store';
 import { formatCurrency, formatDate, formatQuoteDisplay, getQuoteDisplayNumber, getStatusColor, getStatusLabel, isSupabaseQuoteId } from '../lib/utils';
@@ -52,10 +52,9 @@ export function QuoteDetail() {
   const [newStatus, setNewStatus] = useState<QuoteStatus | ''>('');
   const [pdfLoading, setPdfLoading] = useState(false);
   const [mensagemLink, setMensagemLink] = useState('Olá! Segue seu orçamento:');
-  const [mensagemFollowUp, setMensagemFollowUp] = useState('');
   const [clienteOpen, setClienteOpen] = useState(false);
   const [observacoesOpen, setObservacoesOpen] = useState(false);
-  const [followUpCardOpen, setFollowUpCardOpen] = useState(false);
+  const [followUpModalOpen, setFollowUpModalOpen] = useState(false);
 
   const quote = getQuote(id || '');
 
@@ -152,31 +151,6 @@ export function QuoteDetail() {
         });
       }
     }
-  };
-
-  const handleEnviarWhatsApp = () => {
-    if (!mensagemFollowUp.trim()) {
-      toast({
-        title: 'Digite uma mensagem',
-        description: 'Preencha o campo de mensagem antes de enviar.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    const telefoneLimpo = quote.cliente.telefone.replace(/\D/g, '');
-    if (!telefoneLimpo || telefoneLimpo.length < 10) {
-      toast({
-        title: 'Telefone não cadastrado',
-        description: 'O cliente não possui um telefone válido cadastrado.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    const telefone = telefoneLimpo.startsWith('55') ? telefoneLimpo : `55${telefoneLimpo}`;
-    const url = `https://wa.me/${telefone}?text=${encodeURIComponent(mensagemFollowUp.trim())}`;
-    window.open(url, '_blank');
   };
 
   const handleStatusChange = async () => {
@@ -314,84 +288,33 @@ export function QuoteDetail() {
             )}
           </Card>
 
-          {/* Card: Enviar mensagem de follow-up (accordion) - mensagem simples, sem link */}
+          {/* Card: Enviar mensagem de follow-up */}
           <Card>
-            {!followUpCardOpen ? (
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-start gap-3">
-                  <div className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 text-xl">
-                    💬
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-[rgb(var(--fg))]">Enviar mensagem de follow-up</h3>
-                    <p className="text-sm text-[rgb(var(--muted))] mt-0.5">Se o cliente ainda não respondeu, envie uma mensagem e aumente suas chances de fechar.</p>
-                    <Button
-                      variant="outline"
-                      onClick={() => setFollowUpCardOpen(true)}
-                      className="mt-3"
-                    >
-                      Escrever mensagem
-                    </Button>
-                  </div>
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 text-xl">
+                  💬
                 </div>
-              </CardContent>
-            ) : (
-              <CardContent className="p-4 sm:p-6 space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-[rgb(var(--fg))]">Sua mensagem</label>
-                  <Textarea
-                    value={mensagemFollowUp}
-                    onChange={(e) => setMensagemFollowUp(e.target.value.slice(0, 500))}
-                    placeholder="Digite sua mensagem..."
-                    rows={4}
-                    className="mt-2 resize-y"
-                    maxLength={500}
-                  />
-                  <p className="text-xs text-[rgb(var(--muted))] text-right mt-1">{mensagemFollowUp.length} / 500</p>
-                </div>
-
-                <div>
-                  <p className="text-sm font-medium text-[rgb(var(--fg))] mb-2">Tipos de abordagem</p>
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      { label: 'Lembrete', text: `Olá ${quote.cliente.nome.split(' ')[0] || quote.cliente.nome}, conseguiu analisar o orçamento?` },
-                      { label: 'Consultivo', text: `${quote.cliente.nome.split(' ')[0] || quote.cliente.nome}, ficou alguma dúvida ou ponto que possamos ajustar no orçamento?` },
-                      { label: 'Direto', text: `${quote.cliente.nome.split(' ')[0] || quote.cliente.nome}, podemos confirmar o orçamento para dar andamento?` },
-                      { label: 'Agressivo estratégico', text: `${quote.cliente.nome.split(' ')[0] || quote.cliente.nome}, estou fechando a agenda e preciso confirmar se seguimos com seu pedido.` },
-                      { label: 'Urgência', text: `${quote.cliente.nome.split(' ')[0] || quote.cliente.nome}, o orçamento está dentro do prazo, posso reservar para você?` },
-                    ].map(({ label, text }) => (
-                      <button
-                        key={label}
-                        type="button"
-                        onClick={() => setMensagemFollowUp(text.slice(0, 500))}
-                        className="px-3 py-1.5 text-xs font-medium rounded-lg border border-[rgb(var(--border))] bg-white/5 hover:bg-white/10 transition-colors"
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-[rgb(var(--fg))]">Enviar mensagem de follow-up</h3>
+                  <p className="text-sm text-[rgb(var(--muted))] mt-0.5">Se o cliente ainda não respondeu, envie uma mensagem e aumente suas chances de fechar.</p>
                   <Button
-                    onClick={() => {
-                      handleEnviarWhatsApp();
-                      setFollowUpCardOpen(false);
-                    }}
-                    disabled={!mensagemFollowUp.trim()}
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                    title={!mensagemFollowUp.trim() ? 'Digite uma mensagem' : undefined}
+                    variant="outline"
+                    onClick={() => setFollowUpModalOpen(true)}
+                    className="mt-3"
                   >
-                    <Send className="h-4 w-4 mr-2" />
-                    Enviar mensagem
-                  </Button>
-                  <Button variant="outline" onClick={() => setFollowUpCardOpen(false)}>
-                    Cancelar
+                    Escrever mensagem
                   </Button>
                 </div>
-              </CardContent>
-            )}
+              </div>
+            </CardContent>
           </Card>
+
+          <FollowUpModal
+            isOpen={followUpModalOpen}
+            onClose={() => setFollowUpModalOpen(false)}
+            quote={quote}
+          />
 
           <Card>
             <CardHeader>

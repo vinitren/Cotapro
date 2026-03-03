@@ -49,6 +49,8 @@ export interface Quote {
   data_criacao: string;
   /** Data da última atualização (para follow-up: sent_at > updated_at > created_at) */
   updated_at?: string;
+  /** Data/hora do último follow-up enviado ao cliente */
+  last_follow_up_at?: string | null;
 }
 
 export interface Company {
