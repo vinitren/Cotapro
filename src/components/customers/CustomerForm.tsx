@@ -110,17 +110,24 @@ export function CustomerForm({ open, onClose, customer }: CustomerFormProps) {
     }
   }, [customer, reset]);
 
+  const normalizeCpfCnpj = (v: string): string => {
+    const digits = (v || '').replace(/\D/g, '');
+    if (digits.length === 0 || /^0+$/.test(digits)) return '';
+    return v;
+  };
+
   const onSubmit = async (data: CustomerFormData) => {
+    const payload = { ...data, cpf_cnpj: normalizeCpfCnpj(data.cpf_cnpj) };
     try {
       if (isEditing && customer) {
-        await updateCustomer(customer.id, data);
+        await updateCustomer(customer.id, payload);
         toast({
           title: 'Cliente atualizado',
           description: `${data.nome} foi atualizado com sucesso.`,
           variant: 'success',
         });
       } else {
-        await addCustomer(data);
+        await addCustomer(payload);
         toast({
           title: 'Cliente cadastrado',
           description: `${data.nome} foi adicionado com sucesso.`,

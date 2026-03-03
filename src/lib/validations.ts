@@ -10,10 +10,23 @@ export const addressSchema = z.object({
   cep: z.string().default(''),
 });
 
+/** CPF/CNPJ: vazio = OK; preenchido = deve ter 11 (CPF) ou 14 (CNPJ) dígitos */
+const cpfCnpjSchema = z
+  .string()
+  .transform((v) => (v || '').trim())
+  .refine(
+    (v) => {
+      const digits = v.replace(/\D/g, '');
+      if (digits.length === 0 || /^0+$/.test(digits)) return true;
+      return digits.length === 11 || digits.length === 14;
+    },
+    { message: 'CPF/CNPJ inválido (deve ter 11 ou 14 dígitos)' }
+  );
+
 export const customerSchema = z.object({
   tipo: z.enum(['pessoa_fisica', 'pessoa_juridica']),
   nome: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
-  cpf_cnpj: z.string().min(11, 'CPF/CNPJ invalido'),
+  cpf_cnpj: cpfCnpjSchema,
   telefone: z.string().min(14, 'Telefone invalido'),
   email: z.string().email('Email invalido').or(z.string().length(0)),
   endereco: addressSchema,
