@@ -68,6 +68,28 @@ export function QuotePDFTemplate({ quote, company, hideSignatures }: QuotePDFTem
 
   const isCompactMode = items.length >= 6;
 
+  const formatCompanyAddress = (endereco: { rua?: string; numero?: string; bairro?: string; cidade?: string; estado?: string; cep?: string } | undefined): string => {
+    if (!endereco) return '';
+    const rua = String(endereco.rua ?? '').trim();
+    const numero = String(endereco.numero ?? '').trim();
+    const bairro = String(endereco.bairro ?? '').trim();
+    const cidade = String(endereco.cidade ?? '').trim();
+    const estado = String(endereco.estado ?? '').trim();
+    const cep = String(endereco.cep ?? '').trim();
+    let s = '';
+    if (rua) s = numero ? `${rua}, ${numero}` : rua;
+    else if (numero) s = `Nº ${numero}`;
+    if (bairro) s = s ? `${s} - ${bairro}` : bairro;
+    if (cidade || estado) {
+      const cidadeUf = cidade && estado ? `${cidade}/${estado}` : cidade || estado;
+      s = s ? `${s}, ${cidadeUf}` : cidadeUf;
+    }
+    if (cep) s = s ? `${s} - CEP ${cep}` : `CEP ${cep}`;
+    return s.trim();
+  };
+
+  const companyAddressStr = formatCompanyAddress(company.endereco);
+
   const PDF_PAGE_WIDTH_PX = 800;
   const HEADER_BLOCK_HEIGHT_PX = 120;
   const FOOTER_HEIGHT_PX = 180;
@@ -142,6 +164,11 @@ export function QuotePDFTemplate({ quote, company, hideSignatures }: QuotePDFTem
             <p style={{ margin: '1px 0 0', color: '#6B7280', fontSize: '12px', lineHeight: '1.3' }}>
               {company.email}
             </p>
+            {companyAddressStr && (
+              <p style={{ margin: '1px 0 0', color: '#6B7280', fontSize: '12px', lineHeight: '1.3' }}>
+                {companyAddressStr}
+              </p>
+            )}
           </div>
         </div>
 
