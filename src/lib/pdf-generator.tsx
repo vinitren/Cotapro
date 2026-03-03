@@ -123,7 +123,7 @@ export function QuotePDFTemplate({ quote, company, hideSignatures }: QuotePDFTem
           breakInside: 'avoid',
           display: 'flex',
           flexDirection: 'column',
-          height: 1120,
+          height: 1131,
         }}
       >
       {/* BLOCO 1: HEADER — altura fixa (logo, empresa, número, emissão, validade) */}
@@ -142,14 +142,14 @@ export function QuotePDFTemplate({ quote, company, hideSignatures }: QuotePDFTem
           boxSizing: 'border-box',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', transform: 'translateY(-6px)' }}>
           {company.logo_url && (
             <img
               src={company.logo_url}
               alt="Logo"
               style={{
-                maxHeight: '70px',
-                maxWidth: '140px',
+                maxHeight: '85px',
+                maxWidth: '170px',
                 objectFit: 'contain',
               }}
             />
@@ -189,10 +189,10 @@ export function QuotePDFTemplate({ quote, company, hideSignatures }: QuotePDFTem
             </p>
           </div>
           <div style={{ marginTop: '6px' }}>
-            <p style={{ margin: 0, color: '#4B5563', fontSize: '13px' }}>
+            <p style={{ margin: 0, color: '#4B5563', fontSize: '13px', whiteSpace: 'nowrap' }}>
               <strong>Emissão:</strong> {formatDate(quote.data_emissao)}
             </p>
-            <p style={{ margin: '2px 0 0', color: '#4B5563', fontSize: '13px' }}>
+            <p style={{ margin: '2px 0 0', color: '#4B5563', fontSize: '13px', whiteSpace: 'nowrap' }}>
               <strong>Validade:</strong> {formatDate(quote.data_validade)}
             </p>
           </div>
@@ -494,10 +494,8 @@ export async function generateQuotePDF(quote: Quote): Promise<void> {
 
   // jsPDF: uma única página A4 (210mm x 297mm), sem segunda página
   const A4_WIDTH_MM = 210;
-  const A4_HEIGHT_MM = 297;
   const MARGIN_MM = 5;
   const CONTENT_WIDTH_MM = A4_WIDTH_MM - 2 * MARGIN_MM;
-  const CONTENT_HEIGHT_MM = A4_HEIGHT_MM - 2 * MARGIN_MM;
 
   const canvas = await html2canvas(element, {
     scale: 3,
@@ -509,11 +507,11 @@ export async function generateQuotePDF(quote: Quote): Promise<void> {
   const imgH = canvas.height;
   const imgWmm = (imgW / 96) * 25.4;
   const imgHmm = (imgH / 96) * 25.4;
-  const scale = Math.min(CONTENT_WIDTH_MM / imgWmm, CONTENT_HEIGHT_MM / imgHmm, 1);
+  const scale = Math.min(CONTENT_WIDTH_MM / imgWmm, 1);
   const w = imgWmm * scale;
   const h = imgHmm * scale;
   const x = MARGIN_MM + (CONTENT_WIDTH_MM - w) / 2;
-  const y = MARGIN_MM + (CONTENT_HEIGHT_MM - h) / 2;
+  const y = MARGIN_MM;
 
   const pdf = new jsPDF({
     unit: 'mm',
