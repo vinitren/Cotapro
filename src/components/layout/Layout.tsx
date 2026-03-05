@@ -13,7 +13,7 @@ export function Layout() {
   }
 
   return (
-    <div className="relative min-h-[100svh] min-h-screen bg-[rgb(var(--bg))] text-[rgb(var(--fg))]">
+    <div className="relative min-h-screen min-h-[100dvh] bg-[rgb(var(--bg))] text-[rgb(var(--fg))]">
       <WatermarkBrand />
       <div className="relative z-10">
         <Sidebar />

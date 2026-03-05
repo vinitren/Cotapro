@@ -17,7 +17,10 @@ export function BottomNav() {
   if (pathname === '/quotes/new') return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[rgb(var(--card))] border-t border-[rgb(var(--border))] lg:hidden">
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-40 bg-[rgb(var(--card))] border-t border-[rgb(var(--border))] lg:hidden"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+    >
       <div className="flex items-center justify-around h-16 px-2">
         {navItems.map((item) => (
           <NavLink

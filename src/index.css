@@ -160,10 +160,13 @@ input[type="number"] {
 
   body.public-quote-page #root {
     min-height: 100%;
+    min-height: 100dvh;
   }
 
   #root {
     height: calc(var(--vh, 1dvh) * 100);
+    min-height: 100vh;
+    min-height: 100dvh;
     overflow: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: none;
@@ -172,13 +175,25 @@ input[type="number"] {
   body.public-quote-page #root {
     overflow: visible;
     height: auto;
-    min-height: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
   }
 
-  /* Prevenir zoom em inputs no iOS (font-size mínimo 16px) */
+  /* Prevenir zoom em inputs no mobile (font-size mínimo 16px) */
   input,
   textarea,
   select {
     font-size: max(16px, 1em);
+  }
+}
+
+/* iOS: garantir font-size >= 16px para evitar zoom ao focar (apenas mobile) */
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 768px) {
+    input,
+    textarea,
+    select {
+      font-size: max(16px, 1em);
+    }
   }
 }
