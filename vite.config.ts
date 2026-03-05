@@ -12,4 +12,18 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/html2canvas') || id.includes('node_modules/jspdf')) {
+            return 'vendor-pdf';
+          }
+          if (id.includes('node_modules/qrcode')) {
+            return 'vendor-qr';
+          }
+        },
+      },
+    },
+  },
 });

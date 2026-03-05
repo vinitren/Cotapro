@@ -23,7 +23,6 @@ import { maskPhone, maskCnpj, maskCep } from '../lib/utils';
 import { generatePixPayload } from '../lib/pix';
 import { toast } from '../hooks/useToast';
 import { useStripeCheckout } from '../hooks/useStripeCheckout';
-import QRCode from 'qrcode';
 import type { Address } from '../types';
 
 interface CompanyFormData {
@@ -293,6 +292,7 @@ export function Settings() {
     }
     (async () => {
       try {
+        const { default: QRCode } = await import('qrcode');
         const payload = generatePixPayload({
           key: pixKey.trim(),
           name: pixName.trim(),

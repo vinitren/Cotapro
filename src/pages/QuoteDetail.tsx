@@ -40,7 +40,6 @@ import { FollowUpModal } from '../components/FollowUpModal';
 import { Input } from '../components/ui/input';
 import { useStore } from '../store';
 import { formatCurrency, formatDate, formatQuoteDisplay, getQuoteDisplayNumber, getStatusColor, getStatusLabel, isSupabaseQuoteId } from '../lib/utils';
-import { generateQuotePDF } from '../lib/pdf-generator';
 import { toast } from '../hooks/useToast';
 import type { QuoteStatus } from '../types';
 
@@ -101,6 +100,7 @@ export function QuoteDetail() {
     }
     setPdfLoading(true);
     try {
+      const { generateQuotePDF } = await import('../lib/pdf-generator');
       await generateQuotePDF(quote);
       toast({
         title: 'PDF gerado',

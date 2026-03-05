@@ -1,7 +1,4 @@
 import { useState, useEffect } from 'react';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
-import QRCode from 'qrcode';
 import type { Quote, Company } from '../types';
 import { formatCurrency, formatDate, getQuoteDisplayNumber } from './utils';
 import { generatePixPayload } from './pix';
@@ -25,6 +22,7 @@ export function QuotePDFTemplate({ quote, company, hideSignatures }: QuotePDFTem
     }
     (async () => {
       try {
+        const { default: QRCode } = await import('qrcode');
         const payload = generatePixPayload({
           key: pixKey,
           name: pixName,
@@ -497,6 +495,7 @@ export async function generateQuotePDF(quote: Quote): Promise<void> {
   const MARGIN_MM = 5;
   const CONTENT_WIDTH_MM = A4_WIDTH_MM - 2 * MARGIN_MM;
 
+  const html2canvas = (await import('html2canvas')).default;
   const canvas = await html2canvas(element, {
     scale: 3,
     useCORS: true,
@@ -513,6 +512,7 @@ export async function generateQuotePDF(quote: Quote): Promise<void> {
   const x = MARGIN_MM + (CONTENT_WIDTH_MM - w) / 2;
   const y = MARGIN_MM;
 
+  const { jsPDF } = await import('jspdf');
   const pdf = new jsPDF({
     unit: 'mm',
     format: 'a4',

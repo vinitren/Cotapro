@@ -25,7 +25,6 @@ import { cn, formatCurrency, formatDate, formatQuoteDisplay, getQuoteDisplayNumb
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import type { Quote, QuoteStatus } from '../types';
 import { toast } from '../hooks/useToast';
-import { generateQuotePDF } from '../lib/pdf-generator';
 import { format } from 'date-fns';
 import { FollowUpModal } from '../components/FollowUpModal';
 
@@ -149,6 +148,7 @@ export function Quotes() {
     }
     setPdfDownloadingId(quote.id);
     try {
+      const { generateQuotePDF } = await import('../lib/pdf-generator');
       await generateQuotePDF(quote);
       toast({
         title: 'PDF gerado',

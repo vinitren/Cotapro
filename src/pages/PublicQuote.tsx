@@ -5,7 +5,6 @@ import { addDays, generateId } from '../lib/utils';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { generatePixPayload } from '../lib/pix';
 import { PublicQuoteDocument } from '../components/quotes/PublicQuoteDocument';
-import QRCode from 'qrcode';
 import type { Quote, Company, Customer, Address, QuoteItem } from '../types';
 
 interface PixData {
@@ -221,6 +220,7 @@ export function PublicQuote() {
                 const pixCity = String(p.pix_city ?? '').trim() || null;
                 const pixType = String(p.pix_type ?? 'cpf_cnpj').trim();
                 try {
+                  const { default: QRCode } = await import('qrcode');
                   const payload = generatePixPayload({
                     key: pixKey,
                     name: pixName,
