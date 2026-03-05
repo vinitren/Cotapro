@@ -197,3 +197,16 @@ input[type="number"] {
     }
   }
 }
+
+/* ===== MOBILE: override final para evitar zoom ao focar (Safari/iOS) — font-size >= 16px ===== */
+@media (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    font-size: 16px !important;
+  }
+}
