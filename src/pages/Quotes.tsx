@@ -21,11 +21,13 @@ import {
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
 import { useStore } from '../store';
-import { cn, formatCurrency, formatDate, formatQuoteDisplay, getQuoteDisplayNumber, getStatusColor, getStatusLabel, isSupabaseQuoteId } from '../lib/utils';
+import { cn, formatCurrency, formatDate, formatQuoteDisplay, getQuoteDisplayNumber, getStatusLabel, isSupabaseQuoteId } from '../lib/utils';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import type { Quote, QuoteStatus } from '../types';
 import { toast } from '../hooks/useToast';
-import { format } from 'date-fns';
+import { format, startOfDay, endOfDay } from 'date-fns';
+import type { DateRange } from 'react-day-picker';
+import { DateRangePicker } from '../components/quotes/DateRangePicker';
 import { FollowUpModal } from '../components/FollowUpModal';
 
 export function Quotes() {
@@ -41,7 +43,7 @@ export function Quotes() {
       setStatusFilter(statusFromUrl);
     }
   }, [statusFromUrl]);
-  const [dateFilter, setDateFilter] = useState<'all' | 'daily' | 'weekly' | 'monthly'>('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   const [filterNicho, setFilterNicho] = useState<'status' | 'date'>('status');
   const [deleteConfirm, setDeleteConfirm] = useState<Quote | null>(null);
@@ -95,19 +97,14 @@ export function Quotes() {
         clienteNome.includes(searchLower) || numeroStr.includes(searchLower);
       const matchesStatus = statusFilter === 'all' || quote?.status === statusFilter;
       const matchesDate = (() => {
-        if (dateFilter === 'all') return true;
+        if (!dateRange?.from || !dateRange?.to) return true;
         const dateStr = quote.data_emissao ?? quote.data_criacao ?? '';
         if (!dateStr) return true;
-        const d = new Date(dateStr);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const quoteDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-        const diffMs = today.getTime() - quoteDate.getTime();
-        const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
-        if (dateFilter === 'daily') return diffDays === 0;
-        if (dateFilter === 'weekly') return diffDays >= 0 && diffDays <= 6;
-        if (dateFilter === 'monthly') return diffDays >= 0 && diffDays <= 29;
-        return true;
+        const quoteDate = new Date(dateStr);
+        const fromStart = startOfDay(dateRange.from!).getTime();
+        const toEnd = endOfDay(dateRange.to!).getTime();
+        const quoteDayStart = new Date(quoteDate.getFullYear(), quoteDate.getMonth(), quoteDate.getDate()).getTime();
+        return quoteDayStart >= fromStart && quoteDayStart <= toEnd;
       })();
       return matchesSearch && matchesStatus && matchesDate;
     })
@@ -216,9 +213,9 @@ export function Quotes() {
           >
             <Filter className="h-4 w-4 mr-2" />
             Filtro
-            {(statusFilter !== 'all' || dateFilter !== 'all') && (
+            {(statusFilter !== 'all' || (dateRange?.from && dateRange?.to)) && (
               <Badge variant="secondary" className="ml-2 h-5 min-w-5 px-1.5 text-xs">
-                {(statusFilter !== 'all' ? 1 : 0) + (dateFilter !== 'all' ? 1 : 0)}
+                {(statusFilter !== 'all' ? 1 : 0) + (dateRange?.from && dateRange?.to ? 1 : 0)}
               </Badge>
             )}
           </Button>
@@ -261,17 +258,26 @@ export function Quotes() {
                 </div>
               )}
               {filterNicho === 'date' && (
-                <div className="grid grid-cols-2 gap-2">
-                  {(['all', 'daily', 'weekly', 'monthly'] as const).map((v) => (
-                    <Button
-                      key={v}
-                      variant={dateFilter === v ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setDateFilter(v)}
-                    >
-                      {v === 'all' ? 'Todos' : v === 'daily' ? 'Diário' : v === 'weekly' ? 'Semanal' : 'Mensal'}
-                    </Button>
-                  ))}
+                <div className="space-y-2">
+                  <p className="text-xs text-[rgb(var(--muted))]">
+                    {dateRange?.from && dateRange?.to
+                      ? `${format(dateRange.from, 'dd/MM/yyyy')} - ${format(dateRange.to, 'dd/MM/yyyy')}`
+                      : dateRange?.from
+                        ? `${format(dateRange.from, 'dd/MM/yyyy')} - Selecione a data final`
+                        : 'Período não definido'}
+                  </p>
+                  <DateRangePicker
+                    value={dateRange}
+                    onChange={(range) => {
+                      if (!range) {
+                        setDateRange(undefined);
+                        return;
+                      }
+                      setDateRange({ from: range.from, to: range.to });
+                    }}
+                    onClear={() => setDateRange(undefined)}
+                    onApply={() => setFilterPanelOpen(false)}
+                  />
                 </div>
               )}
             </div>
@@ -281,7 +287,7 @@ export function Quotes() {
 
       {isListOpen && (
         <>
-          {(statusFilter !== 'all' || dateFilter !== 'all') && (
+          {(statusFilter !== 'all' || (dateRange?.from && dateRange?.to)) && (
             <div className="flex flex-wrap gap-2">
               {statusFilter !== 'all' && (
                 <Badge
@@ -292,13 +298,13 @@ export function Quotes() {
                   Status: {getStatusLabel(statusFilter)} ×
                 </Badge>
               )}
-              {dateFilter !== 'all' && (
+              {dateRange?.from && dateRange?.to && (
                 <Badge
                   variant="secondary"
                   className="cursor-pointer hover:bg-white/20"
-                  onClick={() => setDateFilter('all')}
+                  onClick={() => setDateRange(undefined)}
                 >
-                  Data: {dateFilter === 'daily' ? 'Diário' : dateFilter === 'weekly' ? 'Semanal' : 'Mensal'} ×
+                  Data: {format(dateRange.from, 'dd/MM/yyyy')} - {format(dateRange.to, 'dd/MM/yyyy')} ×
                 </Badge>
               )}
             </div>
@@ -311,16 +317,16 @@ export function Quotes() {
               <FileText className="h-8 w-8 text-[rgb(var(--muted))]" />
             </div>
             <h3 className="text-base font-bold text-[rgb(var(--fg))] mb-1">
-              {search || statusFilter !== 'all' || dateFilter !== 'all'
+              {search || statusFilter !== 'all' || (dateRange?.from && dateRange?.to)
                 ? 'Nenhum orçamento encontrado'
                 : 'Nenhum orçamento criado'}
             </h3>
             <p className="text-sm text-muted-foreground text-center mb-4">
-              {search || statusFilter !== 'all' || dateFilter !== 'all'
+              {search || statusFilter !== 'all' || (dateRange?.from && dateRange?.to)
                 ? 'Tente ajustar os filtros'
                 : 'Crie seu primeiro orçamento profissional!'}
             </p>
-            {!search && statusFilter === 'all' && dateFilter === 'all' && (
+            {!search && statusFilter === 'all' && !(dateRange?.from && dateRange?.to) && (
               <Link to="/quotes/new" className="hidden sm:inline-block">
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
