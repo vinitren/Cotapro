@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, DollarSign, TrendingUp, CheckCircle, Banknote, MessageCircle, ArrowRight } from 'lucide-react';
+import { FileText, DollarSign, TrendingUp, CheckCircle, Banknote, MessageCircle, ArrowRight, Eye } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { PageHeader } from '../components/layout/PageHeader';
 import { MetricCard } from '../components/dashboard/MetricCard';
@@ -244,66 +244,98 @@ export function Dashboard() {
 
       {/* Prioridades de hoje - Follow-up sugerido */}
       {enableFollowUpSuggestions && followUp && baseList.length > 0 && (
-        <div className="rounded-2xl bg-[rgb(var(--card))]/50 border border-[rgb(var(--border))]/40 p-4 lg:p-6">
-          <h2 className="text-base font-bold text-[rgb(var(--fg))] mb-4">Prioridades de hoje</h2>
-          <div className="flex flex-wrap items-center gap-2 mb-4">
-            {[
-              { key: 'em-risco' as const, label: '🔥 Em risco', count: counts['em-risco'] },
-              { key: 'alto-valor' as const, label: '💰 Alto valor', count: counts['alto-valor'] },
-              { key: 'vencendo' as const, label: '⏳ Vencendo', count: counts['vencendo'] },
-              { key: 'todos' as const, label: '📋 Todos', count: counts['todos'] },
-            ].map(({ key, label, count }) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setFollowUpFilter(key)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors ${
-                  followUpFilter === key
-                    ? 'bg-[rgb(var(--card))] dark:bg-[rgb(var(--card))]/80 border-[rgb(var(--border))] text-[rgb(var(--fg))] shadow-sm'
-                    : 'bg-[rgb(var(--card))]/60 dark:bg-[rgb(var(--card))]/40 border-[rgb(var(--border))]/40 text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]'
-                }`}
-              >
-                <span className="text-xs font-medium">{label}</span>
-                <span className="text-sm font-bold tabular-nums">{count}</span>
-              </button>
-            ))}
+        <div className="rounded-2xl bg-[rgb(var(--card))]/50 dark:bg-[rgb(var(--card))]/30 border border-[rgb(var(--border))]/50 dark:border-[rgb(var(--border))]/40 p-5 lg:p-6">
+          <div className="mb-5">
+            <h2 className="text-base font-bold text-[rgb(var(--fg))]">Prioridades de hoje</h2>
+            <p className="text-sm text-[rgb(var(--muted))] mt-1 dark:text-[rgb(var(--muted))]">
+              Orçamentos que merecem atenção agora.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2 mb-5">
+            {/* Mobile: grade 2 colunas; desktop: linha */}
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-2">
+              {[
+                { key: 'em-risco' as const, label: '🔥 Em risco', count: counts['em-risco'] },
+                { key: 'alto-valor' as const, label: '💰 Alto valor', count: counts['alto-valor'] },
+                { key: 'vencendo' as const, label: '⏳ Vencendo', count: counts['vencendo'] },
+                { key: 'todos' as const, label: '📋 Todos', count: counts['todos'] },
+              ].map(({ key, label, count }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setFollowUpFilter(key)}
+                  className={`flex items-center justify-between gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl border transition-colors min-w-0 ${
+                    followUpFilter === key
+                      ? 'bg-[rgb(var(--card))] dark:bg-white/15 border-[rgb(var(--border))] dark:border-white/20 text-[rgb(var(--fg))] shadow-sm ring-2 ring-[#22C55E]/20 dark:ring-[#22C55E]/30'
+                      : 'bg-[rgb(var(--card))]/70 dark:bg-white/5 border-[rgb(var(--border))]/50 dark:border-white/10 text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] hover:bg-[rgb(var(--card))]/80 dark:hover:bg-white/10'
+                  }`}
+                >
+                  <span className="text-xs font-medium truncate">{label}</span>
+                  <span className="text-sm font-bold tabular-nums shrink-0">{count}</span>
+                </button>
+              ))}
+            </div>
             <Link
               to="/quotes?status=enviado"
-              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[rgb(var(--border))]/40 bg-[rgb(var(--card))]/50 dark:bg-[rgb(var(--card))]/40 text-[rgb(var(--fg))] hover:bg-[rgb(var(--card))]/70 dark:hover:bg-[rgb(var(--card))]/60 transition-colors text-xs font-medium"
+              className="flex items-center justify-end gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl border border-[rgb(var(--border))]/50 dark:border-white/10 bg-[rgb(var(--card))]/70 dark:bg-white/5 text-[rgb(var(--fg))] hover:bg-[rgb(var(--card))]/80 dark:hover:bg-white/10 transition-colors text-xs font-medium sm:ml-auto"
             >
               Ver todos
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
           {followUpList.length > 0 ? (
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 sm:space-y-2">
               {followUpList.map((c) => (
                 <div
                   key={c.quote.id}
-                  className="flex items-center justify-between gap-3 py-2.5 px-3 rounded-xl bg-[rgb(var(--card))]/50 dark:bg-[rgb(var(--card))]/40 border border-[rgb(var(--border))]/40 hover:bg-[rgb(var(--card))]/70 dark:hover:bg-[rgb(var(--card))]/60 transition-colors"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 py-2 px-3 sm:py-3 sm:px-4 rounded-xl bg-[rgb(var(--card))]/50 dark:bg-[rgb(var(--card))]/40 border border-[rgb(var(--border))]/40 dark:border-[rgb(var(--border))]/30 hover:bg-[rgb(var(--card))]/80 dark:hover:bg-white/10 transition-colors"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-[rgb(var(--fg))] truncate">
+                    <p className="text-base font-semibold text-[rgb(var(--fg))] truncate dark:text-[rgb(var(--fg))]">
                       {c.quote.cliente?.nome ?? 'Cliente'}
                     </p>
-                    <p className="text-xs text-[rgb(var(--muted))] mt-0.5">
-                      {formatCurrency(c.quote.total)} · {formatTimeSince(c.hoursSinceSent)}
+                    {/* Mobile: valor e tempo em uma linha compacta */}
+                    <p className="text-xs text-[rgb(var(--muted))] mt-0.5 sm:hidden dark:text-[rgb(var(--muted))] truncate">
+                      {formatCurrency(c.quote.total)} • {formatTimeSince(c.hoursSinceSent)}
+                    </p>
+                    {/* Desktop: valor e tempo em linhas separadas */}
+                    <p className="text-sm font-medium text-[rgb(var(--cardFg))] mt-0.5 hidden sm:block dark:text-[rgb(var(--cardFg))]">
+                      {formatCurrency(c.quote.total)}
+                    </p>
+                    <p className="text-xs text-[rgb(var(--muted))] mt-1 hidden sm:flex items-center gap-2 flex-wrap dark:text-[rgb(var(--muted))]">
+                      <span>{formatTimeSince(c.hoursSinceSent)}</span>
+                      {followUpFilter !== 'todos' && (
+                        <span className="inline-flex items-center rounded-md bg-[rgb(var(--border))]/30 dark:bg-white/10 px-1.5 py-0.5 text-[10px] font-medium text-[rgb(var(--muted))] dark:text-[rgb(var(--muted))]">
+                          {followUpFilter === 'em-risco' && 'Em risco'}
+                          {followUpFilter === 'alto-valor' && 'Alto valor'}
+                          {followUpFilter === 'vencendo' && 'Vencendo'}
+                        </span>
+                      )}
                     </p>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-shrink-0 gap-1.5 h-8 text-xs"
-                    onClick={() => openFollowUpModal(c.quote)}
-                  >
-                    <MessageCircle className="h-3.5 w-3.5" />
-                    Enviar WhatsApp
-                  </Button>
+                  <div className="grid grid-cols-2 sm:flex gap-2 flex-shrink-0 min-w-0">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 h-8 sm:h-9 text-xs w-full min-w-0 sm:w-auto"
+                      onClick={() => openFollowUpModal(c.quote)}
+                    >
+                      <MessageCircle className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">Enviar WhatsApp</span>
+                    </Button>
+                    <Link
+                      to={`/quotes/${c.quote.id}`}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[rgb(var(--border))]/50 dark:border-white/10 bg-transparent px-2 sm:px-3 py-1.5 sm:py-2 h-8 sm:h-9 text-xs font-medium text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] hover:bg-[rgb(var(--card))]/50 dark:hover:bg-white/10 transition-colors min-w-0"
+                    >
+                      <Eye className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">Ver orçamento</span>
+                    </Link>
+                  </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-[rgb(var(--muted))] py-2">
+            <p className="text-sm text-[rgb(var(--muted))] py-4 dark:text-[rgb(var(--muted))]">
               {followUpFilter === 'em-risco' && 'Nenhum orçamento em risco no momento.'}
               {followUpFilter === 'alto-valor' && 'Nenhum orçamento de alto valor pendente.'}
               {followUpFilter === 'vencendo' && 'Nenhum orçamento vencendo em breve.'}
