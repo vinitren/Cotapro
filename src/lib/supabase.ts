@@ -436,6 +436,7 @@ export interface QuoteDB {
   status: string;
   created_at?: string;
   updated_at?: string;
+  last_followup_sent_at?: string | null;
 }
 
 export async function getQuotes(userId: string): Promise<QuoteDB[]> {
@@ -502,6 +503,7 @@ const QUOTES_UPDATE_WHITELIST = [
   'customer_id', 'status', 'total_value', 'items',
   'observations', 'notes', 'validity_days',
   'discount_percentage', 'discount_value',
+  'last_followup_sent_at',
 ] as const;
 
 export function buildQuoteUpdatePayload(formValues: Record<string, unknown>): Record<string, unknown> {

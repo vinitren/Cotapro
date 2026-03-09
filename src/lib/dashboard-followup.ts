@@ -69,6 +69,22 @@ export function getFollowUpCandidates(quotes: Quote[]): FollowUpStats {
   };
 }
 
+/**
+ * Texto para exibição do último follow-up:
+ * - "Follow-up hoje" se a data for hoje
+ * - "Último follow-up: dd/MM" caso contrário
+ */
+export function formatLastFollowUpText(isoString: string): string {
+  const d = new Date(isoString);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  if (dDay.getTime() === today.getTime()) return 'Follow-up hoje';
+  const dd = String(d.getDate()).padStart(2, '0');
+  const MM = String(d.getMonth() + 1).padStart(2, '0');
+  return `Último follow-up: ${dd}/${MM}`;
+}
+
 /** Formata tempo relativo: "há X dias", "há X horas" */
 export function formatTimeSince(hours: number): string {
   if (hours < 1) return 'há menos de 1 hora';

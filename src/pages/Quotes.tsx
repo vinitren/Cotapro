@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Search, FileText, Trash2, Eye, Download, Filter, Loader2, Pencil, MoreVertical, List, MessageCircle } from 'lucide-react';
+import { Plus, Search, FileText, Trash2, Eye, Download, Filter, Loader2, Pencil, MoreVertical, List, MessageCircle, Check } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -29,11 +29,12 @@ import { format, startOfDay, endOfDay } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
 import { DateRangePicker } from '../components/quotes/DateRangePicker';
 import { FollowUpModal } from '../components/FollowUpModal';
+import { formatLastFollowUpText } from '../lib/dashboard-followup';
 
 export function Quotes() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { quotes, deleteQuote, checkExpiredQuotes, userId, loadQuotes } = useStore();
+  const { quotes, deleteQuote, checkExpiredQuotes, userId, loadQuotes, markFollowUpSent } = useStore();
   const statusFromUrl = searchParams.get('status') as QuoteStatus | null;
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<QuoteStatus | 'all'>('all');
@@ -44,10 +45,12 @@ export function Quotes() {
     }
   }, [statusFromUrl]);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [followUpFilter, setFollowUpFilter] = useState<'all' | 'with_followup' | 'without_followup'>('all');
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
-  const [filterNicho, setFilterNicho] = useState<'status' | 'date'>('status');
+  const [filterNicho, setFilterNicho] = useState<'status' | 'date' | 'follow-up'>('status');
   const [deleteConfirm, setDeleteConfirm] = useState<Quote | null>(null);
   const [followUpModal, setFollowUpModal] = useState<Quote | null>(null);
+  const [markFollowUpLoadingId, setMarkFollowUpLoadingId] = useState<string | null>(null);
   const [pdfDownloadingId, setPdfDownloadingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isListOpen, setIsListOpen] = useState<boolean>(() => {
@@ -106,7 +109,10 @@ export function Quotes() {
         const quoteDayStart = new Date(quoteDate.getFullYear(), quoteDate.getMonth(), quoteDate.getDate()).getTime();
         return quoteDayStart >= fromStart && quoteDayStart <= toEnd;
       })();
-      return matchesSearch && matchesStatus && matchesDate;
+      const matchesFollowUp =
+        followUpFilter === 'all' ||
+        (followUpFilter === 'with_followup' ? Boolean(quote.last_follow_up_at) : !quote.last_follow_up_at);
+      return matchesSearch && matchesStatus && matchesDate && matchesFollowUp;
     })
     .sort((a, b) => new Date(b?.data_criacao ?? '').getTime() - new Date(a?.data_criacao ?? '').getTime());
 
@@ -213,16 +219,16 @@ export function Quotes() {
           >
             <Filter className="h-4 w-4 mr-2" />
             Filtro
-            {(statusFilter !== 'all' || (dateRange?.from && dateRange?.to)) && (
+            {(statusFilter !== 'all' || (dateRange?.from && dateRange?.to) || followUpFilter !== 'all') && (
               <Badge variant="secondary" className="ml-2 h-5 min-w-5 px-1.5 text-xs">
-                {(statusFilter !== 'all' ? 1 : 0) + (dateRange?.from && dateRange?.to ? 1 : 0)}
+                {(statusFilter !== 'all' ? 1 : 0) + (dateRange?.from && dateRange?.to ? 1 : 0) + (followUpFilter !== 'all' ? 1 : 0)}
               </Badge>
             )}
           </Button>
           <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Filtros</DialogTitle>
-              <DialogDescription>Combine status e data para refinar a lista.</DialogDescription>
+              <DialogDescription>Combine status, data e follow-up para refinar a lista.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="flex gap-2">
@@ -241,6 +247,14 @@ export function Quotes() {
                   onClick={() => setFilterNicho('date')}
                 >
                   Data
+                </Button>
+                <Button
+                  variant={filterNicho === 'follow-up' ? 'default' : 'outline'}
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => setFilterNicho('follow-up')}
+                >
+                  Follow-up
                 </Button>
               </div>
               {filterNicho === 'status' && (
@@ -280,6 +294,23 @@ export function Quotes() {
                   />
                 </div>
               )}
+              {filterNicho === 'follow-up' && (
+                <div className="space-y-2">
+                  <p className="text-xs text-[rgb(var(--muted))]">Situação de follow-up</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {(['all', 'with_followup', 'without_followup'] as const).map((v) => (
+                      <Button
+                        key={v}
+                        variant={followUpFilter === v ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setFollowUpFilter(v)}
+                      >
+                        {v === 'all' ? 'Todos' : v === 'with_followup' ? 'Com follow-up' : 'Sem follow-up'}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>
@@ -287,7 +318,7 @@ export function Quotes() {
 
       {isListOpen && (
         <>
-          {(statusFilter !== 'all' || (dateRange?.from && dateRange?.to)) && (
+          {(statusFilter !== 'all' || (dateRange?.from && dateRange?.to) || followUpFilter !== 'all') && (
             <div className="flex flex-wrap gap-2">
               {statusFilter !== 'all' && (
                 <Badge
@@ -307,6 +338,15 @@ export function Quotes() {
                   Data: {format(dateRange.from, 'dd/MM/yyyy')} - {format(dateRange.to, 'dd/MM/yyyy')} ×
                 </Badge>
               )}
+              {followUpFilter !== 'all' && (
+                <Badge
+                  variant="secondary"
+                  className="cursor-pointer hover:bg-white/20"
+                  onClick={() => setFollowUpFilter('all')}
+                >
+                  Follow-up: {followUpFilter === 'with_followup' ? 'Com follow-up' : 'Sem follow-up'} ×
+                </Badge>
+              )}
             </div>
           )}
 
@@ -317,16 +357,16 @@ export function Quotes() {
               <FileText className="h-8 w-8 text-[rgb(var(--muted))]" />
             </div>
             <h3 className="text-base font-bold text-[rgb(var(--fg))] mb-1">
-              {search || statusFilter !== 'all' || (dateRange?.from && dateRange?.to)
+              {search || statusFilter !== 'all' || (dateRange?.from && dateRange?.to) || followUpFilter !== 'all'
                 ? 'Nenhum orçamento encontrado'
                 : 'Nenhum orçamento criado'}
             </h3>
             <p className="text-sm text-muted-foreground text-center mb-4">
-              {search || statusFilter !== 'all' || (dateRange?.from && dateRange?.to)
+              {search || statusFilter !== 'all' || (dateRange?.from && dateRange?.to) || followUpFilter !== 'all'
                 ? 'Tente ajustar os filtros'
                 : 'Crie seu primeiro orçamento profissional!'}
             </p>
-            {!search && statusFilter === 'all' && !(dateRange?.from && dateRange?.to) && (
+            {!search && statusFilter === 'all' && !(dateRange?.from && dateRange?.to) && followUpFilter === 'all' && (
               <Link to="/quotes/new" className="hidden sm:inline-block">
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
@@ -365,17 +405,12 @@ export function Quotes() {
                   </p>
                   {quote.last_follow_up_at && (
                     <p className="text-xs text-[rgb(var(--muted))]">
-                      Último follow-up: {(() => {
-                        const d = new Date(quote.last_follow_up_at);
-                        const now = new Date();
-                        const dias = Math.floor((now.getTime() - d.getTime()) / (24 * 60 * 60 * 1000));
-                        return dias === 0 ? 'hoje' : dias === 1 ? '1 dia atrás' : `${dias} dias atrás`;
-                      })()}
+                      {formatLastFollowUpText(quote.last_follow_up_at)}
                     </p>
                   )}
 
-                  <div className="flex gap-2">
-                    <Link to={`/quotes/${quote.id}`} className="flex-1">
+                  <div className="flex flex-wrap gap-2">
+                    <Link to={`/quotes/${quote.id}`} className="flex-1 min-w-0">
                       <Button variant="outline" size="sm" className="w-full h-8 sm:h-9 px-2 sm:px-3">
                         <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
                         Ver
@@ -389,6 +424,38 @@ export function Quotes() {
                     >
                       <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
                       Follow-up
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 sm:h-9 px-2 sm:px-3 text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
+                      disabled={markFollowUpLoadingId === quote.id}
+                      onClick={async () => {
+                        setMarkFollowUpLoadingId(quote.id);
+                        try {
+                          await markFollowUpSent(quote.id);
+                          toast({
+                            title: 'Follow-up registrado',
+                            description: 'Data do último follow-up atualizada.',
+                            variant: 'success',
+                          });
+                        } catch {
+                          toast({
+                            title: 'Erro ao marcar follow-up',
+                            description: 'Não foi possível salvar. Tente novamente.',
+                            variant: 'destructive',
+                          });
+                        } finally {
+                          setMarkFollowUpLoadingId(null);
+                        }
+                      }}
+                    >
+                      {markFollowUpLoadingId === quote.id ? (
+                        <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 animate-spin" />
+                      ) : (
+                        <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
+                      )}
+                      <span className="hidden sm:inline">Marcar follow-up</span>
                     </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

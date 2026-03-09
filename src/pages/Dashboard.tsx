@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, DollarSign, TrendingUp, CheckCircle, Banknote, MessageCircle, ArrowRight, Eye } from 'lucide-react';
+import { FileText, DollarSign, TrendingUp, CheckCircle, Banknote, MessageCircle, ArrowRight, Eye, Check } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { PageHeader } from '../components/layout/PageHeader';
 import { MetricCard } from '../components/dashboard/MetricCard';
@@ -14,7 +14,7 @@ import {
 import { useStore } from '../store';
 import type { Quote } from '../types';
 import { formatCurrency } from '../lib/utils';
-import { getFollowUpCandidates, formatTimeSince } from '../lib/dashboard-followup';
+import { getFollowUpCandidates, formatTimeSince, formatLastFollowUpText } from '../lib/dashboard-followup';
 import { getBarChartData, getDonutChartData, getEmRiscoValue } from '../lib/dashboard-aggregations';
 import { getMonthKey, getCurrentMonthKey } from '../lib/dashboard-date';
 import { ResumoMensal, FunilMensal } from '../components/dashboard/DashboardCharts';
@@ -64,7 +64,7 @@ function filterQuotesByMonth<T extends { data_emissao?: string; data_criacao?: s
 }
 
 export function Dashboard() {
-  const { quotes, checkExpiredQuotes, loadQuotes } = useStore();
+  const { quotes, checkExpiredQuotes, loadQuotes, markFollowUpSent } = useStore();
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState<string>(() => {
     try {
@@ -127,18 +127,27 @@ export function Dashboard() {
   const approvalRate = sentQuotes.length > 0 ? (approvedQuotes.length / sentQuotes.length) * 100 : 0;
 
   const followUp = enableFollowUpSuggestions ? getFollowUpCandidates(quotes) : null;
-  type PrioridadeCategoria = 'em-risco' | 'alto-valor' | 'vencendo' | 'todos';
+  type PrioridadeCategoria = 'em-risco' | 'alto-valor' | 'vencendo' | 'todos' | 'follow-up';
   const [followUpFilter, setFollowUpFilter] = useState<PrioridadeCategoria>('todos');
   const [followUpModal, setFollowUpModal] = useState<Quote | null>(null);
   const [sentFollowUpIds, setSentFollowUpIds] = useState<Set<string>>(() => new Set());
+  const [followUpPeriodFilter, setFollowUpPeriodFilter] = useState<'hoje' | '7dias' | 'todos'>('todos');
 
   const baseList = followUp?.candidatesBase ?? [];
   const available = baseList.filter((c) => !sentFollowUpIds.has(c.quote.id));
+
+  const quotesWithFollowUp = quotes
+    .filter((q): q is Quote & { last_follow_up_at: string } => Boolean(q.last_follow_up_at))
+    .sort((a, b) => new Date(b.last_follow_up_at).getTime() - new Date(a.last_follow_up_at).getTime());
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayPlus3 = new Date(today);
   todayPlus3.setDate(todayPlus3.getDate() + 3);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const sevenDaysAgo = new Date(today);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
   const byPriority = (a: { quote: Quote; hoursSinceSent: number }, b: { quote: Quote; hoursSinceSent: number }) => {
     if (b.quote.total !== a.quote.total) return b.quote.total - a.quote.total;
@@ -159,15 +168,31 @@ export function Dashboard() {
   }).sort(byPriority);
   const todos = [...available].sort(byPriority);
 
-  const counts = { 'em-risco': emRisco.length, 'alto-valor': altoValor.length, 'vencendo': vencendo.length, 'todos': todos.length };
+  const counts = { 'em-risco': emRisco.length, 'alto-valor': altoValor.length, 'vencendo': vencendo.length, 'todos': todos.length, 'follow-up': quotesWithFollowUp.length };
 
-  const rawByFilter: Record<PrioridadeCategoria, typeof available> = {
+  const rawByFilter: Record<Exclude<PrioridadeCategoria, 'follow-up'>, typeof available> = {
     'em-risco': emRisco,
     'alto-valor': altoValor,
     'vencendo': vencendo,
     'todos': todos,
   };
-  const followUpList = rawByFilter[followUpFilter].slice(0, 5);
+  const quotesWithFollowUpFiltered =
+    followUpFilter !== 'follow-up'
+      ? quotesWithFollowUp
+      : followUpPeriodFilter === 'hoje'
+        ? quotesWithFollowUp.filter((q) => {
+            const d = new Date(q.last_follow_up_at);
+            return d >= today && d < tomorrow;
+          })
+        : followUpPeriodFilter === '7dias'
+          ? quotesWithFollowUp.filter((q) => new Date(q.last_follow_up_at) >= sevenDaysAgo)
+          : quotesWithFollowUp;
+
+  type PrioridadeDisplayItem = { quote: Quote; subtitle: string };
+  const followUpListDisplay: PrioridadeDisplayItem[] =
+    followUpFilter === 'follow-up'
+      ? quotesWithFollowUpFiltered.map((q) => ({ quote: q, subtitle: formatLastFollowUpText(q.last_follow_up_at) }))
+      : rawByFilter[followUpFilter].map((c) => ({ quote: c.quote, subtitle: formatTimeSince(c.hoursSinceSent) }));
 
   const openFollowUpModal = (quote: Quote) => {
     setFollowUpModal(quote);
@@ -243,7 +268,7 @@ export function Dashboard() {
       </div>
 
       {/* Prioridades de hoje - Follow-up sugerido */}
-      {enableFollowUpSuggestions && followUp && baseList.length > 0 && (
+      {enableFollowUpSuggestions && (baseList.length > 0 || quotesWithFollowUp.length > 0) && (
         <div className="rounded-2xl bg-[rgb(var(--card))]/50 dark:bg-[rgb(var(--card))]/30 border border-[rgb(var(--border))]/50 dark:border-[rgb(var(--border))]/40 p-5 lg:p-6">
           <div className="mb-5">
             <h2 className="text-base font-bold text-[rgb(var(--fg))]">Prioridades de hoje</h2>
@@ -259,6 +284,7 @@ export function Dashboard() {
                 { key: 'alto-valor' as const, label: '💰 Alto valor', count: counts['alto-valor'] },
                 { key: 'vencendo' as const, label: '⏳ Vencendo', count: counts['vencendo'] },
                 { key: 'todos' as const, label: '📋 Todos', count: counts['todos'] },
+                { key: 'follow-up' as const, label: '✓ Follow-up', count: counts['follow-up'] },
               ].map(({ key, label, count }) => (
                 <button
                   key={key}
@@ -275,6 +301,33 @@ export function Dashboard() {
                 </button>
               ))}
             </div>
+            {followUpFilter === 'follow-up' && (
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <div className="flex gap-1.5">
+                  {[
+                    { key: 'hoje' as const, label: 'Hoje' },
+                    { key: '7dias' as const, label: 'Últimos 7 dias' },
+                    { key: 'todos' as const, label: 'Todos' },
+                  ].map(({ key, label }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setFollowUpPeriodFilter(key)}
+                      className={`px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+                        followUpPeriodFilter === key
+                          ? 'bg-[rgb(var(--card))] dark:bg-white/15 border-[rgb(var(--border))] dark:border-white/20 text-[rgb(var(--fg))]'
+                          : 'bg-transparent border-[rgb(var(--border))]/50 dark:border-white/10 text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <span className="text-xs text-[rgb(var(--muted))] dark:text-[rgb(var(--muted))] tabular-nums">
+                  {quotesWithFollowUpFiltered.length} {quotesWithFollowUpFiltered.length === 1 ? 'orçamento' : 'orçamentos'}
+                </span>
+              </div>
+            )}
             <Link
               to="/quotes?status=enviado"
               className="flex items-center justify-end gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl border border-[rgb(var(--border))]/50 dark:border-white/10 bg-[rgb(var(--card))]/70 dark:bg-white/5 text-[rgb(var(--fg))] hover:bg-[rgb(var(--card))]/80 dark:hover:bg-white/10 transition-colors text-xs font-medium sm:ml-auto"
@@ -283,56 +336,84 @@ export function Dashboard() {
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
-          {followUpList.length > 0 ? (
-            <div className="space-y-1.5 sm:space-y-2">
-              {followUpList.map((c) => (
+          {followUpListDisplay.length > 0 ? (
+            <div className="overflow-y-auto max-h-[15rem] sm:max-h-[22rem] scrollbar-thin rounded-lg -mx-1 px-1">
+              <div className="space-y-1.5 sm:space-y-2">
+              {followUpListDisplay.map((item) => (
                 <div
-                  key={c.quote.id}
+                  key={item.quote.id}
                   className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 py-2 px-3 sm:py-3 sm:px-4 rounded-xl bg-[rgb(var(--card))]/50 dark:bg-[rgb(var(--card))]/40 border border-[rgb(var(--border))]/40 dark:border-[rgb(var(--border))]/30 hover:bg-[rgb(var(--card))]/80 dark:hover:bg-white/10 transition-colors"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="text-base font-semibold text-[rgb(var(--fg))] truncate dark:text-[rgb(var(--fg))]">
-                      {c.quote.cliente?.nome ?? 'Cliente'}
+                      {item.quote.cliente?.nome ?? 'Cliente'}
                     </p>
-                    {/* Mobile: valor e tempo em uma linha compacta */}
+                    {/* Mobile: valor e subtítulo em uma linha compacta */}
                     <p className="text-xs text-[rgb(var(--muted))] mt-0.5 sm:hidden dark:text-[rgb(var(--muted))] truncate">
-                      {formatCurrency(c.quote.total)} • {formatTimeSince(c.hoursSinceSent)}
+                      {formatCurrency(item.quote.total)} • {item.subtitle}
+                      {item.quote.last_follow_up_at && followUpFilter !== 'follow-up' ? ` • ${formatLastFollowUpText(item.quote.last_follow_up_at)}` : ''}
                     </p>
-                    {/* Desktop: valor e tempo em linhas separadas */}
+                    {/* Desktop: valor e subtítulo em linhas separadas */}
                     <p className="text-sm font-medium text-[rgb(var(--cardFg))] mt-0.5 hidden sm:block dark:text-[rgb(var(--cardFg))]">
-                      {formatCurrency(c.quote.total)}
+                      {formatCurrency(item.quote.total)}
                     </p>
                     <p className="text-xs text-[rgb(var(--muted))] mt-1 hidden sm:flex items-center gap-2 flex-wrap dark:text-[rgb(var(--muted))]">
-                      <span>{formatTimeSince(c.hoursSinceSent)}</span>
-                      {followUpFilter !== 'todos' && (
+                      <span>{item.subtitle}</span>
+                      {followUpFilter !== 'todos' && followUpFilter !== 'follow-up' && (
                         <span className="inline-flex items-center rounded-md bg-[rgb(var(--border))]/30 dark:bg-white/10 px-1.5 py-0.5 text-[10px] font-medium text-[rgb(var(--muted))] dark:text-[rgb(var(--muted))]">
                           {followUpFilter === 'em-risco' && 'Em risco'}
                           {followUpFilter === 'alto-valor' && 'Alto valor'}
                           {followUpFilter === 'vencendo' && 'Vencendo'}
                         </span>
                       )}
+                      {followUpFilter !== 'follow-up' && item.quote.last_follow_up_at && (
+                        <span className="text-[rgb(var(--muted))] dark:text-[rgb(var(--muted))]">
+                          • {formatLastFollowUpText(item.quote.last_follow_up_at)}
+                        </span>
+                      )}
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 sm:flex gap-2 flex-shrink-0 min-w-0">
+                  <div className="grid grid-cols-2 sm:flex gap-2 flex-shrink-0 min-w-0 flex-wrap">
                     <Button
                       size="sm"
                       variant="outline"
                       className="gap-1.5 h-8 sm:h-9 text-xs w-full min-w-0 sm:w-auto"
-                      onClick={() => openFollowUpModal(c.quote)}
+                      onClick={() => openFollowUpModal(item.quote)}
                     >
                       <MessageCircle className="h-3.5 w-3.5 shrink-0" />
                       <span className="truncate">Enviar WhatsApp</span>
                     </Button>
                     <Link
-                      to={`/quotes/${c.quote.id}`}
+                      to={`/quotes/${item.quote.id}`}
                       className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-[rgb(var(--border))]/50 dark:border-white/10 bg-transparent px-2 sm:px-3 py-1.5 sm:py-2 h-8 sm:h-9 text-xs font-medium text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] hover:bg-[rgb(var(--card))]/50 dark:hover:bg-white/10 transition-colors min-w-0"
                     >
                       <Eye className="h-3.5 w-3.5 shrink-0" />
                       <span className="truncate">Ver orçamento</span>
                     </Link>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="gap-1.5 h-8 sm:h-9 text-xs text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] min-w-0 sm:w-auto"
+                      onClick={async () => {
+                        try {
+                          await markFollowUpSent(item.quote.id);
+                          setSentFollowUpIds((prev) => new Set([...prev, item.quote.id]));
+                        } catch {
+                          toast({
+                            title: 'Erro ao marcar follow-up',
+                            description: 'Não foi possível salvar. Tente novamente.',
+                            variant: 'destructive',
+                          });
+                        }
+                      }}
+                    >
+                      <Check className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">Marcar follow-up</span>
+                    </Button>
                   </div>
                 </div>
               ))}
+              </div>
             </div>
           ) : (
             <p className="text-sm text-[rgb(var(--muted))] py-4 dark:text-[rgb(var(--muted))]">
@@ -340,6 +421,7 @@ export function Dashboard() {
               {followUpFilter === 'alto-valor' && 'Nenhum orçamento de alto valor pendente.'}
               {followUpFilter === 'vencendo' && 'Nenhum orçamento vencendo em breve.'}
               {followUpFilter === 'todos' && 'Nenhum orçamento pendente de follow-up.'}
+              {followUpFilter === 'follow-up' && 'Nenhum orçamento com follow-up neste período.'}
             </p>
           )}
         </div>

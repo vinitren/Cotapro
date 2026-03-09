@@ -182,6 +182,7 @@ interface AppState {
   deleteQuote: (id: string) => Promise<void>;
   getQuote: (id: string) => Quote | undefined;
   updateQuoteStatus: (id: string, status: QuoteStatus) => Promise<void>;
+  markFollowUpSent: (quoteId: string) => Promise<void>;
   getNextQuoteNumber: () => number;
 
   checkExpiredQuotes: () => void;
@@ -399,7 +400,7 @@ export const useStore = create<AppState>()(
               observacoes,
               data_criacao: dataCriacao,
               updated_at: (q as any).updated_at ?? undefined,
-              last_follow_up_at: (q as any).last_follow_up_at ?? undefined,
+              last_follow_up_at: (q as any).last_followup_sent_at ?? (q as any).last_follow_up_at ?? undefined,
             };
           });
           set({ quotes });
@@ -698,6 +699,23 @@ export const useStore = create<AppState>()(
         } catch (error) {
           console.error('Erro ao atualizar status no Supabase:', error);
           get().loadQuotes();
+          throw error;
+        }
+      },
+
+      markFollowUpSent: async (quoteId: string) => {
+        const userId = get().userId;
+        if (!userId) return;
+        const now = new Date().toISOString();
+        try {
+          await updateQuoteDB(userId, quoteId, { last_followup_sent_at: now });
+          set((state) => ({
+            quotes: state.quotes.map((q) =>
+              q.id === quoteId ? { ...q, last_follow_up_at: now } : q
+            ),
+          }));
+        } catch (error) {
+          console.error('Erro ao marcar follow-up enviado:', error);
           throw error;
         }
       },
