@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { toast } from './useToast';
+import { supabase } from '../lib/supabase';
 
 export function useStripeCheckout() {
   const [loading, setLoading] = useState(false);
 
   const handleCheckout = async (userId: string, email: string) => {
-    if (!userId || !email) {
+    if (!email) {
       toast({
         title: 'Erro',
         description: 'Dados incompletos para ativar o plano.',
@@ -16,10 +17,18 @@ export function useStripeCheckout() {
 
     setLoading(true);
     try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error || !session?.access_token) {
+        throw new Error('Não foi possível obter a sessão de autenticação.');
+      }
+
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, email }),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ email }),
       });
 
       const data = await res.json().catch(() => ({}));
