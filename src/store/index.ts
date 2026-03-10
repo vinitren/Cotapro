@@ -565,6 +565,19 @@ export const useStore = create<AppState>()(
             status: quoteData.status,
           });
 
+          // Salva os campos extras já na criação (observations, notes, validity_days, discount_*)
+          const formValuesExtras = {
+            observacoes: quoteData.observacoes,
+            data_validade: quoteData.data_validade,
+            desconto_tipo: quoteData.desconto_tipo,
+            desconto_valor: quoteData.desconto_valor,
+            notes: (quoteData as { notes?: string }).notes,
+          };
+          const updatePayload = buildQuoteUpdatePayload(formValuesExtras);
+          if (Object.keys(updatePayload).length > 0) {
+            await updateQuoteDB(userId, quoteDB.id, updatePayload);
+          }
+
           const dataCriacaoFromDb = quoteDB.created_at ? new Date(quoteDB.created_at).toISOString().split('T')[0] : dataCriacao;
           // Normaliza items retornados pelo DB
           let rawItemsFromDb: any = [];
