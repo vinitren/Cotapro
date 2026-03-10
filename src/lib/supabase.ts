@@ -624,6 +624,8 @@ export const enablePasteCatalogImport =
 export const enableFollowUpSuggestions =
   import.meta.env.VITE_ENABLE_FOLLOW_UP_SUGGESTIONS !== 'false';
 
+export type CatalogItemType = 'product' | 'service';
+
 export interface ItemCatalogDB {
   id: string;
   user_id: string;
@@ -631,10 +633,18 @@ export interface ItemCatalogDB {
   description: string | null;
   unit_price: number;
   unit_type: string;
+  /** 'product' | 'service'. Itens antigos sem o campo são tratados como 'product'. */
+  item_type?: CatalogItemType | null;
   created_at?: string;
   updated_at?: string;
   created_from_quote?: boolean;
   created_from_quote_at?: string | null;
+}
+
+/** Retorna o tipo do item para exibição/filtro; itens antigos sem item_type viram 'product'. */
+export function getCatalogItemType(item: Pick<ItemCatalogDB, 'item_type'>): CatalogItemType {
+  const t = item?.item_type;
+  return t === 'service' ? 'service' : 'product';
 }
 
 export async function getItemsCatalog(userId: string): Promise<ItemCatalogDB[]> {
@@ -654,7 +664,13 @@ export async function getItemsCatalog(userId: string): Promise<ItemCatalogDB[]> 
 
 export async function createItemCatalog(
   userId: string,
-  data: { name: string; description?: string | null; unit_price: number; unit_type: string }
+  data: {
+    name: string;
+    description?: string | null;
+    unit_price: number;
+    unit_type: string;
+    item_type?: CatalogItemType;
+  }
 ): Promise<ItemCatalogDB> {
   const { data: { session } } = await supabase.auth.getSession();
 
@@ -662,6 +678,7 @@ export async function createItemCatalog(
     throw new Error('Usuário não autenticado ou não autorizado.');
   }
 
+  const itemType = data.item_type === 'service' ? 'service' : 'product';
   const { data: item, error } = await supabase
     .from('items_catalog')
     .insert({
@@ -670,6 +687,7 @@ export async function createItemCatalog(
       description: data.description || null,
       unit_price: data.unit_price,
       unit_type: data.unit_type,
+      item_type: itemType,
     })
     .select()
     .single();
@@ -725,6 +743,7 @@ export async function bulkInsertCatalogFromPaste(
       description: null,
       unit_price: item.unit_price,
       unit_type: 'UN',
+      item_type: 'product',
       created_from_quote: false,
     });
 
@@ -737,6 +756,7 @@ export async function bulkInsertCatalogFromPaste(
         description: null,
         unit_price: item.unit_price,
         unit_type: 'UN',
+        item_type: 'product',
       } as ItemCatalogDB);
     }
   }
@@ -747,7 +767,13 @@ export async function bulkInsertCatalogFromPaste(
 export async function updateItemCatalog(
   userId: string,
   itemId: string,
-  data: Partial<{ name: string; description: string | null; unit_price: number; unit_type: string }>
+  data: Partial<{
+    name: string;
+    description: string | null;
+    unit_price: number;
+    unit_type: string;
+    item_type: CatalogItemType;
+  }>
 ): Promise<ItemCatalogDB> {
   const { data: { session } } = await supabase.auth.getSession();
 
@@ -916,6 +942,7 @@ export async function syncQuoteItemsToCatalog(
         description,
         unit_price,
         unit_type,
+        item_type: 'product',
         created_from_quote: true,
         created_from_quote_at: now,
       };

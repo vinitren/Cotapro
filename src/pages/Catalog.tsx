@@ -25,7 +25,9 @@ import {
   updateItemCatalog,
   deleteItemCatalog,
   enablePasteCatalogImport,
+  getCatalogItemType,
   type ItemCatalogDB,
+  type CatalogItemType,
 } from '../lib/supabase';
 import { PasteCatalogModal } from '../components/catalog/PasteCatalogModal';
 import { toast } from '../hooks/useToast';
@@ -36,6 +38,7 @@ export function Catalog() {
   const { userId } = useStore();
   const [items, setItems] = useState<ItemCatalogDB[]>([]);
   const [search, setSearch] = useState('');
+  const [filterType, setFilterType] = useState<'all' | 'product' | 'service'>('all');
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ItemCatalogDB | null>(null);
@@ -52,6 +55,7 @@ export function Catalog() {
   const [formDescription, setFormDescription] = useState('');
   const [formUnitPrice, setFormUnitPrice] = useState('');
   const [formUnitType, setFormUnitType] = useState('UN');
+  const [formItemType, setFormItemType] = useState<CatalogItemType>('product');
   const [isSaving, setIsSaving] = useState(false);
   const [pasteModalOpen, setPasteModalOpen] = useState(false);
 
@@ -90,7 +94,11 @@ export function Catalog() {
     if (!item) return false;
     const name = (item?.name ?? '').toLowerCase();
     const description = (item?.description ?? '').toLowerCase();
-    return name.includes(searchLower) || description.includes(searchLower);
+    const matchesSearch = name.includes(searchLower) || description.includes(searchLower);
+    if (!matchesSearch) return false;
+    if (filterType === 'all') return true;
+    const type = getCatalogItemType(item);
+    return type === filterType;
   });
 
   const openNew = () => {
@@ -99,6 +107,7 @@ export function Catalog() {
     setFormDescription('');
     setFormUnitPrice('');
     setFormUnitType('UN');
+    setFormItemType('product');
     setIsFormOpen(true);
   };
 
@@ -108,6 +117,7 @@ export function Catalog() {
     setFormDescription(item.description || '');
     setFormUnitPrice(item.unit_price.toString());
     setFormUnitType(item.unit_type);
+    setFormItemType(getCatalogItemType(item));
     setIsFormOpen(true);
   };
 
@@ -132,6 +142,7 @@ export function Catalog() {
           description: formDescription.trim() || null,
           unit_price: unitPrice,
           unit_type: formUnitType,
+          item_type: formItemType,
         });
         toast({
           title: 'Item atualizado',
@@ -144,6 +155,7 @@ export function Catalog() {
           description: formDescription.trim() || null,
           unit_price: unitPrice,
           unit_type: formUnitType,
+          item_type: formItemType,
         });
         toast({
           title: 'Item cadastrado',
@@ -230,6 +242,29 @@ export function Catalog() {
       </div>
 
       {isListOpen && (
+        <div className="flex rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))]/50 p-0.5 w-fit">
+          {[
+            { value: 'all' as const, label: 'Todos' },
+            { value: 'product' as const, label: 'Produtos' },
+            { value: 'service' as const, label: 'Serviços' },
+          ].map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setFilterType(value)}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                filterType === value
+                  ? 'bg-[rgb(var(--primary))] text-[rgb(var(--primary-foreground))]'
+                  : 'text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] hover:bg-white/5'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {isListOpen && (
         loading ? (
           <Card className="rounded-xl border border-[rgb(var(--border))] bg-[rgb(var(--card))] shadow-sm">
             <CardContent className="flex items-center justify-center py-12">
@@ -243,7 +278,13 @@ export function Catalog() {
               <Package className="h-7 w-7 text-[rgb(var(--muted))]" />
             </div>
             <h3 className="text-base font-bold text-[rgb(var(--fg))] mb-1">
-              {search ? 'Nenhum item encontrado' : 'Nenhum item no catálogo'}
+              {search
+                ? 'Nenhum item encontrado'
+                : filterType === 'product'
+                  ? 'Nenhum produto no catálogo'
+                  : filterType === 'service'
+                    ? 'Nenhum serviço no catálogo'
+                    : 'Nenhum item no catálogo'}
             </h3>
             <p className="text-sm text-muted-foreground text-center mb-4">
               {search
@@ -332,6 +373,18 @@ export function Catalog() {
                 maxLength={45}
                 required
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cat-type">Tipo</Label>
+              <select
+                id="cat-type"
+                value={formItemType}
+                onChange={(e) => setFormItemType((e.target.value || 'product') as CatalogItemType)}
+                className="flex h-10 w-full rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))] px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <option value="product">Produto</option>
+                <option value="service">Serviço</option>
+              </select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="cat-desc">Descrição</Label>
