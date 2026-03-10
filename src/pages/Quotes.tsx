@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Search, FileText, Trash2, Eye, Download, Filter, Loader2, Pencil, MoreVertical, List, MessageCircle, Check } from 'lucide-react';
+import { Plus, Search, FileText, Trash2, Eye, Download, Filter, Loader2, Pencil, MoreVertical, List, MessageCircle, Copy, Check, CircleDot } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
@@ -18,10 +18,13 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
 import { useStore } from '../store';
-import { cn, formatCurrency, formatDate, formatQuoteDisplay, getQuoteDisplayNumber, getStatusLabel, isSupabaseQuoteId } from '../lib/utils';
+import { cn, formatCurrency, formatDate, formatQuoteDisplay, getQuoteDisplayNumber, getStatusLabel, isSupabaseQuoteId, generateId } from '../lib/utils';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import type { Quote, QuoteStatus } from '../types';
 import { toast } from '../hooks/useToast';
@@ -34,7 +37,7 @@ import { formatLastFollowUpText } from '../lib/dashboard-followup';
 export function Quotes() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { quotes, deleteQuote, checkExpiredQuotes, userId, loadQuotes, markFollowUpSent } = useStore();
+  const { quotes, deleteQuote, checkExpiredQuotes, userId, loadQuotes, markFollowUpSent, addQuote, updateQuoteStatus } = useStore();
   const statusFromUrl = searchParams.get('status') as QuoteStatus | null;
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<QuoteStatus | 'all'>('all');
@@ -52,6 +55,7 @@ export function Quotes() {
   const [followUpModal, setFollowUpModal] = useState<Quote | null>(null);
   const [markFollowUpLoadingId, setMarkFollowUpLoadingId] = useState<string | null>(null);
   const [pdfDownloadingId, setPdfDownloadingId] = useState<string | null>(null);
+  const [duplicateLoadingId, setDuplicateLoadingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isListOpen, setIsListOpen] = useState<boolean>(() => {
     try {
@@ -167,6 +171,69 @@ export function Quotes() {
       });
     } finally {
       setPdfDownloadingId(null);
+    }
+  };
+
+  const handleDuplicateQuote = async (quote: Quote) => {
+    if (!userId) {
+      toast({
+        title: 'Faça login',
+        description: 'É necessário estar logado para duplicar orçamentos.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setDuplicateLoadingId(quote.id);
+    try {
+      const itensComNovosIds = (quote.itens ?? []).map((item) => ({
+        ...item,
+        id: generateId(),
+      }));
+      const newQuote = await addQuote({
+        cliente_id: quote.cliente_id,
+        cliente: quote.cliente,
+        data_validade: quote.data_validade,
+        status: 'rascunho',
+        itens: itensComNovosIds,
+        subtotal: quote.subtotal,
+        desconto_tipo: quote.desconto_tipo ?? 'percentual',
+        desconto_valor: quote.desconto_valor ?? 0,
+        total: quote.total,
+        observacoes: quote.observacoes ?? '',
+      });
+      toast({
+        title: 'Orçamento duplicado',
+        description: 'O novo orçamento foi criado. Você pode editá-lo abaixo.',
+        variant: 'success',
+      });
+      navigate(`/quotes/new?edit=${newQuote.id}`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      toast({
+        title: 'Erro ao duplicar',
+        description: msg || 'Não foi possível duplicar o orçamento. Tente novamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDuplicateLoadingId(null);
+    }
+  };
+
+  const handleCopyLink = async (quote: Quote) => {
+    const link = `${typeof window !== 'undefined' ? window.location.origin : ''}/orcamento/${quote.id}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      toast({
+        title: 'Link copiado',
+        description: 'O link do orçamento foi copiado para a área de transferência.',
+        variant: 'success',
+      });
+    } catch {
+      toast({
+        title: 'Erro ao copiar',
+        description: 'Não foi possível copiar o link.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -413,7 +480,7 @@ export function Quotes() {
                     <Link to={`/quotes/${quote.id}`} className="flex-1 min-w-0">
                       <Button variant="outline" size="sm" className="w-full h-8 sm:h-9 px-2 sm:px-3">
                         <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
-                        Ver
+                        Ver orçamento
                       </Button>
                     </Link>
                     <Button
@@ -424,38 +491,6 @@ export function Quotes() {
                     >
                       <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
                       Follow-up
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 sm:h-9 px-2 sm:px-3 text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]"
-                      disabled={markFollowUpLoadingId === quote.id}
-                      onClick={async () => {
-                        setMarkFollowUpLoadingId(quote.id);
-                        try {
-                          await markFollowUpSent(quote.id);
-                          toast({
-                            title: 'Follow-up registrado',
-                            description: 'Data do último follow-up atualizada.',
-                            variant: 'success',
-                          });
-                        } catch {
-                          toast({
-                            title: 'Erro ao marcar follow-up',
-                            description: 'Não foi possível salvar. Tente novamente.',
-                            variant: 'destructive',
-                          });
-                        } finally {
-                          setMarkFollowUpLoadingId(null);
-                        }
-                      }}
-                    >
-                      {markFollowUpLoadingId === quote.id ? (
-                        <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 animate-spin" />
-                      ) : (
-                        <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
-                      )}
-                      <span className="hidden sm:inline">Marcar follow-up</span>
                     </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -468,13 +503,94 @@ export function Quotes() {
                           <MoreVertical className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuContent align="end" className="w-52">
                         <DropdownMenuItem
-                          onClick={() => navigate(`/orcamentos/novo?edit=${quote.id}`)}
+                          onClick={() => handleDuplicateQuote(quote)}
+                          disabled={duplicateLoadingId === quote.id}
+                          className="cursor-pointer"
+                        >
+                          {duplicateLoadingId === quote.id ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <FileText className="h-4 w-4 mr-2" />
+                          )}
+                          Duplicar orçamento
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => navigate(`/quotes/new?edit=${quote.id}`)}
                           className="cursor-pointer"
                         >
                           <Pencil className="h-4 w-4 mr-2" />
                           Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuSub>
+                          <DropdownMenuSubTrigger className="cursor-pointer">
+                            <CircleDot className="h-4 w-4 mr-2" />
+                            Alterar status
+                          </DropdownMenuSubTrigger>
+                          <DropdownMenuSubContent>
+                            {(['rascunho', 'enviado', 'aprovado', 'recusado', 'expirado'] as const).map((s) => (
+                              <DropdownMenuItem
+                                key={s}
+                                onClick={async () => {
+                                  try {
+                                    await updateQuoteStatus(quote.id, s);
+                                    toast({
+                                      title: 'Status atualizado',
+                                      description: `Orçamento marcado como ${getStatusLabel(s)}.`,
+                                      variant: 'success',
+                                    });
+                                  } catch {
+                                    toast({
+                                      title: 'Erro ao alterar status',
+                                      description: 'Não foi possível atualizar. Tente novamente.',
+                                      variant: 'destructive',
+                                    });
+                                  }
+                                }}
+                                className="cursor-pointer"
+                              >
+                                {getStatusLabel(s)}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuSubContent>
+                        </DropdownMenuSub>
+                        <DropdownMenuItem
+                          onClick={async () => {
+                            setMarkFollowUpLoadingId(quote.id);
+                            try {
+                              await markFollowUpSent(quote.id);
+                              toast({
+                                title: 'Follow-up registrado',
+                                description: 'Data do último follow-up atualizada.',
+                                variant: 'success',
+                              });
+                            } catch {
+                              toast({
+                                title: 'Erro ao marcar follow-up',
+                                description: 'Não foi possível salvar. Tente novamente.',
+                                variant: 'destructive',
+                              });
+                            } finally {
+                              setMarkFollowUpLoadingId(null);
+                            }
+                          }}
+                          disabled={markFollowUpLoadingId === quote.id}
+                          className="cursor-pointer"
+                        >
+                          {markFollowUpLoadingId === quote.id ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Check className="h-4 w-4 mr-2" />
+                          )}
+                          Marcar follow-up
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleCopyLink(quote)}
+                          className="cursor-pointer"
+                        >
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copiar link
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleDownloadPDF(quote)}
