@@ -70,8 +70,8 @@ export function MetricCard({
   return (
     <div
       className={cn(
-        'group relative h-full flex overflow-hidden rounded-xl min-h-[92px]',
-        'border',
+        'group relative h-full flex overflow-hidden rounded-2xl min-h-[92px]',
+        'border shadow-sm',
         styles.bg,
         styles.border,
         'transition-all duration-300 ease-out',
@@ -85,11 +85,11 @@ export function MetricCard({
         <div className="flex items-center gap-2">
           <div
             className={cn(
-              'h-8 w-8 flex-shrink-0 rounded-lg flex items-center justify-center',
+              'h-8 w-8 flex-shrink-0 rounded-xl flex items-center justify-center',
               styles.iconBg
             )}
           >
-            <Icon className={cn('h-4 w-4', styles.iconColor)} />
+            <Icon size={28} strokeWidth={2.5} className={cn('h-7 w-7 min-w-7 min-h-7 shrink-0 block', styles.iconColor)} />
           </div>
           <p className="text-xs font-medium text-zinc-400 leading-tight min-w-0">{label}</p>
         </div>
