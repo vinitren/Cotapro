@@ -320,17 +320,32 @@ export function Dashboard() {
         />
       </div>
 
+      {/* Resumo mensal + Funil do mês — grid 2 colunas desktop, 1 coluna mobile */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+        <ResumoMensal
+          barData={barChartData}
+          totalOrcamentos={totalQuotesThisMonth}
+          taxaAprovacao={approvalRate}
+        />
+        <FunilMensal
+          donutData={donutChartData}
+          emAberto={openValue}
+          aprovado={closedValue}
+          emRisco={emRiscoValue}
+        />
+      </div>
+
       {/* Assistente CotaPro - recuperação inteligente de orçamentos */}
       {enableFollowUpSuggestions && (baseList.length > 0 || quotesWithFollowUp.length > 0) && (
         <div className="rounded-2xl bg-[rgb(var(--card))]/50 dark:bg-[rgb(var(--card))]/30 border border-[rgb(var(--border))]/50 dark:border-[rgb(var(--border))]/40 overflow-hidden">
           {/* 1. Header */}
           <div className="p-5 lg:p-6 pb-4 border-b border-[rgb(var(--border))]/40 dark:border-white/10">
             <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--primary))]/15 dark:bg-[rgb(var(--primary))]/20 text-[rgb(var(--primary))]">
-                <Sparkles className="h-5 w-5" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 dark:bg-primary/20 text-primary">
+                <Sparkles className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-[rgb(var(--fg))]">Assistente CotaPro</h2>
+                <h2 className="text-lg font-bold text-[rgb(var(--fg))]">Assistente Cota<span className="text-primary">Pro</span></h2>
                 <p className="text-sm text-[rgb(var(--muted))] mt-0.5 dark:text-[rgb(var(--muted))]">
                   Recuperação inteligente de orçamentos
                 </p>
@@ -518,21 +533,6 @@ export function Dashboard() {
           }}
         />
       )}
-
-      {/* Resumo mensal + Funil do mês — grid 2 colunas desktop, 1 coluna mobile */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-        <ResumoMensal
-          barData={barChartData}
-          totalOrcamentos={totalQuotesThisMonth}
-          taxaAprovacao={approvalRate}
-        />
-        <FunilMensal
-          donutData={donutChartData}
-          emAberto={openValue}
-          aprovado={closedValue}
-          emRisco={emRiscoValue}
-        />
-      </div>
     </div>
   );
 }
