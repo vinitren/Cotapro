@@ -94,6 +94,14 @@ export function formatTimeSince(hours: number): string {
   return `há ${days} dias`;
 }
 
+/** Formata para destaque de prioridade: "⚠ X dias sem follow-up" */
+export function formatDaysWithoutFollowUp(hoursSinceSent: number): string {
+  if (hoursSinceSent < 24) return '⚠ menos de 1 dia sem follow-up';
+  const days = Math.floor(hoursSinceSent / 24);
+  if (days === 1) return '⚠ 1 dia sem follow-up';
+  return `⚠ ${days} dias sem follow-up`;
+}
+
 export const FOLLOW_UP_MESSAGE_TEMPLATE =
   'Oi {nome}, tudo bem? Você conseguiu ver o orçamento? Se quiser, ajusto qualquer detalhe e te mando a versão final agora.';
 

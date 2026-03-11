@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Trash2, Edit, Users, MoreVertical, Filter, List } from 'lucide-react';
+import { Plus, Search, Trash2, Edit, Users, MoreVertical, List } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent } from '../components/ui/card';
 import { pageCardClasses } from '../components/layout/PageLayout';
-import { Badge } from '../components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -29,8 +28,7 @@ import { toast } from '../hooks/useToast';
 export function Customers() {
   const { customers, deleteCustomer, quotes, loadCustomers } = useStore();
   const [search, setSearch] = useState('');
-  const [tipoFilter, setTipoFilter] = useState<'all' | 'pessoa_fisica' | 'pessoa_juridica'>('all');
-  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+  const [activeClientFilter, setActiveClientFilter] = useState<'all' | 'pf' | 'pj'>('all');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<Customer | null>(null);
@@ -82,7 +80,10 @@ export function Customers() {
       cpfCnpj.includes(searchLower) ||
       telefone.includes(searchLower) ||
       email.includes(searchLower);
-    const matchesTipo = tipoFilter === 'all' || customer.tipo === tipoFilter;
+    const matchesTipo =
+      activeClientFilter === 'all' ||
+      (activeClientFilter === 'pf' && customer.tipo === 'pessoa_fisica') ||
+      (activeClientFilter === 'pj' && customer.tipo === 'pessoa_juridica');
     return matchesSearch && matchesTipo;
   });
 
@@ -174,55 +175,30 @@ export function Customers() {
           <List className="h-4 w-4 mr-2" />
           {isListOpen ? 'Ocultar clientes' : 'Ver clientes'}
         </Button>
-        <Dialog open={filterPanelOpen} onOpenChange={setFilterPanelOpen}>
-          <Button
-            variant="outline"
-            className="w-full sm:w-auto hidden sm:flex"
-            onClick={() => setFilterPanelOpen(true)}
-            disabled={!isListOpen}
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            Filtro
-            {tipoFilter !== 'all' && (
-              <Badge variant="secondary" className="ml-2 h-5 min-w-5 px-1.5 text-xs">
-                1
-              </Badge>
-            )}
-          </Button>
-          <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Filtros</DialogTitle>
-              <DialogDescription>Filtre por tipo de pessoa.</DialogDescription>
-            </DialogHeader>
-            <div className="grid grid-cols-3 gap-2">
-              {(['all', 'pessoa_fisica', 'pessoa_juridica'] as const).map((v) => (
-                <Button
-                  key={v}
-                  variant={tipoFilter === v ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setTipoFilter(v)}
-                >
-                  {v === 'all' ? 'Todos' : v === 'pessoa_fisica' ? 'Pessoa Física' : 'Pessoa Jurídica'}
-                </Button>
-              ))}
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
 
       {isListOpen && (
         <>
-          {tipoFilter !== 'all' && (
-            <div className="flex flex-wrap gap-2">
-              <Badge
-                variant="secondary"
-                className="cursor-pointer hover:bg-white/20"
-                onClick={() => setTipoFilter('all')}
+          <div className="flex rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))]/50 p-0.5 w-fit">
+            {[
+              { value: 'all' as const, label: 'Todos' },
+              { value: 'pf' as const, label: 'Pessoa Física' },
+              { value: 'pj' as const, label: 'Pessoa Jurídica' },
+            ].map(({ value, label }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setActiveClientFilter(value)}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  activeClientFilter === value
+                    ? 'bg-[rgb(var(--primary))] text-[rgb(var(--primary-foreground))]'
+                    : 'text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] hover:bg-white/5'
+                }`}
               >
-                Tipo: {tipoFilter === 'pessoa_fisica' ? 'Pessoa Física' : 'Pessoa Jurídica'} ×
-              </Badge>
-            </div>
-          )}
+                {label}
+              </button>
+            ))}
+          </div>
 
           {filteredCustomers.length === 0 ? (
             <Card className={pageCardClasses}>
@@ -231,14 +207,14 @@ export function Customers() {
               <Users className="h-7 w-7 text-[rgb(var(--muted))]" />
             </div>
             <h3 className="text-base font-bold text-[rgb(var(--fg))] mb-1">
-              {search || tipoFilter !== 'all' ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
+              {search || activeClientFilter !== 'all' ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
             </h3>
             <p className="text-sm text-muted-foreground text-center mb-4">
-              {search || tipoFilter !== 'all'
+              {search || activeClientFilter !== 'all'
                 ? 'Tente ajustar os filtros'
                 : 'Comece adicionando seu primeiro cliente!'}
             </p>
-            {!search && tipoFilter === 'all' && (
+            {!search && activeClientFilter === 'all' && (
               <Button onClick={() => setIsFormOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Adicionar Cliente
@@ -343,19 +319,6 @@ export function Customers() {
           <Button onClick={() => setIsFormOpen(true)} className="flex-1 h-12">
             <Plus className="h-4 w-4 mr-2" />
             Novo Cliente
-          </Button>
-          <Button
-            variant="outline"
-            className="flex-1 h-12"
-            onClick={() => setFilterPanelOpen(true)}
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            Filtro
-            {tipoFilter !== 'all' && (
-              <Badge variant="secondary" className="ml-2 h-5 min-w-5 px-1.5 text-xs">
-                1
-              </Badge>
-            )}
           </Button>
         </div>
       </div>

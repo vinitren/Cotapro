@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, DollarSign, TrendingUp, CheckCircle, Banknote, MessageCircle, ArrowRight, Eye, Check } from 'lucide-react';
+import { FileText, DollarSign, TrendingUp, CheckCircle, Banknote, MessageCircle, ArrowRight, Eye, Check, Calendar, Sparkles } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { PageHeader } from '../components/layout/PageHeader';
 import { MetricCard } from '../components/dashboard/MetricCard';
@@ -14,7 +14,7 @@ import {
 import { useStore } from '../store';
 import type { Quote } from '../types';
 import { formatCurrency } from '../lib/utils';
-import { getFollowUpCandidates, formatTimeSince, formatLastFollowUpText } from '../lib/dashboard-followup';
+import { getFollowUpCandidates, formatTimeSince, formatLastFollowUpText, formatDaysWithoutFollowUp } from '../lib/dashboard-followup';
 import { getBarChartData, getDonutChartData, getEmRiscoValue } from '../lib/dashboard-aggregations';
 import { getMonthKey, getCurrentMonthKey } from '../lib/dashboard-date';
 import { ResumoMensal, FunilMensal } from '../components/dashboard/DashboardCharts';
@@ -22,6 +22,15 @@ import { enableFollowUpSuggestions } from '../lib/supabase';
 import { LoadingSkeleton } from '../components/LoadingSkeleton';
 import { FollowUpModal } from '../components/FollowUpModal';
 import { toast } from '../hooks/useToast';
+import type { DateRange } from 'react-day-picker';
+import { format, startOfDay, endOfDay } from 'date-fns';
+import { DateRangePicker } from '../components/quotes/DateRangePicker';
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from '../components/ui/dialog';
 
 const DASHBOARD_MONTH_KEY = 'dashboard-selected-month';
 
@@ -63,6 +72,22 @@ function filterQuotesByMonth<T extends { data_emissao?: string; data_criacao?: s
   });
 }
 
+/** Filtra orçamentos por intervalo de datas (usado apenas no Dashboard, independente de Prioridades). */
+function filterQuotesByDateRange<T extends { data_emissao?: string; data_criacao?: string }>(
+  quotes: T[],
+  range: DateRange | undefined
+): T[] {
+  if (!range?.from || !range?.to) return quotes;
+  const fromTs = startOfDay(range.from).getTime();
+  const toTs = endOfDay(range.to).getTime();
+  return quotes.filter((q) => {
+    const dateStr = q.data_emissao ?? q.data_criacao ?? '';
+    if (!dateStr) return false;
+    const t = new Date(dateStr).getTime();
+    return t >= fromTs && t <= toTs;
+  });
+}
+
 export function Dashboard() {
   const { quotes, checkExpiredQuotes, loadQuotes, markFollowUpSent } = useStore();
   const [isLoading, setIsLoading] = useState(true);
@@ -75,6 +100,8 @@ export function Dashboard() {
     }
     return getCurrentMonthKey();
   });
+
+  const [dashboardDateRange, setDashboardDateRange] = useState<DateRange | undefined>(undefined);
 
   const availableMonths = getAvailableMonths(quotes);
   const availableKeys = availableMonths.map((m) => m.key);
@@ -114,16 +141,20 @@ export function Dashboard() {
   }, [loadQuotes, checkExpiredQuotes]);
 
   const quotesInMonth = filterQuotesByMonth(quotes, selectedMonth);
+  const quotesForDashboard =
+    dashboardDateRange?.from && dashboardDateRange?.to
+      ? filterQuotesByDateRange(quotes, dashboardDateRange)
+      : quotesInMonth;
 
-  const totalQuotesThisMonth = quotesInMonth.length;
+  const totalQuotesThisMonth = quotesForDashboard.length;
 
-  const openValue = quotesInMonth
+  const openValue = quotesForDashboard
     .filter((q) => q.status === 'enviado')
     .reduce((sum, q) => sum + q.total, 0);
 
-  const approvedQuotes = quotesInMonth.filter((q) => q.status === 'aprovado');
+  const approvedQuotes = quotesForDashboard.filter((q) => q.status === 'aprovado');
   const closedValue = approvedQuotes.reduce((sum, q) => sum + q.total, 0);
-  const sentQuotes = quotesInMonth.filter((q) => q.status === 'enviado' || q.status === 'aprovado' || q.status === 'recusado');
+  const sentQuotes = quotesForDashboard.filter((q) => q.status === 'enviado' || q.status === 'aprovado' || q.status === 'recusado');
   const approvalRate = sentQuotes.length > 0 ? (approvedQuotes.length / sentQuotes.length) * 100 : 0;
 
   const followUp = enableFollowUpSuggestions ? getFollowUpCandidates(quotes) : null;
@@ -131,7 +162,15 @@ export function Dashboard() {
   const [followUpFilter, setFollowUpFilter] = useState<PrioridadeCategoria>('todos');
   const [followUpModal, setFollowUpModal] = useState<Quote | null>(null);
   const [sentFollowUpIds, setSentFollowUpIds] = useState<Set<string>>(() => new Set());
-  const [followUpPeriodFilter, setFollowUpPeriodFilter] = useState<'hoje' | '7dias' | 'todos'>('todos');
+  const [prioritiesDateRange, setPrioritiesDateRange] = useState<DateRange | undefined>(undefined);
+
+  function quoteInPrioritiesDateRange(quote: Quote): boolean {
+    if (!prioritiesDateRange?.from || !prioritiesDateRange?.to) return true;
+    const dateStr = quote.data_emissao ?? quote.data_criacao ?? '';
+    if (!dateStr) return false;
+    const t = new Date(dateStr).getTime();
+    return t >= startOfDay(prioritiesDateRange.from).getTime() && t <= endOfDay(prioritiesDateRange.to).getTime();
+  }
 
   const baseList = followUp?.candidatesBase ?? [];
   const available = baseList.filter((c) => !sentFollowUpIds.has(c.quote.id));
@@ -144,15 +183,16 @@ export function Dashboard() {
   today.setHours(0, 0, 0, 0);
   const todayPlus3 = new Date(today);
   todayPlus3.setDate(todayPlus3.getDate() + 3);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const sevenDaysAgo = new Date(today);
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
   const byPriority = (a: { quote: Quote; hoursSinceSent: number }, b: { quote: Quote; hoursSinceSent: number }) => {
     if (b.quote.total !== a.quote.total) return b.quote.total - a.quote.total;
     return b.hoursSinceSent - a.hoursSinceSent;
   };
+
+  const quotesWithFollowUpInRange =
+    followUpFilter === 'follow-up' && prioritiesDateRange?.from && prioritiesDateRange?.to
+      ? quotesWithFollowUp.filter((q) => quoteInPrioritiesDateRange(q))
+      : quotesWithFollowUp;
 
   const emRisco = available.filter((c) => c.hoursSinceSent >= 48 && c.hoursSinceSent <= 120).sort(byPriority);
   const altoValorCount = Math.max(1, Math.ceil(available.length * 0.3));
@@ -168,7 +208,7 @@ export function Dashboard() {
   }).sort(byPriority);
   const todos = [...available].sort(byPriority);
 
-  const counts = { 'em-risco': emRisco.length, 'alto-valor': altoValor.length, 'vencendo': vencendo.length, 'todos': todos.length, 'follow-up': quotesWithFollowUp.length };
+  const counts = { 'em-risco': emRisco.length, 'alto-valor': altoValor.length, 'vencendo': vencendo.length, 'todos': todos.length, 'follow-up': quotesWithFollowUpInRange.length };
 
   const rawByFilter: Record<Exclude<PrioridadeCategoria, 'follow-up'>, typeof available> = {
     'em-risco': emRisco,
@@ -176,23 +216,16 @@ export function Dashboard() {
     'vencendo': vencendo,
     'todos': todos,
   };
-  const quotesWithFollowUpFiltered =
-    followUpFilter !== 'follow-up'
-      ? quotesWithFollowUp
-      : followUpPeriodFilter === 'hoje'
-        ? quotesWithFollowUp.filter((q) => {
-            const d = new Date(q.last_follow_up_at);
-            return d >= today && d < tomorrow;
-          })
-        : followUpPeriodFilter === '7dias'
-          ? quotesWithFollowUp.filter((q) => new Date(q.last_follow_up_at) >= sevenDaysAgo)
-          : quotesWithFollowUp;
+  const quotesWithFollowUpFiltered = quotesWithFollowUpInRange;
 
   type PrioridadeDisplayItem = { quote: Quote; subtitle: string };
   const followUpListDisplay: PrioridadeDisplayItem[] =
     followUpFilter === 'follow-up'
       ? quotesWithFollowUpFiltered.map((q) => ({ quote: q, subtitle: formatLastFollowUpText(q.last_follow_up_at) }))
-      : rawByFilter[followUpFilter].map((c) => ({ quote: c.quote, subtitle: formatTimeSince(c.hoursSinceSent) }));
+      : rawByFilter[followUpFilter].map((c) => ({
+          quote: c.quote,
+          subtitle: formatDaysWithoutFollowUp(c.hoursSinceSent),
+        }));
 
   const openFollowUpModal = (quote: Quote) => {
     setFollowUpModal(quote);
@@ -203,9 +236,9 @@ export function Dashboard() {
   }
 
   const monthOptions = availableMonths;
-  const barChartData = getBarChartData(quotesInMonth);
-  const donutChartData = getDonutChartData(quotesInMonth);
-  const emRiscoValue = getEmRiscoValue(quotesInMonth);
+  const barChartData = getBarChartData(quotesForDashboard);
+  const donutChartData = getDonutChartData(quotesForDashboard);
+  const emRiscoValue = getEmRiscoValue(quotesForDashboard);
 
   return (
     <div className="p-4 lg:p-6 space-y-6 lg:space-y-8">
@@ -213,18 +246,38 @@ export function Dashboard() {
         title="Dashboard"
         subtitle="Visão geral dos seus orçamentos"
         action={
-          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-            <SelectTrigger className="w-[140px] rounded-lg border border-[rgb(var(--border))] px-4 py-2 text-sm hover:bg-white/10 transition-colors">
-              <SelectValue placeholder="Mês" />
-            </SelectTrigger>
-            <SelectContent>
-              {monthOptions.map((opt) => (
-                <SelectItem key={opt.key} value={opt.key}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex flex-wrap items-center gap-2">
+            <Dialog>
+              <DialogTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[rgb(var(--border))] bg-[rgb(var(--card))]/50 text-[rgb(var(--fg))] hover:bg-[rgb(var(--card))]/80 transition-colors text-sm font-medium"
+                >
+                  <Calendar className="h-4 w-4 shrink-0" />
+                  {dashboardDateRange?.from && dashboardDateRange?.to
+                    ? `${format(dashboardDateRange.from, 'dd/MM/yyyy')} - ${format(dashboardDateRange.to, 'dd/MM/yyyy')}`
+                    : 'Período'}
+                </button>
+              </DialogTrigger>
+              <DialogContent className="max-w-[min(90vw,36rem)]">
+                <DialogTitle className="sr-only">Filtrar Dashboard por período</DialogTitle>
+                <DateRangePicker
+                  value={dashboardDateRange}
+                  onChange={(range) => setDashboardDateRange(range ?? undefined)}
+                  onClear={() => setDashboardDateRange(undefined)}
+                />
+              </DialogContent>
+            </Dialog>
+            {dashboardDateRange?.from && dashboardDateRange?.to && (
+              <button
+                type="button"
+                onClick={() => setDashboardDateRange(undefined)}
+                className="text-xs text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] underline"
+              >
+                Limpar
+              </button>
+            )}
+          </div>
         }
       />
 
@@ -267,75 +320,85 @@ export function Dashboard() {
         />
       </div>
 
-      {/* Prioridades de hoje - Follow-up sugerido */}
+      {/* Assistente CotaPro - recuperação inteligente de orçamentos */}
       {enableFollowUpSuggestions && (baseList.length > 0 || quotesWithFollowUp.length > 0) && (
-        <div className="rounded-2xl bg-[rgb(var(--card))]/50 dark:bg-[rgb(var(--card))]/30 border border-[rgb(var(--border))]/50 dark:border-[rgb(var(--border))]/40 p-5 lg:p-6">
-          <div className="mb-5">
-            <h2 className="text-base font-bold text-[rgb(var(--fg))]">Prioridades de hoje</h2>
-            <p className="text-sm text-[rgb(var(--muted))] mt-1 dark:text-[rgb(var(--muted))]">
-              Orçamentos que merecem atenção agora.
-            </p>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2 mb-5">
-            {/* Mobile: grade 2 colunas; desktop: linha */}
-            <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-2">
-              {[
-                { key: 'em-risco' as const, label: '🔥 Em risco', count: counts['em-risco'] },
-                { key: 'alto-valor' as const, label: '💰 Alto valor', count: counts['alto-valor'] },
-                { key: 'vencendo' as const, label: '⏳ Vencendo', count: counts['vencendo'] },
-                { key: 'todos' as const, label: '📋 Todos', count: counts['todos'] },
-                { key: 'follow-up' as const, label: '✓ Follow-up', count: counts['follow-up'] },
-              ].map(({ key, label, count }) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setFollowUpFilter(key)}
-                  className={`flex items-center justify-between gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl border transition-colors min-w-0 ${
-                    followUpFilter === key
-                      ? 'bg-[rgb(var(--card))] dark:bg-white/15 border-[rgb(var(--border))] dark:border-white/20 text-[rgb(var(--fg))] shadow-sm ring-2 ring-[#22C55E]/20 dark:ring-[#22C55E]/30'
-                      : 'bg-[rgb(var(--card))]/70 dark:bg-white/5 border-[rgb(var(--border))]/50 dark:border-white/10 text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] hover:bg-[rgb(var(--card))]/80 dark:hover:bg-white/10'
-                  }`}
-                >
-                  <span className="text-xs font-medium truncate">{label}</span>
-                  <span className="text-sm font-bold tabular-nums shrink-0">{count}</span>
-                </button>
-              ))}
+        <div className="rounded-2xl bg-[rgb(var(--card))]/50 dark:bg-[rgb(var(--card))]/30 border border-[rgb(var(--border))]/50 dark:border-[rgb(var(--border))]/40 overflow-hidden">
+          {/* 1. Header */}
+          <div className="p-5 lg:p-6 pb-4 border-b border-[rgb(var(--border))]/40 dark:border-white/10">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--primary))]/15 dark:bg-[rgb(var(--primary))]/20 text-[rgb(var(--primary))]">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-[rgb(var(--fg))]">Assistente CotaPro</h2>
+                <p className="text-sm text-[rgb(var(--muted))] mt-0.5 dark:text-[rgb(var(--muted))]">
+                  Recuperação inteligente de orçamentos
+                </p>
+              </div>
             </div>
+          </div>
+
+          {/* 2. Filtros de status + período (quando Follow-up) */}
+          <div className="px-5 lg:px-6 py-4 space-y-4 border-b border-[rgb(var(--border))]/30 dark:border-white/5">
             {followUpFilter === 'follow-up' && (
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                <div className="flex gap-1.5">
-                  {[
-                    { key: 'hoje' as const, label: 'Hoje' },
-                    { key: '7dias' as const, label: 'Últimos 7 dias' },
-                    { key: 'todos' as const, label: 'Todos' },
-                  ].map(({ key, label }) => (
+              <div className="flex flex-wrap items-center gap-2">
+                <Dialog>
+                  <DialogTrigger asChild>
                     <button
-                      key={key}
                       type="button"
-                      onClick={() => setFollowUpPeriodFilter(key)}
-                      className={`px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
-                        followUpPeriodFilter === key
-                          ? 'bg-[rgb(var(--card))] dark:bg-white/15 border-[rgb(var(--border))] dark:border-white/20 text-[rgb(var(--fg))]'
-                          : 'bg-transparent border-[rgb(var(--border))]/50 dark:border-white/10 text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))]'
-                      }`}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[rgb(var(--border))]/50 dark:border-white/10 bg-[rgb(var(--card))]/70 dark:bg-white/5 text-[rgb(var(--fg))] hover:bg-[rgb(var(--card))]/80 dark:hover:bg-white/10 transition-colors text-xs font-medium"
                     >
-                      {label}
+                      <Calendar className="h-3.5 w-3.5 shrink-0" />
+                      {prioritiesDateRange?.from && prioritiesDateRange?.to
+                        ? `${format(prioritiesDateRange.from, 'dd/MM/yyyy')} - ${format(prioritiesDateRange.to, 'dd/MM/yyyy')}`
+                        : 'Período'}
                     </button>
-                  ))}
-                </div>
-                <span className="text-xs text-[rgb(var(--muted))] dark:text-[rgb(var(--muted))] tabular-nums">
-                  {quotesWithFollowUpFiltered.length} {quotesWithFollowUpFiltered.length === 1 ? 'orçamento' : 'orçamentos'}
-                </span>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-[min(90vw,36rem)]">
+                    <DialogTitle className="sr-only">Filtrar prioridades por período</DialogTitle>
+                    <DateRangePicker
+                      value={prioritiesDateRange}
+                      onChange={(range) => setPrioritiesDateRange(range ?? undefined)}
+                      onClear={() => setPrioritiesDateRange(undefined)}
+                    />
+                  </DialogContent>
+                </Dialog>
+                {prioritiesDateRange?.from && prioritiesDateRange?.to && (
+                  <button
+                    type="button"
+                    onClick={() => setPrioritiesDateRange(undefined)}
+                    className="text-xs text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] underline"
+                  >
+                    Limpar período
+                  </button>
+                )}
               </div>
             )}
-            <Link
-              to="/quotes?status=enviado"
-              className="flex items-center justify-end gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl border border-[rgb(var(--border))]/50 dark:border-white/10 bg-[rgb(var(--card))]/70 dark:bg-white/5 text-[rgb(var(--fg))] hover:bg-[rgb(var(--card))]/80 dark:hover:bg-white/10 transition-colors text-xs font-medium sm:ml-auto"
-            >
-              Ver todos
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-2">
+                {[
+                  { key: 'em-risco' as const, label: '🔥 Em risco', count: counts['em-risco'], activeCls: 'bg-amber-500/20 dark:bg-amber-500/25 border-amber-500/40 text-amber-800 dark:text-amber-200 ring-2 ring-amber-500/30', inactiveCls: 'bg-amber-500/10 dark:bg-amber-500/15 border-amber-500/25 text-amber-700 dark:text-amber-300 hover:bg-amber-500/15 dark:hover:bg-amber-500/20' },
+                  { key: 'alto-valor' as const, label: '💰 Alto valor', count: counts['alto-valor'], activeCls: 'bg-emerald-500/20 dark:bg-emerald-500/25 border-emerald-500/40 text-emerald-800 dark:text-emerald-200 ring-2 ring-emerald-500/30', inactiveCls: 'bg-emerald-500/10 dark:bg-emerald-500/15 border-emerald-500/25 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/15 dark:hover:bg-emerald-500/20' },
+                  { key: 'vencendo' as const, label: '⏳ Vencendo', count: counts['vencendo'], activeCls: 'bg-sky-500/20 dark:bg-sky-500/25 border-sky-500/40 text-sky-800 dark:text-sky-200 ring-2 ring-sky-500/30', inactiveCls: 'bg-sky-500/10 dark:bg-sky-500/15 border-sky-500/25 text-sky-700 dark:text-sky-300 hover:bg-sky-500/15 dark:hover:bg-sky-500/20' },
+                  { key: 'todos' as const, label: '📋 Todos', count: counts['todos'], activeCls: 'bg-slate-500/20 dark:bg-slate-400/20 border-slate-500/40 text-slate-800 dark:text-slate-200 ring-2 ring-slate-500/30', inactiveCls: 'bg-slate-500/10 dark:bg-slate-400/10 border-slate-500/25 text-slate-700 dark:text-slate-300 hover:bg-slate-500/15 dark:hover:bg-slate-400/15' },
+                  { key: 'follow-up' as const, label: '✓ Follow-up', count: counts['follow-up'], activeCls: 'bg-green-500/20 dark:bg-green-500/25 border-green-500/40 text-green-800 dark:text-green-200 ring-2 ring-green-500/30', inactiveCls: 'bg-green-500/10 dark:bg-green-500/15 border-green-500/25 text-green-700 dark:text-green-300 hover:bg-green-500/15 dark:hover:bg-green-500/20' },
+                ].map(({ key, label, count, activeCls, inactiveCls }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setFollowUpFilter(key)}
+                    className={`flex items-center justify-between gap-2 px-3 py-2 rounded-xl border font-medium transition-colors min-w-0 text-xs sm:text-sm ${followUpFilter === key ? activeCls : inactiveCls}`}
+                  >
+                    <span className="truncate">{label}</span>
+                    <span className="text-sm font-bold tabular-nums shrink-0">{count}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
+
+          {/* 3. Lista de orçamentos */}
+          <div className="p-5 lg:p-6 pt-4">
           {followUpListDisplay.length > 0 ? (
             <div className="overflow-y-auto max-h-[15rem] sm:max-h-[22rem] scrollbar-thin rounded-lg -mx-1 px-1">
               <div className="space-y-1.5 sm:space-y-2">
@@ -350,7 +413,10 @@ export function Dashboard() {
                     </p>
                     {/* Mobile: valor e subtítulo em uma linha compacta */}
                     <p className="text-xs text-[rgb(var(--muted))] mt-0.5 sm:hidden dark:text-[rgb(var(--muted))] truncate">
-                      {formatCurrency(item.quote.total)} • {item.subtitle}
+                      {formatCurrency(item.quote.total)} •{' '}
+                      <span className={item.subtitle.startsWith('⚠') ? 'font-semibold text-amber-600 dark:text-amber-400' : ''}>
+                        {item.subtitle}
+                      </span>
                       {item.quote.last_follow_up_at && followUpFilter !== 'follow-up' ? ` • ${formatLastFollowUpText(item.quote.last_follow_up_at)}` : ''}
                     </p>
                     {/* Desktop: valor e subtítulo em linhas separadas */}
@@ -358,7 +424,9 @@ export function Dashboard() {
                       {formatCurrency(item.quote.total)}
                     </p>
                     <p className="text-xs text-[rgb(var(--muted))] mt-1 hidden sm:flex items-center gap-2 flex-wrap dark:text-[rgb(var(--muted))]">
-                      <span>{item.subtitle}</span>
+                      <span className={item.subtitle.startsWith('⚠') ? 'font-semibold text-amber-600 dark:text-amber-400' : ''}>
+                        {item.subtitle}
+                      </span>
                       {followUpFilter !== 'todos' && followUpFilter !== 'follow-up' && (
                         <span className="inline-flex items-center rounded-md bg-[rgb(var(--border))]/30 dark:bg-white/10 px-1.5 py-0.5 text-[10px] font-medium text-[rgb(var(--muted))] dark:text-[rgb(var(--muted))]">
                           {followUpFilter === 'em-risco' && 'Em risco'}
@@ -376,12 +444,32 @@ export function Dashboard() {
                   <div className="grid grid-cols-2 sm:flex gap-2 flex-shrink-0 min-w-0 flex-wrap">
                     <Button
                       size="sm"
-                      variant="outline"
-                      className="gap-1.5 h-8 sm:h-9 text-xs w-full min-w-0 sm:w-auto"
+                      variant="default"
+                      className="gap-1.5 h-8 sm:h-9 text-xs w-full min-w-0 sm:w-auto bg-[#22C55E] hover:bg-[#1ea34e] text-white"
                       onClick={() => openFollowUpModal(item.quote)}
                     >
                       <MessageCircle className="h-3.5 w-3.5 shrink-0" />
-                      <span className="truncate">Enviar WhatsApp</span>
+                      <span className="truncate">Enviar follow-up</span>
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5 h-8 sm:h-9 text-xs text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] min-w-0 sm:w-auto"
+                      onClick={async () => {
+                        try {
+                          await markFollowUpSent(item.quote.id);
+                          setSentFollowUpIds((prev) => new Set([...prev, item.quote.id]));
+                        } catch {
+                          toast({
+                            title: 'Erro ao marcar',
+                            description: 'Não foi possível salvar. Tente novamente.',
+                            variant: 'destructive',
+                          });
+                        }
+                      }}
+                    >
+                      <Check className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">Marcar como feito</span>
                     </Button>
                     <Link
                       to={`/quotes/${item.quote.id}`}
@@ -390,26 +478,6 @@ export function Dashboard() {
                       <Eye className="h-3.5 w-3.5 shrink-0" />
                       <span className="truncate">Ver orçamento</span>
                     </Link>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="gap-1.5 h-8 sm:h-9 text-xs text-[rgb(var(--muted))] hover:text-[rgb(var(--fg))] min-w-0 sm:w-auto"
-                      onClick={async () => {
-                        try {
-                          await markFollowUpSent(item.quote.id);
-                          setSentFollowUpIds((prev) => new Set([...prev, item.quote.id]));
-                        } catch {
-                          toast({
-                            title: 'Erro ao marcar follow-up',
-                            description: 'Não foi possível salvar. Tente novamente.',
-                            variant: 'destructive',
-                          });
-                        }
-                      }}
-                    >
-                      <Check className="h-3.5 w-3.5 shrink-0" />
-                      <span className="truncate">Marcar follow-up</span>
-                    </Button>
                   </div>
                 </div>
               ))}
@@ -424,6 +492,18 @@ export function Dashboard() {
               {followUpFilter === 'follow-up' && 'Nenhum orçamento com follow-up neste período.'}
             </p>
           )}
+
+          {/* 4. Ver todos */}
+          <div className="mt-4 pt-4 border-t border-[rgb(var(--border))]/30 dark:border-white/5 flex justify-end">
+            <Link
+              to="/quotes?status=enviado"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[rgb(var(--border))]/50 dark:border-white/10 bg-[rgb(var(--card))]/70 dark:bg-white/5 text-[rgb(var(--fg))] hover:bg-[rgb(var(--card))]/80 dark:hover:bg-white/10 transition-colors text-sm font-medium"
+            >
+              Ver todos
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+          </div>
         </div>
       )}
 
