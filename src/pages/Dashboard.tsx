@@ -336,7 +336,7 @@ export function Dashboard() {
       </div>
 
       {/* Assistente CotaPro - recuperação inteligente de orçamentos */}
-      {enableFollowUpSuggestions && (baseList.length > 0 || quotesWithFollowUp.length > 0) && (
+      {enableFollowUpSuggestions && (
         <div className="rounded-2xl bg-[rgb(var(--card))]/50 dark:bg-[rgb(var(--card))]/30 border border-[rgb(var(--border))]/50 dark:border-[rgb(var(--border))]/40 overflow-hidden">
           {/* 1. Header */}
           <div className="p-5 lg:p-6 pb-4 border-b border-[rgb(var(--border))]/40 dark:border-white/10">
@@ -353,6 +353,28 @@ export function Dashboard() {
             </div>
           </div>
 
+          {quotes.length === 0 ? (
+          /* Estado 1: usuário sem orçamentos */
+          <div className="flex flex-col items-center justify-center text-center px-5 py-8 lg:py-10 min-h-0">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/15 dark:bg-primary/20 text-primary mb-4">
+              <Sparkles className="h-6 w-6 text-primary" />
+            </div>
+            <h3 className="text-base font-semibold text-[rgb(var(--fg))] dark:text-[rgb(var(--fg))] mb-2">
+              Seu assistente vai aparecer aqui
+            </h3>
+            <p className="text-sm text-[rgb(var(--muted))] dark:text-[rgb(var(--muted))] max-w-sm mb-5">
+              Crie seus primeiros orçamentos para começar a usar o assistente.
+            </p>
+            <Link to="/quotes/new">
+              <Button className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground">
+                Criar primeiro orçamento
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+          ) : (baseList.length > 0 || quotesWithFollowUp.length > 0) ? (
+          /* Estado 3: assistente ativo — existem orçamentos que precisam de atenção */
+          <>
           {/* 2. Filtros de status + período (quando Follow-up) */}
           <div className="px-5 lg:px-6 py-4 space-y-4 border-b border-[rgb(var(--border))]/30 dark:border-white/5">
             {followUpFilter === 'follow-up' && (
@@ -519,6 +541,21 @@ export function Dashboard() {
             </Link>
           </div>
           </div>
+          </>
+          ) : (
+          /* Estado 2: usuário tem orçamentos, mas ainda não há prioridades reais */
+          <div className="flex flex-col items-center justify-center text-center px-5 py-8 lg:py-10 min-h-0">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/15 dark:bg-primary/20 text-primary mb-4">
+              <Sparkles className="h-6 w-6 text-primary" />
+            </div>
+            <h3 className="text-base font-semibold text-[rgb(var(--fg))] dark:text-[rgb(var(--fg))] mb-2">
+              O assistente está aprendendo
+            </h3>
+            <p className="text-sm text-[rgb(var(--muted))] dark:text-[rgb(var(--muted))] max-w-sm">
+              Continue criando e enviando orçamentos para que o CotaPro possa identificar oportunidades e prioridades.
+            </p>
+          </div>
+          )}
         </div>
       )}
 
