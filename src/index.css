@@ -170,7 +170,7 @@ input[type="number"] {
 
   body.public-quote-page {
     overflow: auto !important;
-    overflow-x: auto;
+    overflow-x: hidden;
     position: relative !important;
     margin: 0;
     padding: 0;

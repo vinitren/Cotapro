@@ -298,6 +298,8 @@ export function PublicQuote() {
           min-height: 100dvh;
           background: #f5f5f5;
           padding: 20px;
+          max-width: 100%;
+          overflow-x: hidden;
         }
         #quote-document {
           width: 800px;
@@ -317,7 +319,7 @@ export function PublicQuote() {
         }
       `}</style>
 
-      <div className="w-full flex justify-center">
+      <div className="w-full flex justify-center min-w-0 max-w-full overflow-x-hidden">
         <>
           {loading ? (
             <Card>
