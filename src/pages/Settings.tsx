@@ -764,6 +764,9 @@ export function Settings() {
                   <p className="text-xs text-[rgb(var(--muted))] text-center">
                     Formatos: JPG, PNG, GIF. Tamanho máximo: 2MB
                   </p>
+                  <p className="text-xs text-[rgb(var(--muted))] text-center">
+                    Dica: Prefira enviar sua logo em PNG sem fundo para um visual mais profissional. Se necessário, peça para uma IA como o ChatGPT remover o fundo da sua logo.
+                  </p>
                 </div>
               </AccordionCard>
 
