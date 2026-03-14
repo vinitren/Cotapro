@@ -4,8 +4,8 @@ import { Plus, Receipt, Sun, Moon } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useTheme } from '../../context/ThemeContext';
 
-const LOGO_BLACK = '/brand/cotapro-logo-cropped.png';
-const LOGO_WHITE = '/brand/cotapro-logo-branca-login.png';
+const LOGO_BLACK = '/brand/cotapro-logo-dark.svg';
+const LOGO_WHITE = '/brand/cotapro-logo-light.svg';
 
 export function Header() {
   const [logoError, setLogoError] = useState(false);

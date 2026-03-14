@@ -93,7 +93,7 @@ export function AuthLayout({ children, variant = 'login' }: AuthLayoutProps) {
             <div className="space-y-10">
               <div className="space-y-6">
                 <img
-                  src="/brand/cotapro-logo-branca-login.png"
+                  src="/brand/cotapro-logo-light.svg"
                   alt="CotaPro"
                   className="h-12 w-auto object-contain object-left"
                 />

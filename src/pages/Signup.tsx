@@ -143,12 +143,12 @@ export function Signup() {
             {/* Logo completa - somente mobile/tablet: preta no modo claro, branca no modo escuro. Desktop = só painel esquerdo. */}
             <div className="lg:hidden">
               <img
-                src="/brand/Cota%20pro%20logo%20preta%20completa%20png.png"
+                src="/brand/cotapro-logo-dark.svg"
                 alt="CotaPro"
                 className="dark:hidden w-64 h-auto object-contain mx-auto mb-3"
               />
               <img
-                src="/brand/Cota%20pro%20logo%20branca%20completa%20png.png"
+                src="/brand/cotapro-logo-light.svg"
                 alt="CotaPro"
                 className="hidden dark:block w-64 h-auto object-contain mx-auto mb-3"
               />

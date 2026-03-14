@@ -3,8 +3,8 @@ import { NavLink, Link } from 'react-router-dom';
 import { LayoutDashboard, FileText, Users, Package, Settings, Receipt, HelpCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
-const LOGO_BLACK = '/brand/cotapro-logo-cropped.png';
-const LOGO_WHITE = '/brand/cotapro-logo-branca-login.png';
+const LOGO_BLACK = '/brand/cotapro-logo-dark.svg';
+const LOGO_WHITE = '/brand/cotapro-logo-light.svg';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },

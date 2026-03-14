@@ -1,5 +1,5 @@
-const LOGO_BLACK = '/brand/Cota%20pro%20logo%20preta%20png.png';
-const LOGO_WHITE = '/brand/Cota%20pro%20logo%20branca%20png.png';
+const LOGO_BLACK = '/brand/cotapro-logo-dark.svg';
+const LOGO_WHITE = '/brand/cotapro-logo-light.svg';
 
 export function WatermarkBrand() {
   return (
