@@ -55,8 +55,12 @@ export async function POST(request: Request) {
     );
   }
 
-  const origin = request.headers.get('origin') || 'https://cotapro.app';
-  const returnUrl = `${origin}/configuracoes/conta`;
+  const siteUrl = (process.env.SITE_URL || '').trim().replace(/\/+$/, '');
+  if (!siteUrl) {
+    console.error('Missing env: SITE_URL');
+    return jsonResponse({ error: 'Stripe não configurado' }, 500);
+  }
+  const returnUrl = `${siteUrl}/configuracoes/conta`;
 
   try {
     const stripe = new Stripe(stripeSecretKey, { apiVersion: '2026-02-25.clover' });
