@@ -403,7 +403,14 @@ export const useStore = create<AppState>()(
               last_follow_up_at: (q as any).last_followup_sent_at ?? (q as any).last_follow_up_at ?? undefined,
             };
           });
-          set({ quotes });
+          // Aplica expiração por data na própria lista carregada (enviado + data_validade passada → expirado)
+          const quotesWithExpired = quotes.map((q) => {
+            if (q.status === 'enviado' && isExpired(q.data_validade)) {
+              return { ...q, status: 'expirado' as QuoteStatus };
+            }
+            return q;
+          });
+          set({ quotes: quotesWithExpired });
         } catch (error) {
           console.error('Erro ao carregar orçamentos:', error);
           // Nota: toast não pode ser usado diretamente no store.

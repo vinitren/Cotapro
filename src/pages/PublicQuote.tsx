@@ -7,6 +7,19 @@ import { generatePixPayload } from '../lib/pix';
 import { PublicQuoteDocument } from '../components/quotes/PublicQuoteDocument';
 import type { Quote, Company, Customer, Address, QuoteItem } from '../types';
 
+/** Status que permitem visualização pelo link público (RLS e frontend). */
+const PUBLIC_QUOTE_STATUSES = ['enviado', 'aprovado', 'expirado'] as const;
+function isPublicableStatus(status: string | undefined): boolean {
+  return status != null && PUBLIC_QUOTE_STATUSES.includes(status as any);
+}
+
+/** Campos mínimos para renderizar a página pública (evita select *). */
+const QUOTES_PUBLIC_SELECT =
+  'id, user_id, customer_id, number, total_value, items, status, created_at, validity_days, observations, notes, discount_percentage, discount_value';
+const CUSTOMERS_PUBLIC_SELECT = 'id, tipo, nome, cpf_cnpj, telefone, endereco, data_cadastro';
+const PROFILES_PUBLIC_SELECT =
+  'id, company_name, cnpj, phone, email, logo_url, street, number, complement, district, city, state, cep, default_notes, pix_key, pix_name, pix_city, pix_type';
+
 interface PixData {
   pix_key: string;
   pix_name: string;
@@ -68,9 +81,22 @@ export function PublicQuote() {
       'width=device-width, initial-scale=1.0, minimum-scale=0.5, maximum-scale=3.0, user-scalable=yes'
     );
     document.body.classList.add('public-quote-page');
+    // Impede indexação da página pública por buscadores
+    let metaRobots = document.querySelector('meta[name="robots"]');
+    if (!metaRobots) {
+      metaRobots = document.createElement('meta');
+      metaRobots.setAttribute('name', 'robots');
+      document.head.appendChild(metaRobots);
+    }
+    const previousRobots = metaRobots.getAttribute('content') ?? '';
+    metaRobots.setAttribute('content', 'noindex, nofollow');
     return () => {
       metaViewport?.setAttribute('content', originalContent);
       document.body.classList.remove('public-quote-page');
+      if (metaRobots) {
+        if (previousRobots) metaRobots.setAttribute('content', previousRobots);
+        else metaRobots.remove();
+      }
     };
   }, []);
 
@@ -90,7 +116,7 @@ export function PublicQuote() {
       try {
         const { data: qData, error: qError } = await supabase
           .from('quotes')
-          .select('*')
+          .select(QUOTES_PUBLIC_SELECT)
           .eq('id', id)
           .single();
 
@@ -106,6 +132,16 @@ export function PublicQuote() {
         }
 
         const q: any = qData;
+        // Só exibir orçamentos publicáveis (rascunho/recusado = não encontrado)
+        if (!isPublicableStatus(q.status)) {
+          if (!cancelled) {
+            setTemplateQuote(null);
+            setTemplateCompany(null);
+            setTemplatePix(null);
+            setNotFound(true);
+          }
+          return;
+        }
         const createdAt = q.created_at ? new Date(q.created_at) : new Date();
         const dataEmissao = (q.data_emissao && String(q.data_emissao)) || toIsoDateOnly(createdAt);
 
@@ -150,7 +186,7 @@ export function PublicQuote() {
         try {
           const { data: cData } = await supabase
             .from('customers')
-            .select('*')
+            .select(CUSTOMERS_PUBLIC_SELECT)
             .eq('id', q.customer_id)
             .maybeSingle();
           if (cData) {
@@ -161,9 +197,9 @@ export function PublicQuote() {
               nome: String(c.nome ?? 'Cliente'),
               cpf_cnpj: String(c.cpf_cnpj ?? ''),
               telefone: String(c.telefone ?? ''),
-              email: String(c.email ?? ''),
+              email: '',
               endereco: (c.endereco as Address) ?? emptyAddress,
-              observacoes: String(c.observacoes ?? ''),
+              observacoes: '',
               data_cadastro: String(c.data_cadastro ?? dataEmissao),
             };
           }
@@ -189,7 +225,7 @@ export function PublicQuote() {
           try {
             const { data: pData } = await supabase
               .from('profiles')
-              .select('*')
+              .select(PROFILES_PUBLIC_SELECT)
               .eq('id', q.user_id)
               .maybeSingle();
 
@@ -240,11 +276,14 @@ export function PublicQuote() {
         }
 
         if (!cancelled) {
-          const descontoTipo = (q.desconto_tipo as Quote['desconto_tipo']) || 'percentual';
-          const descontoValor = Number(q.desconto_valor ?? 0) || 0;
+          const discountPct = Number(q.discount_percentage ?? 0) || 0;
+          const discountVal = Number(q.discount_value ?? 0) || 0;
+          const descontoTipo: Quote['desconto_tipo'] =
+            discountPct > 0 ? 'percentual' : 'fixo';
+          const descontoValor = discountPct > 0 ? discountPct : discountVal;
           const subtotal = Number(q.subtotal ?? subtotalCalc) || 0;
           const total = Number(q.total ?? q.total_value ?? subtotal) || 0;
-          const quoteObsRaw = String((q.observacoes ?? q.notes ?? '')).trim();
+          const quoteObsRaw = String((q.observations ?? q.notes ?? '')).trim();
           const observacoes = quoteObsRaw || profileDefaultNotes || '';
 
           const quoteForTemplate: Quote = {
